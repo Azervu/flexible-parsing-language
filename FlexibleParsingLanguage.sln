@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35327.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlexibleParsingLanguage", "FlexibleParsingLanguage\FlexibleParsingLanguage.csproj", "{8A14C112-956A-4C01-A460-6C1EC82E5A75}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlexibleParsingLanguage.Test", "FlexibleParsingLanguage.Test\FlexibleParsingLanguage.Test.csproj", "{7468B44D-EC33-459A-B5A5-7B79C97255E1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8A14C112-956A-4C01-A460-6C1EC82E5A75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A14C112-956A-4C01-A460-6C1EC82E5A75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A14C112-956A-4C01-A460-6C1EC82E5A75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A14C112-956A-4C01-A460-6C1EC82E5A75}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7468B44D-EC33-459A-B5A5-7B79C97255E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7468B44D-EC33-459A-B5A5-7B79C97255E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7468B44D-EC33-459A-B5A5-7B79C97255E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7468B44D-EC33-459A-B5A5-7B79C97255E1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DA023481-59E1-4E4B-B40E-887111CA79FF}
+	EndGlobalSection
+EndGlobal
