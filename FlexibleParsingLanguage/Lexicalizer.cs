@@ -1,8 +1,7 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics.Metrics;
 
 namespace FlexibleParsingLanguage;
-
-
 
 internal struct GroupToken
 {
@@ -32,22 +31,13 @@ internal struct OperatorToken
     }
 }
 
-
-
-
 public struct OperatorKey
 {
-
     public char Operator { get; internal set; }
-
     public int TargetId { get; internal set; }
-
     public int AccessorId { get; internal set; }
-
     public string? Accessor { get; internal set; }
-
     public bool Write { get; internal set; }
-
 
     public OperatorKey(int targetId, char op, string acc, bool write = false)
     {
@@ -65,20 +55,9 @@ public struct OperatorKey
         AccessorId = accessorId;
         Write = write;
     }
-
 }
 
-internal class QueryExpression
-{
-    private List<OperatorKey> _ops;
-
-    public QueryExpression(List<OperatorKey> ops)
-    {
-        _ops = ops;
-    }
-}
-
-internal class Lexicalizer
+internal partial class Lexicalizer
 {
     public const char ROOT = '$';
 
@@ -92,6 +71,11 @@ internal class Lexicalizer
 
     public const char WRITE = '_';
 
+
+    public const int WRITE_ROOT = 2;
+
+    public const int READ_ROOT = 1;
+
     internal Tokenizer Tokenizer { get; private set; }
 
     public Lexicalizer()
@@ -103,46 +87,47 @@ internal class Lexicalizer
     public Parser Lexicalize(string raw)
     {
         var tokens = Tokenizer.Tokenize(raw);
-        var rawOps = ProcessTokens(tokens);
-        var ops = ProcessRawOps(rawOps);
+        var ops = ProcessTokens(tokens);
+        //var ops = ProcessRawOps(rawOps);
 
         return new Parser(ops);
     }
 
-    private List<OperatorKey> ProcessTokens(List<(char, string?)> tokens)
+    private List<ParseOperation> ProcessTokens(List<(char, string?)> tokens)
     {
-        var ops = new Dictionary<OperatorKey, int> {
-            { new OperatorKey(-1, ROOT, null, false), 1 },
-            { new OperatorKey(-1, ROOT, null, true), 2 }
+        var opsMap = new Dictionary<OperatorKey, int> {
+            { new OperatorKey(-1, ROOT, null, false), 1 }
         };
 
         var idStack = new Stack<(int, int, bool)>();
 
         var idCounter = 3;
 
-        var readId = 1;
-        var writeId = 2;
-        var writeMode = false;
+        var readId = READ_ROOT;
+        var writeId = WRITE_ROOT;
+        var loadedReadId = readId;
+        var loadedWriteId = -2;
+        var writeMode = StartWriteMode(0, tokens);
+        var ops = new List<ParseOperation>();
 
-        var writeOps = new List<int>();
+        var writeOps2 = new List<(char, string?)>();
 
-
-
-
-        foreach (var (token, accessor) in tokens)
+        for (var i = 0; i < tokens.Count; i++)
         {
+            var (token, accessor) = tokens[i];
             switch (token)
             {
                 case '{':
                     idStack.Push((readId, writeId, writeMode));
-                    writeMode = false;
+                    writeMode = StartWriteMode(i, tokens);
                     break;
                 case '}':
+                    ProcessWriteOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, writeOps2);
                     var writeKey = new OperatorKey(writeId, WRITE, readId, true);
-                    if (!ops.TryGetValue(writeKey, out writeId))
+                    if (!opsMap.TryGetValue(writeKey, out writeId))
                     {
-                        ops.Add(writeKey, ++idCounter);
-                        writeOps.Add(idCounter);
+                        opsMap.Add(writeKey, ++idCounter);
+                        ops.Add(new ParseOperation(ParseOperationType.WriteFromRead));
                     }
                     if (!idStack.TryPop(out var lastEntry))
                         throw new InvalidOperationException("un branching past start");
@@ -151,41 +136,90 @@ internal class Lexicalizer
                     writeMode = lastEntry.Item3;
                     break;
                 case ':':
-                    writeMode = true;
+                    writeMode = false;
+                    break;
+                case '.':
+                case '\'':
+                case '"':
+                case '[':
+
+                    if (writeMode)
+                        writeOps2.Add((token, accessor));
+                    else
+                        ProcessReadOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, token, token != '[', accessor);
                     break;
                 default:
-                    if (writeMode)
-                    {
-                        var key = new OperatorKey(writeId, token, accessor, writeMode);
-                        if (!ops.TryGetValue(key, out writeId))
-                        {
-                            writeId = ++idCounter;
-                            ops.Add(key, writeId);
-                        }
-                    }
-                    else
-                    {
-                        var key = new OperatorKey(readId, token, accessor, writeMode);
-                        if (!ops.TryGetValue(key, out readId))
-                        {
-                            readId = ++idCounter;
-                            ops.Add(key, readId);
-                        }
-                    }
                     break;
             }
         }
-        var writeKey2 = new OperatorKey(writeId, WRITE, readId, true);
-        if (!ops.TryGetValue(writeKey2, out writeId))
+
+
+        /*
+        foreach (var (token, accessor) in tokens)
         {
-            ops.Add(writeKey2, ++idCounter);
+            switch (token)
+            {
+                case '{':
+                    idStack.Push((readId, writeId, writeMode));
+                    writeMode = true;
+                    break;
+                case '}':
+
+                    if (writeOps2.Any())
+                        ProcessWriteOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, writeOps2);
+
+
+                    var writeKey = new OperatorKey(writeId, WRITE, readId, true);
+                    if (!opsMap.TryGetValue(writeKey, out writeId))
+                    {
+                        opsMap.Add(writeKey, ++idCounter);
+                        writeOps.Add(idCounter);
+                        ops.Add(new ParseOperation(ParseOperationType.WriteFromRead));
+                    }
+                    if (!idStack.TryPop(out var lastEntry))
+                        throw new InvalidOperationException("un branching past start");
+                    readId = lastEntry.Item1;
+                    writeId = lastEntry.Item2;
+                    writeMode = lastEntry.Item3;
+                    break;
+                case ':':
+                    writeMode = false;
+                    break;
+                case '.':
+                case '\'':
+                case '"':
+                case '[':
+
+                    if (writeMode)
+                        writeOps2.Add((token, accessor));
+                    else
+                        ProcessReadOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, token, token != '[', accessor);
+                    break;
+                default:
+                    break;
+            }
+        }
+        */
+
+        ProcessWriteOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, writeOps2);
+
+
+        return ops;
+
+
+        /*
+
+        var writeKey2 = new OperatorKey(writeId, WRITE, readId, true);
+        if (!opsMap.TryGetValue(writeKey2, out writeId))
+        {
+            opsMap.Add(writeKey2, ++idCounter);
             writeOps.Add(idCounter);
         }
 
 
-        var references = ops.ToDictionary(x => x.Value, x => x.Key).ToDictionary();
-        var refCount = ops.GroupBy(x => x.Key.TargetId).ToDictionary(x => x.Key, x => x.Count());
-        foreach (var x in ops.Keys)
+        var references = opsMap.ToDictionary(x => x.Value, x => x.Key).ToDictionary();
+        var refCount = opsMap.GroupBy(x => x.Key.TargetId).ToDictionary(x => x.Key, x => x.Count());
+        foreach (var x in opsMap.Keys)
         {
             if (x.AccessorId == null)
                 continue;
@@ -243,7 +277,64 @@ internal class Lexicalizer
         }
 
         return orderedOperations;
+        */
     }
+
+
+
+
+    private bool StartWriteMode(int i, List<(char, string?)> tokens)
+    {
+        var depth = 0;
+
+        for (var j = i; j < tokens.Count; j++)
+        {
+            var (token, accessor) = tokens[j];
+
+            switch (token)
+            {
+                case '{':
+                    depth++;
+                    break;
+                case '}':
+                    depth--;
+                    if (depth < 0)
+                        return false;
+                    break;
+                case ':':
+                    if (depth == 0)
+                        return true;
+                    break;
+
+            }
+        }
+        return false;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

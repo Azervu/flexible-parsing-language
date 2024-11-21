@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -11,12 +12,14 @@ internal enum ParseOperationType
 {
     WriteInitRoot,
     WriteRoot,
+    WriteLoad,
     WriteAccess,
     WriteAccessInt,
+    WriteFromRead,
     ReadRoot,
+    ReadLoad,
     ReadAccess,
     ReadAccessInt,
-
 }
 
 internal struct ParseOperation
@@ -38,14 +41,9 @@ internal struct ParseOperation
         this.OpType = opType;
         this.IntAcc = acc;
     }
-
 }
 
-
-
-
-
-public interface IParsingModule
+public interface IReadingModule
 {
     public List<Type> HandledTypes { get; }
     public object Parse(object raw, string acc);
@@ -56,8 +54,8 @@ public interface IWritingModule
 {
     public List<Type> HandledTypes { get; }
     public object Root();
-    public void Write(ref object raw, string acc, object? val);
-    public void Write(ref object raw, int acc, object? val);
+    public void Write(object raw, string acc, object? val);
+    public void Write(object raw, int acc, object? val);
 }
 
 
@@ -66,9 +64,9 @@ public class Parser
 {
     private List<ParseOperation> _ops;
 
-    private List<(List<Type>, IParsingModule)> _modules;
+    private List<(List<Type>, IReadingModule)> _modules;
 
-    private Dictionary<Type, IParsingModule> _moduleLookup;
+    private Dictionary<Type, IReadingModule> _moduleLookup;
 
     private Type activeType;
 
@@ -76,14 +74,14 @@ public class Parser
     {
         _ops = ops;
 
-        _modules = new List<(List<Type>, IParsingModule)>
+        _modules = new List<(List<Type>, IReadingModule)>
         {
             ([typeof(JsonNode)] , new JsonParsingModule() )
         };
-        _moduleLookup = new Dictionary<Type, IParsingModule>();
+        _moduleLookup = new Dictionary<Type, IReadingModule>();
     }
 
-    private IParsingModule LookupModule(Type t)
+    private IReadingModule LookupModule(Type t)
     {
         if (_moduleLookup.TryGetValue(t, out var m))
             return m;
@@ -106,13 +104,14 @@ public class Parser
 
     public object Parse(object readRoot)
     {
-        IWritingModule write = new CollectionWritingModule();
-        Type activeType = null;
-        IParsingModule activeModule = null;
+        IWritingModule writer = new CollectionWritingModule();
+        IReadingModule reader = null;
 
         object writeRoot = null;
         object readHead = readRoot;
         object writeHead = null;
+
+        Type activeType = null;
 
         foreach (var o in _ops)
         {
@@ -120,34 +119,68 @@ public class Parser
             if (t != activeType)
             {
                 activeType = t;
-                activeModule = LookupModule(t);
+                reader = LookupModule(t);
             }
-            switch (o.OpType)
-            {
-                case ParseOperationType.WriteInitRoot:
-                    writeRoot = write.Root();
-                    writeHead = writeRoot;
-                    break;
-                case ParseOperationType.WriteRoot:
-                    writeHead = writeRoot;
-                    break;
-                case ParseOperationType.WriteAccess:
-                    write.Write(ref writeHead, o.StringAcc, readHead);
-                    break;
-                case ParseOperationType.WriteAccessInt:
-                    write.Write(ref writeHead, o.IntAcc, readHead);
-                    break;
-                case ParseOperationType.ReadRoot:
-                    readHead = readRoot;
-                    break;
-                case ParseOperationType.ReadAccess:
-                    readHead = activeModule.Parse(readHead, o.StringAcc);
-                    break;
-                case ParseOperationType.ReadAccessInt:
-                    readHead = activeModule.Parse(readHead, o.IntAcc);
-                    break;
-            }
+            ParseInner(
+                writer,
+                reader,
+                ref readRoot,
+                ref writeRoot,
+                ref readHead,
+                ref writeHead,
+                o
+            );
         }
         return writeRoot;
     }
+
+
+    private void ParseInner(
+        IWritingModule write,
+        IReadingModule activeModule,
+        ref object readRoot,
+        ref object writeRoot,
+        ref object readHead,
+        ref object writeHead,
+        ParseOperation o
+        )
+    {
+        switch (o.OpType)
+        {
+            case ParseOperationType.WriteInitRoot:
+                writeRoot = write.Root();
+                writeHead = writeRoot;
+                break;
+            case ParseOperationType.WriteLoad:
+                break;
+            case ParseOperationType.WriteRoot:
+                writeHead = writeRoot;
+                break;
+            case ParseOperationType.WriteAccessInt:
+            case ParseOperationType.WriteAccess:
+                var w = write.Root();
+                write.Write(writeHead, o.StringAcc, w);
+                writeHead = w;
+                break;
+            case ParseOperationType.WriteFromRead:
+                write.Write(writeHead, o.StringAcc, readHead);
+                //write.Write(ref writeHead, o.IntAcc, readHead);
+                break;
+            case ParseOperationType.ReadRoot:
+                readHead = readRoot;
+                break;
+            case ParseOperationType.ReadAccess:
+                readHead = activeModule.Parse(readHead, o.StringAcc);
+                break;
+            case ParseOperationType.ReadAccessInt:
+                readHead = activeModule.Parse(readHead, o.IntAcc);
+                break;
+            case ParseOperationType.ReadLoad:
+                break;
+
+
+        }
+    }
+
+
 }

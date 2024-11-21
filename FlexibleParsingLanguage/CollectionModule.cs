@@ -16,19 +16,19 @@ internal class CollectionWritingModule : IWritingModule
 
     public object Root() => new Dictionary<string, object>();
 
-    public void Write(ref object raw, string acc, object? val)
+    public void Write(object raw, string acc, object val)
     {
         if (raw is not IDictionary dict)
             return;
 
-        dict.Add(acc, val ?? new Dictionary<string, object>());
+        dict.Add(acc, val);
     }
 
-    public void Write(ref object raw, int acc, object? val)
+    public void Write(object raw, int acc, object val)
     {
         if (raw is not IDictionary dict)
             return;
 
-        dict.Add(acc.ToString(), val ?? new Dictionary<string, object>());
+        dict.Add(acc.ToString(), val);
     }
 }

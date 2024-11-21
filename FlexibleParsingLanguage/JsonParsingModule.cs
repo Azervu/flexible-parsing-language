@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage;
 
-public class JsonParsingModule: IParsingModule
+public class JsonParsingModule: IReadingModule
 {
     public List<Type> HandledTypes { get; } = [typeof(JsonNode), typeof(JsonObject[])];
 

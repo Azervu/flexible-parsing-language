@@ -6,25 +6,33 @@ namespace FlexibleParsingLanguage.Test;
 [TestClass]
 public class ParserTest
 {
-    private Lexicalizer L { get; set; } = new Lexicalizer();
+    private Lexicalizer L { get; } = new Lexicalizer();
+    private JsonSerializerOptions O { get; } = new JsonSerializerOptions { WriteIndented = true };
+
+    public static IEnumerable<object[]> Payloads
+    {
+        get =>  Directory.EnumerateFiles("../../../JsonPayloads").Where(f => !f.EndsWith(".result.json") && !f.EndsWith(".query")).Select(x => new object[] { x });
+    }
+
 
     [TestMethod]
-    public void JsonParserTest() {
-
-        var serializationOptions = new JsonSerializerOptions();
-        serializationOptions.WriteIndented = true;
-
-        foreach (var f in Directory.EnumerateFiles("../../../JsonPayloads").Where(f => !f.EndsWith(".result.json") && !f.EndsWith(".query"))) {
-
-            var text = File.ReadAllText(f);
-            var query = File.ReadAllText(f.Replace(".json", ".query"));
+    [DynamicData(nameof(Payloads))]
+    public void JsonParserTest(string payload) {
+        try
+        {
+            var text = File.ReadAllText(payload);
+            var query = File.ReadAllText(payload.Replace(".json", ".query"));
             var parser = L.Lexicalize(query);
             var raw = JsonSerializer.Deserialize<JsonNode>(text);
 
             var result = parser.Parse(raw);
-            var serialized = JsonSerializer.Serialize(result, serializationOptions);
-            var expected = File.ReadAllText(f.Replace(".json", ".result.json"));
-            Assert.AreEqual(expected, serialized, $"parsing result {f}");
+            var serialized = JsonSerializer.Serialize(result, O);
+            var expected = File.ReadAllText(payload.Replace(".json", ".result.json"));
+            Assert.AreEqual(expected, serialized, $"parsing result {payload}");
+        }
+        catch (Exception ex)
+        {
+            Assert.Fail(payload + " " + ex.Message + "\n" + ex.StackTrace);
         }
     }
 }
