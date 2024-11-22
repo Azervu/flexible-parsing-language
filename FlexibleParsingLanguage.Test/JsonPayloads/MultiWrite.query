@@ -1,1 +1,1 @@
-a1{ab:abw}a2.a3:b{$b1:$bw}
+b:a1{abw:ab}{b2:a2.a3}
