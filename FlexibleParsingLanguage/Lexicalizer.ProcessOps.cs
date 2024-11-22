@@ -8,7 +8,6 @@ namespace FlexibleParsingLanguage;
 
 internal partial class Lexicalizer
 {
-
     private void ProcessWriteOps(
         List<ParseOperation> ops,
         Dictionary<OperatorKey, int> opsMap,
@@ -24,7 +23,6 @@ internal partial class Lexicalizer
         if (!writeOps.Any())
             return;
 
-
         if (writeId == WRITE_ROOT && !opsMap.ContainsKey(new OperatorKey(-1, ROOT, null, true)))
         {
             opsMap.Add(new OperatorKey(-1, ROOT, null, true), WRITE_ROOT);
@@ -32,9 +30,7 @@ internal partial class Lexicalizer
             loadedWriteId = WRITE_ROOT;
         }
 
-
         int writeIdToLoad = writeId;
-
 
         var i = 0;
         for (i = 0; i < writeOps.Count - 1; i++)
@@ -52,7 +48,6 @@ internal partial class Lexicalizer
                 ops.Add(new ParseOperation(ParseOperationType.WriteLoad, writeIdToLoad));
                 loadedWriteId = writeIdToLoad;
             }
-
 
             writeId = ++idCounter;
             loadedWriteId = writeId;
@@ -75,9 +70,7 @@ internal partial class Lexicalizer
         List<ParseOperation> ops,
         Dictionary<OperatorKey, int> opsMap,
         ref int idCounter,
-        ref int writeId,
         ref int readId,
-        ref int loadedWriteId,
         ref int loadedReadId,
         char token,
         bool numeric,
@@ -85,11 +78,7 @@ internal partial class Lexicalizer
         )
     {
 
-
-
         /*
-
-        
         if (numeric)
         {
             if (!int.TryParse(accessor, out var i))
@@ -99,31 +88,29 @@ internal partial class Lexicalizer
             else
                 var k = new ParseOperation(ParseOperationType.WriteAccessInt, i);
         }
-
-
-        
-         */
-
-
-
-
+        */
 
         //TODO enum flags write / numeric etc
         //TODO invert write logic - read out in - write in out
 
 
+
+
         var key = new OperatorKey(readId, token, accessor, false);
-        if (!opsMap.TryGetValue(key, out readId))
+        if (opsMap.TryGetValue(key, out readId))
+            return;
+
+        if (key.TargetId != loadedReadId)
         {
-            if (readId != loadedReadId)
-            {
-                ops.Add(new ParseOperation(ParseOperationType.ReadLoad, readId));
-                loadedReadId = readId;
-            }
-            readId = ++idCounter;
-            loadedReadId = readId;
-            opsMap.Add(key, readId);
-            ops.Add(new ParseOperation(ParseOperationType.ReadAccess, accessor));
+            ops.Add(new ParseOperation(ParseOperationType.ReadLoad, key.TargetId));
+            loadedReadId = key.TargetId;
         }
+        readId = ++idCounter;
+        loadedReadId = readId;
+        opsMap.Add(key, readId);
+        ops.Add(new ParseOperation(ParseOperationType.ReadAccess, accessor));
+        ops.Add(new ParseOperation(ParseOperationType.ReadSave, readId));
+
+
     }
 }

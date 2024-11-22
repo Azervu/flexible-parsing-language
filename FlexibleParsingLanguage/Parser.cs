@@ -13,16 +13,18 @@ internal enum ParseOperationType
     WriteInitRoot,
     WriteRoot,
     WriteLoad,
+    WriteSave,
     WriteAccess,
     WriteAccessInt,
     WriteFromRead,
     ReadRoot,
     ReadLoad,
+    ReadSave,
     ReadAccess,
     ReadAccessInt,
 }
 
-internal struct ParseOperation
+internal class ParseOperation
 {
     internal ParseOperationType OpType { get; set; }
     internal string StringAcc { get; set; }
@@ -58,8 +60,6 @@ public interface IWritingModule
     public void Write(object raw, int acc, object? val);
 }
 
-
-
 public class Parser
 {
     private List<ParseOperation> _ops;
@@ -68,12 +68,9 @@ public class Parser
 
     private Dictionary<Type, IReadingModule> _moduleLookup;
 
-    private Type activeType;
-
     internal Parser(List<ParseOperation> ops)
     {
         _ops = ops;
-
         _modules = new List<(List<Type>, IReadingModule)>
         {
             ([typeof(JsonNode)] , new JsonParsingModule() )
@@ -99,7 +96,6 @@ public class Parser
         }
 
         throw new Exception($"{t.Name} not supported by parser");
-
     }
 
     public object Parse(object readRoot)
@@ -107,15 +103,29 @@ public class Parser
         IWritingModule writer = new CollectionWritingModule();
         IReadingModule reader = null;
 
+        var store = new Dictionary<int, object>();
+
         object writeRoot = null;
         object readHead = readRoot;
         object writeHead = null;
 
         Type activeType = null;
 
+
+
+
+
         foreach (var o in _ops)
         {
+
+
+            var debug = _ops.Select(x => $"{(x == o ? "*" : " ")} {x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
+
+
+
+
             var t = readHead?.GetType() ?? typeof(void);
+
             if (t != activeType)
             {
                 activeType = t;
@@ -124,6 +134,7 @@ public class Parser
             ParseInner(
                 writer,
                 reader,
+                store,
                 ref readRoot,
                 ref writeRoot,
                 ref readHead,
@@ -138,6 +149,7 @@ public class Parser
     private void ParseInner(
         IWritingModule write,
         IReadingModule activeModule,
+        Dictionary<int, object> stored,
         ref object readRoot,
         ref object writeRoot,
         ref object readHead,
@@ -150,8 +162,6 @@ public class Parser
             case ParseOperationType.WriteInitRoot:
                 writeRoot = write.Root();
                 writeHead = writeRoot;
-                break;
-            case ParseOperationType.WriteLoad:
                 break;
             case ParseOperationType.WriteRoot:
                 writeHead = writeRoot;
@@ -175,10 +185,18 @@ public class Parser
             case ParseOperationType.ReadAccessInt:
                 readHead = activeModule.Parse(readHead, o.IntAcc);
                 break;
-            case ParseOperationType.ReadLoad:
+            case ParseOperationType.WriteLoad:
+                writeHead = stored[o.IntAcc];
                 break;
-
-
+            case ParseOperationType.ReadLoad:
+                readHead = stored[o.IntAcc];
+                break;
+            case ParseOperationType.WriteSave:
+                stored[o.IntAcc] = writeHead;
+                break;
+            case ParseOperationType.ReadSave:
+                stored[o.IntAcc] = readHead;
+                break;
         }
     }
 

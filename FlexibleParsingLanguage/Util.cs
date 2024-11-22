@@ -9,6 +9,31 @@ public static class Util
     public static string Join(this IEnumerable<string> it, char separator) => string.Join(separator, it);
 
 
+    public static IEnumerable<T> LazyConcat<T>(this IEnumerable<T> it, params IEnumerable<T>[] iterators) {
+        foreach (var item in it) {
+            yield return item;        
+        }
+
+        foreach (var it2 in iterators)
+        {
+            foreach (var item in it2)
+            {
+                yield return item;
+            }
+        }
+    }
+
+    public static IEnumerable<T> LazyConcat<T>(params IEnumerable<T>[] iterators)
+    {
+        foreach (var it2 in iterators)
+        {
+            foreach (var item in it2)
+            {
+                yield return item;
+            }
+        }
+    }
+
     public static string GetHumanReadableName(this Type t)
     {
         var name = new StringBuilder();

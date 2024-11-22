@@ -110,7 +110,7 @@ internal partial class Lexicalizer
         var writeMode = StartWriteMode(0, tokens);
         var ops = new List<ParseOperation>();
 
-        var writeOps2 = new List<(char, string?)>();
+        var writeOps = new List<(char, string?)>();
 
         for (var i = 0; i < tokens.Count; i++)
         {
@@ -118,17 +118,26 @@ internal partial class Lexicalizer
             switch (token)
             {
                 case '{':
+                    ops.Add(new ParseOperation(ParseOperationType.WriteSave, writeId));
                     idStack.Push((readId, writeId, writeMode));
-                    writeMode = StartWriteMode(i, tokens);
+                    writeMode = StartWriteMode(i + 1, tokens);
                     break;
                 case '}':
-                    ProcessWriteOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, writeOps2);
+                    ops.Add(new ParseOperation(ParseOperationType.WriteSave, writeId));
+
+                    ProcessWriteOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, writeOps);
+
+                    /*
                     var writeKey = new OperatorKey(writeId, WRITE, readId, true);
                     if (!opsMap.TryGetValue(writeKey, out writeId))
                     {
                         opsMap.Add(writeKey, ++idCounter);
                         ops.Add(new ParseOperation(ParseOperationType.WriteFromRead));
                     }
+                    */
+
+
+
                     if (!idStack.TryPop(out var lastEntry))
                         throw new InvalidOperationException("un branching past start");
                     readId = lastEntry.Item1;
@@ -144,9 +153,9 @@ internal partial class Lexicalizer
                 case '[':
 
                     if (writeMode)
-                        writeOps2.Add((token, accessor));
+                        writeOps.Add((token, accessor));
                     else
-                        ProcessReadOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, token, token != '[', accessor);
+                        ProcessReadOps(ops, opsMap, ref idCounter, ref readId, ref loadedReadId, token, token != '[', accessor);
                     break;
                 default:
                     break;
@@ -201,7 +210,7 @@ internal partial class Lexicalizer
         }
         */
 
-        ProcessWriteOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, writeOps2);
+        ProcessWriteOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, writeOps);
 
 
         return ops;
@@ -310,11 +319,6 @@ internal partial class Lexicalizer
         }
         return false;
     }
-
-
-
-
-
 
 
 

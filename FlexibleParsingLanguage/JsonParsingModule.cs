@@ -14,7 +14,7 @@ public class JsonParsingModule: IReadingModule
 
     public object Parse(object raw, string acc)
     {
-        if (raw is JsonNode n)
+        if (raw is JsonObject n)
             return n[acc];
 
         return null;
