@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Nodes;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Nodes;
 
 namespace FlexibleParsingLanguage;
 
@@ -108,21 +102,11 @@ public class Parser
         object writeRoot = null;
         object readHead = readRoot;
         object writeHead = null;
-
         Type activeType = null;
-
-
-
-
 
         foreach (var o in _ops)
         {
-
-
             var debug = _ops.Select(x => $"{(x == o ? "*" : " ")} {x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
-
-
-
 
             var t = readHead?.GetType() ?? typeof(void);
 

@@ -83,13 +83,10 @@ internal partial class Lexicalizer
         Tokenizer = new Tokenizer("${}:", '.', "'\"", '\\');
     }
 
-
     public Parser Lexicalize(string raw)
     {
         var tokens = Tokenizer.Tokenize(raw);
         var ops = ProcessTokens(tokens);
-        //var ops = ProcessRawOps(rawOps);
-
         return new Parser(ops);
     }
 
@@ -124,20 +121,7 @@ internal partial class Lexicalizer
                     break;
                 case '}':
                     ops.Add(new ParseOperation(ParseOperationType.WriteSave, writeId));
-
                     ProcessWriteOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, writeOps);
-
-                    /*
-                    var writeKey = new OperatorKey(writeId, WRITE, readId, true);
-                    if (!opsMap.TryGetValue(writeKey, out writeId))
-                    {
-                        opsMap.Add(writeKey, ++idCounter);
-                        ops.Add(new ParseOperation(ParseOperationType.WriteFromRead));
-                    }
-                    */
-
-
-
                     if (!idStack.TryPop(out var lastEntry))
                         throw new InvalidOperationException("un branching past start");
                     readId = lastEntry.Item1;
@@ -162,131 +146,11 @@ internal partial class Lexicalizer
             }
         }
 
-
-        /*
-        foreach (var (token, accessor) in tokens)
-        {
-            switch (token)
-            {
-                case '{':
-                    idStack.Push((readId, writeId, writeMode));
-                    writeMode = true;
-                    break;
-                case '}':
-
-                    if (writeOps2.Any())
-                        ProcessWriteOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, writeOps2);
-
-
-                    var writeKey = new OperatorKey(writeId, WRITE, readId, true);
-                    if (!opsMap.TryGetValue(writeKey, out writeId))
-                    {
-                        opsMap.Add(writeKey, ++idCounter);
-                        writeOps.Add(idCounter);
-                        ops.Add(new ParseOperation(ParseOperationType.WriteFromRead));
-                    }
-                    if (!idStack.TryPop(out var lastEntry))
-                        throw new InvalidOperationException("un branching past start");
-                    readId = lastEntry.Item1;
-                    writeId = lastEntry.Item2;
-                    writeMode = lastEntry.Item3;
-                    break;
-                case ':':
-                    writeMode = false;
-                    break;
-                case '.':
-                case '\'':
-                case '"':
-                case '[':
-
-                    if (writeMode)
-                        writeOps2.Add((token, accessor));
-                    else
-                        ProcessReadOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, token, token != '[', accessor);
-                    break;
-                default:
-                    break;
-            }
-        }
-        */
-
         ProcessWriteOps(ops, opsMap, ref idCounter, ref writeId, ref readId, ref loadedWriteId, ref loadedReadId, writeOps);
 
+        //TODO remove unused saves
 
         return ops;
-
-
-        /*
-
-        var writeKey2 = new OperatorKey(writeId, WRITE, readId, true);
-        if (!opsMap.TryGetValue(writeKey2, out writeId))
-        {
-            opsMap.Add(writeKey2, ++idCounter);
-            writeOps.Add(idCounter);
-        }
-
-
-        var references = opsMap.ToDictionary(x => x.Value, x => x.Key).ToDictionary();
-        var refCount = opsMap.GroupBy(x => x.Key.TargetId).ToDictionary(x => x.Key, x => x.Count());
-        foreach (var x in opsMap.Keys)
-        {
-            if (x.AccessorId == null)
-                continue;
-
-            if (refCount.TryGetValue((int)x.AccessorId, out var n))
-                refCount[x.AccessorId] = n + 1;
-            else
-                refCount[x.AccessorId] = 1;
-        }
-        var multiRef = refCount.Where(x => x.Value > 1).Select(x => x.Key).ToHashSet();
-
-        var includedOperations = new HashSet<int>();    
-        var orderedOperations = new List<OperatorKey>();
-        foreach (var write in writeOps)
-        {
-            var op = references[write];
-            var a = op.TargetId;
-            var i = orderedOperations.Count;
-
-            while (!includedOperations.Contains(a) && a != -1)
-            {
-                var o = references[a];
-                orderedOperations.Insert(i, o);
-                includedOperations.Add(a);
-
-                if (multiRef.Contains(a))
-                {
-                    //TODO save operation
-                }
-
-                a = o.TargetId;
-            }
-
-            if (a != -1)
-            {
-                //TODO load operation
-                //orderedOperations.Insert(i, o);
-            }
-
-
-            a = (int)op.AccessorId;
-            while (!includedOperations.Contains(a) && a != -1)
-            {
-                var o = references[a];
-                orderedOperations.Insert(i, o);
-                includedOperations.Add(a);
-
-                if (multiRef.Contains(a))
-                {
-                    //TODO save operation
-                }
-
-                a = o.TargetId;
-            }
-        }
-
-        return orderedOperations;
-        */
     }
 
 
@@ -319,91 +183,6 @@ internal partial class Lexicalizer
         }
         return false;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    private List<ParseOperation> ProcessRawOps(List<OperatorKey> ops)
-    {
-        var result = new List<ParseOperation>();
-        var writeInited = false;
-
-        foreach (var op in ops)
-        {
-
-
-            if (op.Write)
-            {
-                switch (op.Operator)
-                {
-                    case '$':
-                        if (writeInited)
-                        {
-                            result.Add(new ParseOperation(ParseOperationType.WriteRoot));
-                        }
-                        else
-                        {
-                            writeInited = true;
-                            result.Add(new ParseOperation(ParseOperationType.WriteInitRoot));
-                        }
-                        break;
-                    case '.':
-                        if (op.Accessor == null)
-                            result.Add(new ParseOperation(ParseOperationType.WriteAccessInt, op.AccessorId));
-                        else
-                            result.Add(new ParseOperation(ParseOperationType.WriteAccess, op.Accessor));
-                        break;
-                    default:
-                        throw new InvalidOperationException(op.Operator + " not handled write");
-                }
-            }
-            else
-            {
-                switch (op.Operator)
-                {
-                    case '$':
-                        result.Add(new ParseOperation(ParseOperationType.ReadRoot));
-                        break;
-                    case '.':
-                        if (op.Accessor == null)
-                            result.Add(new ParseOperation(ParseOperationType.ReadAccessInt, op.AccessorId));
-                        else
-                            result.Add(new ParseOperation(ParseOperationType.ReadAccess, op.Accessor));
-                        break;
-                    default:
-                        throw new InvalidOperationException(op.Operator + " not handled read");
-                }
-            }
-        }
-
-        return result;
-    }
-
-
-
-
-
 }
 
 
