@@ -20,18 +20,37 @@ internal partial class Lexicalizer
     )
     {
 
-        if (!writeOps.Any())
-            return;
+
+        var add = !writeOps.Any();
+
+
+
 
         if (writeId == WRITE_ROOT && !opsMap.ContainsKey(new OperatorKey(-1, ROOT, null, true)))
         {
             opsMap.Add(new OperatorKey(-1, ROOT, null, true), WRITE_ROOT);
-            ops.Add(new ParseOperation(ParseOperationType.WriteInitRoot));
+
+
+            if (add || writeOps[0].Item1 == '[')
+            {
+                ops.Add(new ParseOperation(ParseOperationType.WriteInitRootArray));
+            }
+            else
+            {
+                ops.Add(new ParseOperation(ParseOperationType.WriteInitRootMap));
+            }
             loadedWriteId = WRITE_ROOT;
         }
 
-        int writeIdToLoad = writeId;
 
+
+        if (add)
+        {
+            ops.Add(new ParseOperation(ParseOperationType.AddFromRead));
+            return;
+        }
+
+        int writeIdToLoad = writeId;
         var i = 0;
         for (i = 0; i < writeOps.Count - 1; i++)
         {
@@ -53,12 +72,16 @@ internal partial class Lexicalizer
             loadedWriteId = writeId;
             opsMap.Add(key, writeId);
 
-            var nextNumeric = writeOps[i + 1].Item1 == '[';
-
-            if (nextNumeric)
+            if (writeOps[i + 1].Item1 == '[')
+            {
+                if (!int.TryParse(accessor, out var id))
+                    throw new ArgumentException("");
                 ops.Add(new ParseOperation(ParseOperationType.WriteAccess, accessor));
+            }
             else
+            {
                 ops.Add(new ParseOperation(ParseOperationType.WriteAccess, accessor));
+            }
         }
 
         var (t, a) = writeOps.Last();

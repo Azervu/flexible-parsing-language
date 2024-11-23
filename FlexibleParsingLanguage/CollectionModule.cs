@@ -11,10 +11,11 @@ namespace FlexibleParsingLanguage;
 
 internal class CollectionWritingModule : IWritingModule
 {
-    public List<Type> HandledTypes { get; } = [typeof(IDictionary)];
+    public List<Type> HandledTypes { get; } = [typeof(IDictionary), typeof(IList)];
 
+    public object BlankArray() => new List<object>();
 
-    public object Root() => new Dictionary<string, object>();
+    public object BlankMap() => new Dictionary<string, object>();
 
     public void Write(object raw, string acc, object val)
     {
@@ -26,9 +27,16 @@ internal class CollectionWritingModule : IWritingModule
 
     public void Write(object raw, int acc, object val)
     {
-        if (raw is not IDictionary dict)
+        if (raw is not IList list)
+            return;
+        list[acc] = val;
+    }
+
+    public void Append(object target, object? val)
+    {
+        if (target is not IList list)
             return;
 
-        dict.Add(acc.ToString(), val);
+        list.Add(val);
     }
 }

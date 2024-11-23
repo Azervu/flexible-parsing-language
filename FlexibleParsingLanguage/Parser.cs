@@ -4,13 +4,16 @@ namespace FlexibleParsingLanguage;
 
 internal enum ParseOperationType
 {
-    WriteInitRoot,
+    WriteInitRootMap,
+    WriteInitRootArray,
+
     WriteRoot,
     WriteLoad,
     WriteSave,
     WriteAccess,
     WriteAccessInt,
     WriteFromRead,
+    AddFromRead,
     ReadRoot,
     ReadLoad,
     ReadSave,
@@ -49,9 +52,11 @@ public interface IReadingModule
 public interface IWritingModule
 {
     public List<Type> HandledTypes { get; }
-    public object Root();
-    public void Write(object raw, string acc, object? val);
-    public void Write(object raw, int acc, object? val);
+    public object BlankMap();
+    public object BlankArray();
+    public void Write(object target, string acc, object? val);
+    public void Write(object target, int acc, object? val);
+    public void Append(object target, object? val);
 }
 
 public class Parser
@@ -143,18 +148,28 @@ public class Parser
     {
         switch (o.OpType)
         {
-            case ParseOperationType.WriteInitRoot:
-                writeRoot = write.Root();
+
+            case ParseOperationType.WriteInitRootArray:
+                writeRoot = write.BlankArray();
+                writeHead = writeRoot;
+                break;
+
+            case ParseOperationType.WriteInitRootMap:
+                writeRoot = write.BlankMap();
                 writeHead = writeRoot;
                 break;
             case ParseOperationType.WriteRoot:
                 writeHead = writeRoot;
                 break;
             case ParseOperationType.WriteAccessInt:
+                var w1 = write.BlankArray();
+                write.Write(writeHead, o.IntAcc, w1);
+                writeHead = w1;
+                break;
             case ParseOperationType.WriteAccess:
-                var w = write.Root();
-                write.Write(writeHead, o.StringAcc, w);
-                writeHead = w;
+                var w2 = write.BlankMap();
+                write.Write(writeHead, o.StringAcc, w2);
+                writeHead = w2;
                 break;
             case ParseOperationType.WriteFromRead:
                 write.Write(writeHead, o.StringAcc, readHead);
@@ -180,6 +195,9 @@ public class Parser
                 break;
             case ParseOperationType.ReadSave:
                 stored[o.IntAcc] = readHead;
+                break;
+            case ParseOperationType.AddFromRead:
+                write.Append(writeHead, readHead);
                 break;
         }
     }

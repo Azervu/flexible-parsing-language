@@ -11,7 +11,7 @@ public class ParserTest
 
     public static IEnumerable<object[]> Payloads
     {
-        get =>  Directory.EnumerateFiles("../../../JsonPayloads").Where(f => !f.EndsWith(".result.json") && !f.EndsWith(".query")).Select(x => new object[] { x });
+        get => Directory.EnumerateFiles("../../../JsonPayloads").Where(f => !f.EndsWith(".result.json") && !f.EndsWith(".query")).Select(x => new object[] { x });
     }
 
 
