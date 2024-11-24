@@ -3,7 +3,7 @@ internal partial class Lexicalizer
 {
     private void ProcessWriteOperator(ParseData data, ParseContext ctx, AccessorData acc)
     {
-        ctx.WriteMode = WriteMode.Written;;
+        ctx.WriteMode = WriteMode.Written;
         var key = new OperatorKey(ctx.WriteId, acc.Operator, acc.Accessor, true);
 
         if (data.OpsMap.TryGetValue(key, out var writeId))

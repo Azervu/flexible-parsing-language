@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace FlexibleParsingLanguage;
 
@@ -108,12 +109,18 @@ public class Parser
         object writeHead = null;
         Type activeType = null;
 
+
+
+        var x = "";
+
         foreach (var o in _ops)
         {
             var debug = _ops.Select(x => $"{(x == o ? "*" : " ")} {x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
 
-            var t = readHead?.GetType() ?? typeof(void);
+            x += "\n" + JsonSerializer.Serialize(readHead) + $" | {o.OpType} {o.IntAcc} {o.StringAcc}";
 
+
+            var t = readHead?.GetType() ?? typeof(void);
             if (t != activeType)
             {
                 activeType = t;
@@ -129,6 +136,13 @@ public class Parser
                 ref writeHead,
                 o
             );
+
+
+            if (readHead == null)
+            {
+                throw new Exception($"Active read result in null | op = {o.OpType} | acc = {o.StringAcc} | i = {o.IntAcc}");
+            }
+
         }
         return writeRoot;
     }

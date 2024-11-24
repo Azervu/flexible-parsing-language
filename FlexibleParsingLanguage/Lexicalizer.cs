@@ -107,20 +107,6 @@ internal partial class Lexicalizer
 
         var debug = ops.Select(x => $"{x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
 
-/*
-         
-ReadAccess -1 root 
-ReadSave 4  
-ReadAccess -1 k1 
-WriteInitRootMap -1  
-WriteAccess -1 h1 
-ReadLoad 4  
-ReadAccess -1 k2 
-WriteRoot -1  
-WriteAccess -1 h2 
-
-*/
-
         return new Parser(ops);
     }
 
@@ -286,7 +272,7 @@ WriteAccess -1 h2
         {
             data.LoadedOps.Add(ctx.ReadId);
             data.Ops.Add(new ParseOperation(ParseOperationType.ReadLoad, ctx.ReadId));
-            ctx.ReadId = data.LoadedReadId;
+            data.LoadedReadId = ctx.ReadId;
             return;
         }
 
