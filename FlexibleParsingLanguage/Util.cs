@@ -8,6 +8,13 @@ public static class Util
 
     public static string Join(this IEnumerable<string> it, char separator) => string.Join(separator, it);
 
+    public static T Pop<T>(this List<T> stack)
+    {
+        var v = stack[stack.Count - 1];
+        stack.RemoveAt(stack.Count - 1);
+        return v;
+    }
+
 
     public static IEnumerable<T> LazyConcat<T>(this IEnumerable<T> it, params IEnumerable<T>[] iterators) {
         foreach (var item in it) {

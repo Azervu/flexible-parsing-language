@@ -34,9 +34,18 @@ internal class CollectionWritingModule : IWritingModule
 
     public void Append(object target, object? val)
     {
-        if (target is not IList list)
-            return;
 
-        list.Add(val);
+
+        switch (target)
+        {
+            case IList list:
+                list.Add(val);
+                break;
+            case IDictionary dict:
+                dict.Add(Guid.NewGuid().ToString(), val);
+                break;
+        }
+
+
     }
 }
