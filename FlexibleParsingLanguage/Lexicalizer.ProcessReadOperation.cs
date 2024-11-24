@@ -8,7 +8,7 @@ namespace FlexibleParsingLanguage;
 
 internal partial class Lexicalizer
 {
-    private void ProcessReadOperator(ParseData parser, ParseContext context, AccessorData data)
+    private void ProcessReadOperator(ParseData parser, ParseContext ctx, AccessorData data)
     {
 
         /*
@@ -28,33 +28,20 @@ internal partial class Lexicalizer
 
 
 
-        var key = new OperatorKey(context.ReadId, data.Operator, data.Accessor, false);
+        var key = new OperatorKey(ctx.ReadId, data.Operator, data.Accessor, false);
         if (parser.OpsMap.TryGetValue(key, out var readId))
         {
-            context.ReadId = readId;
+            ctx.ReadId = readId;
             return;
         }
 
 
-        {
-            if (key.TargetId != parser.LoadedReadId)
-            {
-                if (key.TargetId == READ_ROOT)
-                {
-                    parser.Ops.Add(new ParseOperation(ParseOperationType.ReadRoot));
-                }
-                else
-                {
-                    parser.Ops.Add(new ParseOperation(ParseOperationType.ReadLoad, key.TargetId));
-                    parser.LoadedReadId = key.TargetId;
-                }
-            }
-        }
-
-        context.ReadId = ++parser.IdCounter;
-        parser.LoadedReadId = context.ReadId;
-        parser.OpsMap.Add(key, context.ReadId);
+        EnsureReadOpLoaded(parser, ctx);
+        ctx.ReadId = ++parser.IdCounter;
+        parser.SaveOps.Add(ctx.ReadId);
+        parser.LoadedReadId = ctx.ReadId;
+        parser.OpsMap.Add(key, ctx.ReadId);
         parser.Ops.Add(new ParseOperation(ParseOperationType.ReadAccess, data.Accessor));
-        parser.Ops.Add(new ParseOperation(ParseOperationType.ReadSave, context.ReadId));
+        parser.Ops.Add(new ParseOperation(ParseOperationType.ReadSave, ctx.ReadId));
     }
 }

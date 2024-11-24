@@ -29,40 +29,37 @@ internal partial class Lexicalizer
     }
 
 
-    private void ProcessWriteOperator(ParseData parser, ParseContext context, AccessorData data)
+    private void ProcessWriteOperator(ParseData data, ParseContext ctx, AccessorData acc)
     {
-        EnsureWriteRootExists(parser, context, data);
 
-        context.WriteMode = WriteMode.Written;
-        var nextToken = data.NextActiveChar();
-        var key = new OperatorKey(context.WriteId, data.Operator, data.Accessor, true);
 
-        if (parser.OpsMap.TryGetValue(key, out var writeId))
+        ctx.WriteMode = WriteMode.Written;;
+        var key = new OperatorKey(ctx.WriteId, acc.Operator, acc.Accessor, true);
+
+
+
+
+        if (data.OpsMap.TryGetValue(key, out var writeId))
         {
-            context.WriteId = writeId;
+            ctx.WriteId = writeId;
             return;
         }
 
-        if (context.WriteId != parser.LoadedWriteId)
+        EnsureWriteOpLoaded(data, ctx, acc);
+
+        ctx.WriteId = ++data.IdCounter;
+        data.LoadedWriteId = ctx.WriteId;
+        data.OpsMap.Add(key, ctx.WriteId);
+
+        if (acc.Numeric)
         {
-            parser.Ops.Add(new ParseOperation(ParseOperationType.WriteLoad, context.WriteId));
-            parser.LoadedWriteId = context.WriteId;
-        }
-
-        context.WriteId = ++parser.IdCounter;
-        parser.LoadedWriteId = context.WriteId;
-        parser.OpsMap.Add(key, context.WriteId);
-
-
-        if (nextToken == '[')
-        {
-            if (!int.TryParse(data.Accessor, out var id))
+            if (!int.TryParse(acc.Accessor, out var id))
                 throw new ArgumentException("");
-            parser.Ops.Add(new ParseOperation(ParseOperationType.WriteAccess, data.Accessor));
+            data.Ops.Add(new ParseOperation(ParseOperationType.WriteAccess, acc.Accessor));
         }
         else
         {
-            parser.Ops.Add(new ParseOperation(ParseOperationType.WriteAccess, data.Accessor));
+            data.Ops.Add(new ParseOperation(ParseOperationType.WriteAccess, acc.Accessor));
         }
     }
 }

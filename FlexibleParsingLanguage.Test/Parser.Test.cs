@@ -35,4 +35,27 @@ public class ParserTest
             Assert.Fail(payload + " " + ex.Message + "\n" + ex.StackTrace);
         }
     }
+
+
+    public static IEnumerable<object[]> SimplePayloads => new List<object[]>
+    {
+        new object[] { "{\"k\" : \"v\"}", "k", "v" }
+    };
+
+    [TestMethod]
+    [DynamicData(nameof(SimplePayloads))]
+    public void SimpleJsonParserTest(string payload, string query, string expected)
+    {
+        try
+        {
+            var parser = L.Lexicalize(query);
+            var result = parser.Parse(JsonSerializer.Deserialize<JsonNode>(payload));
+            var serialized = JsonSerializer.Serialize(result, O);
+            Assert.AreEqual(expected, serialized, $"parsing result {payload}");
+        }
+        catch (Exception ex)
+        {
+            Assert.Fail(payload + " " + ex.Message + "\n" + ex.StackTrace);
+        }
+    }
 }

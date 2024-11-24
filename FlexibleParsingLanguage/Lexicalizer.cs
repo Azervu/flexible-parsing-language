@@ -1,5 +1,7 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Diagnostics.Metrics;
+using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace FlexibleParsingLanguage;
 
@@ -30,6 +32,63 @@ public struct OperatorKey
     }
 }
 
+internal enum WriteMode
+{
+    Read,
+    Write,
+    Written,
+}
+
+internal class ParseData
+{
+    internal List<ParseOperation> Ops { get; set; }
+    internal Dictionary<OperatorKey, int> OpsMap { get; set; }
+
+    internal HashSet<int> SaveOps { get; set; } = new HashSet<int>();
+    internal HashSet<int> LoadedOps { get; set; } = new HashSet<int>();
+
+    internal int IdCounter { get; set; }
+    internal int LoadedWriteId { get; set; }
+    internal int LoadedReadId { get; set; }
+}
+
+
+internal class ParseContext
+{
+    internal List<AccessorData> Accessors = new List<AccessorData>();
+
+    internal char LastWriteOp { get; set; } = '*';
+
+    internal int ReadId { get; set; }
+    internal int WriteId { get; set; }
+    internal WriteMode WriteMode { get; set; } = WriteMode.Read;
+    internal int TokenIndex { get; set; } = 0;
+    internal int LastOperatorIndex { get; set; } = 0;
+
+    internal ParseContext Parent { get; set; }
+}
+
+
+internal class AccessorData
+{
+    internal char Operator { get; set; }
+    internal string? Accessor { get; set; }
+    internal ParseContext Ctx { get; set; }
+
+    internal bool Numeric { get => Operator == '['; }
+
+    internal AccessorData(char op, string? acc, ParseContext ctx = null)
+    {
+        Operator = op;
+        Accessor = acc;
+        Ctx = ctx;
+    }
+
+}
+
+
+
+/*
 internal struct AccessorData
 {
     internal List<(char, string?)> Tokens { get; set; }
@@ -66,50 +125,14 @@ internal struct AccessorData
     }
 
 }
-
-internal enum WriteMode
-{
-    Read,
-    Write,
-    Written,
-
-}
+*/
 
 
 
-internal class ParseData
-{
-    internal List<ParseOperation> Ops { get; set; }
-    internal Dictionary<OperatorKey, int> OpsMap { get; set; }
-    internal int IdCounter { get; set; }
-    internal int LoadedWriteId { get; set; }
-    internal int LoadedReadId { get; set; }
-}
 
 
-internal class ParseContext
-{
-    internal List<TestAccessor> Accessors = new List<TestAccessor>();
-    internal int ReadId { get; set; }
-    internal int WriteId { get; set; }
-    internal WriteMode WriteMode { get; set; } = WriteMode.Read;
-    internal int TokenIndex { get; set; } = 0;
-    internal ParseContext Parent { get; set; }
-}
-internal class TestAccessor
-{
-    internal char Op { get; set; }
-    internal string? Acc { get; set; }
-    internal ParseContext Ctx { get; set; }
 
-    internal TestAccessor(char op, string? acc, ParseContext ctx = null)
-    {
-        Op = op;
-        Acc = acc;
-        Ctx = ctx;
-    }
 
-}
 
 
 
@@ -170,27 +193,36 @@ internal partial class Lexicalizer
     {
         var root = new ParseContext { Parent = null };
         var l = new List<ParseContext> { root };
-        foreach (var (t, a) in tokens)
+
+        for (var i = 0; i < tokens.Count; i++)
         {
+            var (t, a) = tokens[i];
+
             var ctx = l.Last();
             switch (t)
             {
                 case '{':
-                    var n = new ParseContext { Parent = ctx };
-                    ctx.Accessors.Add(new TestAccessor(t, a, n));
+                    var n = new ParseContext { Parent = ctx, WriteMode = WriteMode.Read };
+                    ctx.Accessors.Add(new AccessorData(t, a, n));
                     l.Add(n);
                     break;
                 case '}':
                     l.RemoveAt(l.Count - 1);
                     break;
+                case ':':
+                    ctx.WriteMode = WriteMode.Write;
+                    ctx.Accessors.Add(new AccessorData(t, a));
+                    break;
                 default:
-                    ctx.Accessors.Add(new TestAccessor(t, a));
+
+                    if (ctx.WriteMode == WriteMode.Write)
+                        ctx.LastWriteOp = t;
+                    ctx.LastOperatorIndex = i;
+                    ctx.Accessors.Add(new AccessorData(t, a));
                     break;
             }
         }
         return root;
-
-
     }
 
 
@@ -198,8 +230,24 @@ internal partial class Lexicalizer
     private List<ParseOperation> ProcessTokensGroup(List<(char, string?)> tokens)
     {
         var root = GroupContexts(tokens);
-        var active = root;
 
+        root.ReadId = READ_ROOT;
+        root.WriteId = WRITE_ROOT;
+
+        var parseData = new ParseData
+        {
+            LoadedReadId = READ_ROOT,
+            LoadedWriteId = -2,
+            IdCounter = 3,
+            Ops = new List<ParseOperation>(),
+            OpsMap = new Dictionary<OperatorKey, int> {
+                { new OperatorKey(-1, ROOT, null, false), 1 }
+            }
+        };
+
+        ProcessContext(parseData, root);
+
+        /*
         while (true)
         {
             if (active == null)
@@ -218,140 +266,14 @@ internal partial class Lexicalizer
             }
             else
             {
-                ProcessOperator(active, a);
+                ProcessOperator(parseData, active, a);
             }
 
         }
-
-        return null;
-
-    }
-
-    private void ProcessOperator(ParseContext ctx, TestAccessor acc)
-    {
-        switch (acc.Op)
-        {
-            case ':':
-                ctx.WriteMode = WriteMode.Write;
-                break;
-            case '.':
-            case '\'':
-            case '"':
-            case '[':
-                break;
-            default:
-                break;
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    private List<ParseOperation> ProcessTokens(List<(char, string?)> tokens)
-    {
-        if (tokens.First().Item1 != '{')
-        {
-            tokens.Insert(0, ('{', null));
-            tokens.Add(('}', null));
-        }
-        var contextStack = new Stack<ParseContext>();
-        var context = new ParseContext
-        {
-            ReadId = READ_ROOT,
-            WriteId = WRITE_ROOT,
-            WriteMode = WriteMode.Read, //MoreWritesAtOrAfter(0, tokens) ? WriteMode.Write : WriteMode.Read,
-
-        };
-        var parseData = new ParseData
-        {
-            LoadedReadId = context.ReadId,
-            LoadedWriteId = -2,
-            IdCounter = 3,
-            Ops = new List<ParseOperation>(),
-            OpsMap = new Dictionary<OperatorKey, int> {
-                { new OperatorKey(-1, ROOT, null, false), 1 }
-            }
-        };
-
-
-
-
-
-        for (var i = 0; i < tokens.Count; i++)
-        {
-            var (token, accessor) = tokens[i];
-            switch (token)
-            {
-                case '{':
-                    parseData.Ops.Add(new ParseOperation(ParseOperationType.WriteSave, context.WriteId));
-                    contextStack.Push(new ParseContext(context));
-                    context.WriteMode = WriteMode.Read;
-                    //context.WriteMode = MoreWritesAtOrAfter(i + 1, tokens) ? WriteMode.Write : WriteMode.Read;
-                    break;
-                case '}':
-                    //ProcessWriteOps(ops, opsMap, ref idCounter, context, ref loadedWriteId, ref loadedReadId, writeOps);
-                    if (!contextStack.TryPop(out var lastEntry))
-                        throw new InvalidOperationException("un branching past start");
-                    context = lastEntry;
-                    break;
-                case ':':
-                    context.WriteMode = WriteMode.Write;
-                    break;
-                case '.':
-                case '\'':
-                case '"':
-                case '[':
-                    var acc = new AccessorData
-                    {
-                        Index = i,
-                        Tokens = tokens,
-                    };
-                    if (acc.NextActiveChar() == ' ')
-                        ProcessLastContextOperation(parseData, context, acc);
-                    else if (context.WriteMode == WriteMode.Read)
-                        ProcessReadOperator(parseData, context, acc);
-                    else
-                        ProcessWriteOperator(parseData, context, acc);
-
-                    break;
-                default:
-                    break;
-            }
-        }
-
-
-
-        /*
-    if (context.WriteMode == WriteMode.Read)
-        ops.Add(new ParseOperation(ParseOperationType.AddFromRead));
-
-
-    if (context.WriteMode == WriteMode.Written)
-        ops.Add(new ParseOperation(ParseOperationType.WriteFromRead));
-    */
-
-        //ProcessWriteOps(ops, opsMap, ref idCounter, context, ref loadedWriteId, ref loadedReadId, writeOps);
-
-        //TODO remove unused saves
+        */
 
         var debug = parseData.Ops.Select(x => $"{x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
+
 
 
 
@@ -361,31 +283,117 @@ internal partial class Lexicalizer
 
 
 
-    private bool MoreWritesAtOrAfter(int i, List<(char, string?)> tokens)
+    private void ProcessContext(ParseData data, ParseContext ctx)
     {
-        var depth = 0;
-
-        for (var j = i; j < tokens.Count; j++)
+        var processedEnd = false;
+        for (var i = 0; i < ctx.Accessors.Count; i++)
         {
-            var (token, accessor) = tokens[j];
-
-            switch (token)
+            var a = ctx.Accessors[i];
+            if (a.Ctx != null)
             {
-                case '{':
-                    depth++;
-                    break;
-                case '}':
-                    depth--;
-                    if (depth < 0)
-                        return false;
-                    break;
+                ProcessContext(data, a.Ctx);
+                continue;
+            }
+            switch (a.Operator)
+            {
                 case ':':
-                    if (depth == 0)
-                        return true;
+                    ctx.WriteMode = WriteMode.Write;
                     break;
-
+                case '.':
+                case '\'':
+                case '"':
+                case '[':
+                    if (ctx.WriteMode == WriteMode.Read)
+                    {
+                        ProcessReadOperator(data, ctx, a);
+                    }
+                    else if (ctx.LastOperatorIndex == ctx.TokenIndex)
+                    {
+                        processedEnd = true;
+                        ProcessLastContextOperation(data, ctx, a);
+                    }
+                    else
+                    {
+                        ProcessWriteOperator(data, ctx, a);
+                    }
+                    break;
+                default:
+                    break;
             }
         }
-        return false;
+
+        if (!processedEnd)
+            ProcessContextEndingOperator(data, ctx, null);
+    }
+
+
+    private void ProcessContextEndingOperator(ParseData data, ParseContext ctx, AccessorData? acc)
+    {
+        EnsureReadOpLoaded(data, ctx);
+        EnsureWriteOpLoaded(data, ctx, acc);
+
+
+        if (acc == null || ctx.WriteMode == WriteMode.Read)
+            new ParseOperation(ParseOperationType.AddFromRead);
+        else if (acc.Numeric)
+            new ParseOperation(ParseOperationType.WriteFromRead); //Int
+        else
+            new ParseOperation(ParseOperationType.WriteFromRead, acc.Accessor);
+    }
+
+
+    private void EnsureReadOpLoaded(ParseData data, ParseContext ctx)
+    {
+        if (ctx.ReadId == data.LoadedReadId)
+            return;
+
+        if (ctx.ReadId == READ_ROOT)
+        {
+            data.Ops.Add(new ParseOperation(ParseOperationType.ReadRoot));
+            return;
+        }
+
+        if (data.SaveOps.Contains(ctx.ReadId))
+        {
+            data.LoadedOps.Add(ctx.ReadId);
+            data.Ops.Add(new ParseOperation(ParseOperationType.ReadLoad, ctx.ReadId));
+            ctx.ReadId = data.LoadedReadId;
+            return;
+        }
+
+        throw new Exception("Unknown read id " + ctx.ReadId);
+    }
+
+    private void EnsureWriteOpLoaded(ParseData data, ParseContext ctx, AccessorData? acc)
+    {
+        if (ctx.WriteId == data.LoadedWriteId)
+            return;
+
+        if (data.SaveOps.Contains(ctx.WriteId))
+        {
+            data.LoadedOps.Add(ctx.WriteId);
+            var o = ParseOperationType.WriteLoad;
+            data.Ops.Add(new ParseOperation(o, ctx.WriteId));
+            ctx.WriteId = data.LoadedWriteId;
+            return;
+        }
+
+        if (ctx.WriteId != WRITE_ROOT)
+            throw new Exception("Unknown write id " + ctx.WriteId);
+
+        var key = new OperatorKey(-1, ROOT, null, true);
+
+        if (data.OpsMap.ContainsKey(key))
+        {
+            data.Ops.Add(new ParseOperation(ParseOperationType.WriteRoot));
+            ctx.WriteId = data.LoadedWriteId;
+            return;
+        }
+
+        if (acc == null || acc.Numeric || ctx.WriteMode == WriteMode.Read)
+            data.Ops.Add(new ParseOperation(ParseOperationType.WriteInitRootArray));
+        else
+            data.Ops.Add(new ParseOperation(ParseOperationType.WriteInitRootMap));
+        ctx.WriteId = data.LoadedWriteId;
     }
 }

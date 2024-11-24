@@ -10,8 +10,6 @@ internal partial class Lexicalizer
 {
     private void ProcessLastContextOperation(ParseData parser, ParseContext context, AccessorData data)
     {
-        var nextToken = data.NextActiveChar();
-
         if (context.WriteMode == WriteMode.Read)
         {
             return;
@@ -22,28 +20,21 @@ internal partial class Lexicalizer
             //ops.Add(new ParseOperation(ParseOperationType.AddFromRead));
         }
 
-
-
         EnsureWriteRootExists(parser, context, data);
-
-
-
 
         parser.Ops.Add(new ParseOperation(ParseOperationType.WriteSave, context.WriteId));
 
+
+
+
+        parser.Ops.Add(new ParseOperation(ParseOperationType.WriteFromRead, data.Accessor));
+        /*
         if (context.WriteMode == WriteMode.Read)
             parser.Ops.Add(new ParseOperation(ParseOperationType.AddFromRead));
+        */
 
 
 
-
-
-
-        if (nextToken == ' ')
-        {
-            parser.Ops.Add(new ParseOperation(ParseOperationType.WriteFromRead, data.Accessor));
-            return;
-        }
 
 
 
