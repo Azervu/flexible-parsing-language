@@ -53,15 +53,11 @@ internal class ParseData
 internal class ParseContext
 {
     internal List<AccessorData> Accessors = new List<AccessorData>();
-
     internal char LastWriteOp { get; set; } = '*';
-
     internal int ReadId { get; set; }
     internal int WriteId { get; set; }
     internal WriteMode WriteMode { get; set; } = WriteMode.Read;
-    internal int TokenIndex { get; set; } = 0;
     internal int LastOperatorIndex { get; set; } = 0;
-
     internal ParseContext Parent { get; set; }
 }
 
@@ -111,8 +107,8 @@ internal partial class Lexicalizer
     public Parser Lexicalize(string raw)
     {
         var tokens = Tokenizer.Tokenize(raw);
-        //var ops = ProcessTokens(tokens);
-        var ops = ProcessTokensGroup(tokens);
+        var root = GroupContexts(tokens);
+        var ops = ProcessTokensGroup(root);
         return new Parser(ops);
     }
 
@@ -155,9 +151,9 @@ internal partial class Lexicalizer
     }
 
 
-    private List<ParseOperation> ProcessTokensGroup(List<(char, string?)> tokens)
+    private List<ParseOperation> ProcessTokensGroup(ParseContext root)
     {
-        var root = GroupContexts(tokens);
+        
         root.ReadId = READ_ROOT;
         root.WriteId = WRITE_ROOT;
 
@@ -178,6 +174,7 @@ internal partial class Lexicalizer
 
     private void ProcessContext(ParseData data, ParseContext ctx)
     {
+        ctx.WriteMode = WriteMode.Read;
         var processedEnd = false;
         for (var i = 0; i < ctx.Accessors.Count; i++)
         {
@@ -200,7 +197,7 @@ internal partial class Lexicalizer
                     {
                         ProcessReadOperator(data, ctx, a);
                     }
-                    else if (ctx.LastOperatorIndex == ctx.TokenIndex)
+                    else if (i == ctx.LastOperatorIndex)
                     {
                         processedEnd = true;
                         ProcessContextEndingOperator(data, ctx, a);
@@ -225,12 +222,14 @@ internal partial class Lexicalizer
         EnsureWriteOpLoaded(data, ctx, acc);
 
 
+        
+
         if (acc == null || ctx.WriteMode == WriteMode.Read)
-            new ParseOperation(ParseOperationType.AddFromRead);
+            data.Ops.Add(new ParseOperation(ParseOperationType.AddFromRead));
         else if (acc.Numeric)
-            new ParseOperation(ParseOperationType.WriteFromRead); //Int
+            data.Ops.Add(new ParseOperation(ParseOperationType.WriteFromRead)); //Int
         else
-            new ParseOperation(ParseOperationType.WriteFromRead, acc.Accessor);
+            data.Ops.Add(new ParseOperation(ParseOperationType.WriteFromRead, acc.Accessor));
     }
 
 

@@ -9,26 +9,6 @@ namespace FlexibleParsingLanguage;
 
 internal partial class Lexicalizer
 {
-
-
-    private void EnsureWriteRootExists(ParseData parser, ParseContext context, AccessorData data)
-    {
-        if (context.WriteId != WRITE_ROOT)
-            return;
-        var key = new OperatorKey(-1, ROOT, null, true);
-
-        if (parser.OpsMap.ContainsKey(key))
-            return;
-
-        parser.OpsMap.Add(key, WRITE_ROOT);
-        if (data.Numeric || context.WriteMode == WriteMode.Read)
-            parser.Ops.Add(new ParseOperation(ParseOperationType.WriteInitRootArray));
-        else
-            parser.Ops.Add(new ParseOperation(ParseOperationType.WriteInitRootMap));
-        parser.LoadedWriteId = WRITE_ROOT;
-    }
-
-
     private void ProcessWriteOperator(ParseData data, ParseContext ctx, AccessorData acc)
     {
 

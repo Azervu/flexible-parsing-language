@@ -39,7 +39,10 @@ public class ParserTest
 
     public static IEnumerable<object[]> SimplePayloads => new List<object[]>
     {
-        new object[] { "{\"k\" : \"v\"}", "k", "v" }
+        new object[] { "{\"k\" : \"v\"}", "k", "[\"v\"]" },
+        new object[] { "{\"k\" : \"v\"}", "h:k", "{\"h\":\"v\"}" },
+        new object[] { "{ \"root\": { \"k\": \"v\" }}", "root{h:k}", "{\"h\":\"v\"}" },
+        new object[] { "{ \"a\": { \"a\": \"value\" }}", "a.a:bb", "{\"a\":{\"a\":\"value\"}}" }
     };
 
     [TestMethod]
@@ -50,8 +53,8 @@ public class ParserTest
         {
             var parser = L.Lexicalize(query);
             var result = parser.Parse(JsonSerializer.Deserialize<JsonNode>(payload));
-            var serialized = JsonSerializer.Serialize(result, O);
-            Assert.AreEqual(expected, serialized, $"parsing result {payload}");
+            var serialized = JsonSerializer.Serialize(result);
+            Assert.AreEqual(expected, serialized, $"payload {payload}");
         }
         catch (Exception ex)
         {
