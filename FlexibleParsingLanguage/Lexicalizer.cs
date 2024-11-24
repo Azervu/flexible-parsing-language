@@ -5,7 +5,6 @@ using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace FlexibleParsingLanguage;
 
-
 public struct OperatorKey
 {
     public char Operator { get; internal set; }
@@ -51,8 +50,6 @@ internal class ParseData
     internal int LoadedWriteId { get; set; }
     internal int LoadedReadId { get; set; }
 }
-
-
 internal class ParseContext
 {
     internal List<AccessorData> Accessors = new List<AccessorData>();
@@ -67,7 +64,6 @@ internal class ParseContext
 
     internal ParseContext Parent { get; set; }
 }
-
 
 internal class AccessorData
 {
@@ -85,73 +81,6 @@ internal class AccessorData
     }
 
 }
-
-
-
-/*
-internal struct AccessorData
-{
-    internal List<(char, string?)> Tokens { get; set; }
-    internal int Index { get; set; }
-
-    internal bool Numeric { get => Operator == '['; }
-    internal char NextToken { get => Index + 1 < Tokens.Count ? Tokens[Index + 1].Item1 : ' '; }
-    internal char Operator { get => Tokens[Index].Item1; }
-    internal string Accessor { get => Tokens[Index].Item2; }
-
-    internal char NextActiveChar()
-    {
-        var depth = 0;
-        for (var i = Index + 1; i < Tokens.Count; i++)
-        {
-            var (token, accessor) = Tokens[i];
-            switch (token)
-            {
-                case '{':
-                    depth++;
-                    break;
-                case '}':
-                    depth--;
-                    if (depth < 0)
-                        return ' ';
-                    break;
-                default:
-                    if (depth == 0)
-                        return token;
-                    break;
-            }
-        }
-        return ' ';
-    }
-
-}
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 internal partial class Lexicalizer
 {
@@ -226,11 +155,9 @@ internal partial class Lexicalizer
     }
 
 
-
     private List<ParseOperation> ProcessTokensGroup(List<(char, string?)> tokens)
     {
         var root = GroupContexts(tokens);
-
         root.ReadId = READ_ROOT;
         root.WriteId = WRITE_ROOT;
 
@@ -244,44 +171,10 @@ internal partial class Lexicalizer
                 { new OperatorKey(-1, ROOT, null, false), 1 }
             }
         };
-
         ProcessContext(parseData, root);
-
-        /*
-        while (true)
-        {
-            if (active == null)
-                break;
-            if (active.TokenIndex >= active.Accessors.Count)
-            {
-                active = active.Parent;
-                continue;
-            }
-
-            var a = active.Accessors[active.TokenIndex];
-            active.TokenIndex++;
-            if (a.Ctx != null)
-            {
-                active = a.Ctx;
-            }
-            else
-            {
-                ProcessOperator(parseData, active, a);
-            }
-
-        }
-        */
-
         var debug = parseData.Ops.Select(x => $"{x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
-
-
-
-
         return parseData.Ops;
     }
-
-
-
 
     private void ProcessContext(ParseData data, ParseContext ctx)
     {
@@ -310,7 +203,7 @@ internal partial class Lexicalizer
                     else if (ctx.LastOperatorIndex == ctx.TokenIndex)
                     {
                         processedEnd = true;
-                        ProcessLastContextOperation(data, ctx, a);
+                        ProcessContextEndingOperator(data, ctx, a);
                     }
                     else
                     {
@@ -322,10 +215,9 @@ internal partial class Lexicalizer
             }
         }
 
-        if (!processedEnd)
+        if (!processedEnd && ctx.WriteMode == WriteMode.Read)
             ProcessContextEndingOperator(data, ctx, null);
     }
-
 
     private void ProcessContextEndingOperator(ParseData data, ParseContext ctx, AccessorData? acc)
     {
