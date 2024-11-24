@@ -104,6 +104,23 @@ internal partial class Lexicalizer
         var tokens = Tokenizer.Tokenize(raw);
         var root = GroupContexts(tokens);
         var ops = ProcessTokensGroup(root);
+
+        var debug = ops.Select(x => $"{x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
+
+/*
+         
+ReadAccess -1 root 
+ReadSave 4  
+ReadAccess -1 k1 
+WriteInitRootMap -1  
+WriteAccess -1 h1 
+ReadLoad 4  
+ReadAccess -1 k2 
+WriteRoot -1  
+WriteAccess -1 h2 
+
+*/
+
         return new Parser(ops);
     }
 
@@ -113,6 +130,8 @@ internal partial class Lexicalizer
     {
         var root = new ParseContext { Parent = null };
         var l = new List<ParseContext> { root };
+
+        var startI = 0;
 
         for (var i = 0; i < tokens.Count; i++)
         {
@@ -125,6 +144,7 @@ internal partial class Lexicalizer
                     var n = new ParseContext { Parent = ctx, WriteMode = WriteMode.Read };
                     ctx.Accessors.Add(new AccessorData(t, a, n));
                     l.Add(n);
+                    startI = i + 1;
                     break;
                 case '}':
                     l.RemoveAt(l.Count - 1);
@@ -137,7 +157,7 @@ internal partial class Lexicalizer
 
                     if (ctx.WriteMode == WriteMode.Write)
                         ctx.LastWriteOp = t;
-                    ctx.LastOperatorIndex = i;
+                    ctx.LastOperatorIndex = ctx.Accessors.Count;
                     ctx.Accessors.Add(new AccessorData(t, a));
                     break;
             }
@@ -154,6 +174,7 @@ internal partial class Lexicalizer
 
         var parseData = new ParseData
         {
+           
             LoadedReadId = READ_ROOT,
             LoadedWriteId = -2,
             IdCounter = 3,
@@ -162,13 +183,35 @@ internal partial class Lexicalizer
                 { new OperatorKey(-1, ROOT, null, false), 1 }
             }
         };
-        ProcessContext(parseData, root);
-        var debug = parseData.Ops.Select(x => $"{x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
-        return parseData.Ops;
+        ProcessContext(parseData, root, null);
+
+        var outOps = new List<ParseOperation>();
+
+        foreach (var o in parseData.Ops)
+        {
+            if (o.OpType == ParseOperationType.ReadSave || o.OpType == ParseOperationType.WriteSave)
+            {
+                if (!parseData.LoadedOps.Contains(o.IntAcc))
+                {
+                    continue;
+                }
+            }
+
+            outOps.Add(o);
+        }
+
+        return outOps;
     }
 
-    private void ProcessContext(ParseData data, ParseContext ctx)
+    private void ProcessContext(ParseData data, ParseContext ctx, ParseContext parent)
     {
+        if (parent != null)
+        {
+            ctx.ReadId = parent.ReadId;
+            ctx.WriteId = parent.WriteId;
+        }
+
+
         ctx.WriteMode = WriteMode.Read;
         var processedEnd = false;
         for (var i = 0; i < ctx.Accessors.Count; i++)
@@ -176,7 +219,7 @@ internal partial class Lexicalizer
             var a = ctx.Accessors[i];
             if (a.Ctx != null)
             {
-                ProcessContext(data, a.Ctx);
+                ProcessContext(data, a.Ctx, ctx);
                 continue;
             }
             switch (a.Operator)
@@ -213,11 +256,11 @@ internal partial class Lexicalizer
 
     private void ProcessContextEndingOperator(ParseData data, ParseContext ctx, AccessorData? acc)
     {
+        if (ctx.Accessors.Count != 0 && ctx.Accessors.Last().Ctx != null)
+            return;
+
         EnsureReadOpLoaded(data, ctx);
         EnsureWriteOpLoaded(data, ctx, acc);
-
-
-        
 
         if (acc == null || ctx.WriteMode == WriteMode.Read)
             data.Ops.Add(new ParseOperation(ParseOperationType.AddFromRead));
@@ -275,6 +318,7 @@ internal partial class Lexicalizer
             ctx.WriteId = data.LoadedWriteId;
             return;
         }
+        data.OpsMap.Add(key, WRITE_ROOT);
 
         if (acc == null || acc.Numeric || ctx.WriteMode == WriteMode.Read)
             data.Ops.Add(new ParseOperation(ParseOperationType.WriteInitRootArray));

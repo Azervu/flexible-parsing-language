@@ -101,7 +101,6 @@ public class Parser
     {
         IWritingModule writer = new CollectionWritingModule();
         IReadingModule reader = null;
-
         var store = new Dictionary<int, object>();
 
         object writeRoot = null;
@@ -134,7 +133,6 @@ public class Parser
         return writeRoot;
     }
 
-
     private void ParseInner(
         IWritingModule write,
         IReadingModule activeModule,
@@ -148,12 +146,10 @@ public class Parser
     {
         switch (o.OpType)
         {
-
             case ParseOperationType.WriteInitRootArray:
                 writeRoot = write.BlankArray();
                 writeHead = writeRoot;
                 break;
-
             case ParseOperationType.WriteInitRootMap:
                 writeRoot = write.BlankMap();
                 writeHead = writeRoot;
@@ -201,6 +197,4 @@ public class Parser
                 break;
         }
     }
-
-
 }

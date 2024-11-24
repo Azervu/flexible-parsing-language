@@ -39,11 +39,13 @@ public class ParserTest
 
     public static IEnumerable<object[]> SimplePayloads => new List<object[]>
     {
+        new object[] { "{\"k\": \"test_v\"}", "k", "[\"test_v\"]" },
         new object[] { "{\"k\" : \"v\"}", "k", "[\"v\"]" },
         new object[] { "{\"k\" : \"v\"}", "h:k", "{\"h\":\"v\"}" },
-        new object[] { "{ \"root\": { \"k\": \"v\" }}", "root{h:k}", "{\"h\":\"v\"}" },
         new object[] { "{ \"a\": { \"a\": \"value\" }}", "bb:a.a", "{\"bb\":\"value\"}" },
-        new object[] { "{ \"aa\": \"value\" }", "b.b:aa", "{\"b\":{\"b\":\"value\"}}" }
+        new object[] { "{ \"aa\": \"value\" }", "b.b:aa", "{\"b\":{\"b\":\"value\"}}" },
+        new object[] { "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{k2}k1", "[\"v2\",\"v1\"]" },
+        new object[] { "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{h1:k1}{h2:k2}", "{\"h1\":\"v1\",\"h2\":\"v2\"}" },
     };
 
     [TestMethod]
