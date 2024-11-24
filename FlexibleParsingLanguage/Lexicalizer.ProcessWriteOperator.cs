@@ -1,23 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-
-namespace FlexibleParsingLanguage;
-
+﻿namespace FlexibleParsingLanguage;
 internal partial class Lexicalizer
 {
     private void ProcessWriteOperator(ParseData data, ParseContext ctx, AccessorData acc)
     {
-
-
         ctx.WriteMode = WriteMode.Written;;
         var key = new OperatorKey(ctx.WriteId, acc.Operator, acc.Accessor, true);
-
-
-
 
         if (data.OpsMap.TryGetValue(key, out var writeId))
         {

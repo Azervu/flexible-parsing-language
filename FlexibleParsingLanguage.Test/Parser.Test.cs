@@ -42,7 +42,8 @@ public class ParserTest
         new object[] { "{\"k\" : \"v\"}", "k", "[\"v\"]" },
         new object[] { "{\"k\" : \"v\"}", "h:k", "{\"h\":\"v\"}" },
         new object[] { "{ \"root\": { \"k\": \"v\" }}", "root{h:k}", "{\"h\":\"v\"}" },
-        new object[] { "{ \"a\": { \"a\": \"value\" }}", "a.a:bb", "{\"a\":{\"a\":\"value\"}}" }
+        new object[] { "{ \"a\": { \"a\": \"value\" }}", "bb:a.a", "{\"bb\":\"value\"}" },
+        new object[] { "{ \"aa\": \"value\" }", "b.b:aa", "{\"b\":{\"b\":\"value\"}}" }
     };
 
     [TestMethod]
