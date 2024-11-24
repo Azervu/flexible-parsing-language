@@ -52,7 +52,6 @@ internal class ParseContext
     internal int ReadId { get; set; }
     internal int WriteId { get; set; }
     internal WriteMode WriteMode { get; set; } = WriteMode.Read;
-    internal int LastOperatorIndex { get; set; } = 0;
     internal ParseContext Parent { get; set; }
 }
 
@@ -143,7 +142,6 @@ internal partial class Lexicalizer
 
                     if (ctx.WriteMode == WriteMode.Write)
                         ctx.LastWriteOp = t;
-                    ctx.LastOperatorIndex = ctx.Accessors.Count;
                     ctx.Accessors.Add(new AccessorData(t, a));
                     break;
             }
@@ -221,7 +219,7 @@ internal partial class Lexicalizer
                     {
                         ProcessReadOperator(data, ctx, a);
                     }
-                    else if (i == ctx.LastOperatorIndex)
+                    else if (i == ctx.Accessors.Count - 1)
                     {
                         processedEnd = true;
                         ProcessContextEndingOperator(data, ctx, a);

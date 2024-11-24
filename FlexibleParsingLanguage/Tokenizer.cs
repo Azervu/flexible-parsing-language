@@ -86,62 +86,6 @@ internal class Tokenizer
         {
             tokens.Add((DefaultOp, raw.Substring(completedIndex, raw.Length - completedIndex)));
         }
-        ReOrder(tokens);
         return tokens;
     }
-
-    internal class SorterStack
-    {
-        internal int Start { get; set; }
-        internal int Middle { get; set; }
-        internal int End { get; set; }
-
-        internal void Swap<T>(List<T> list)
-        {
-
-            if (Middle < 0)
-                return;
-
-
-
-            var startRange = list.GetRange(Start, Middle - Start);
-            var endRange = list.GetRange(Middle + 1, End - Middle);
-
-
-            var newMiddle = Start + endRange.Count;
-
-            list[newMiddle] = list[Middle];
-
-            for (var j = Start; j < newMiddle; j++)
-                list[j] = endRange[j - Start];
-
-            for (var j = newMiddle + 1; j <= End; j++)
-                list[j] = startRange[j - newMiddle - 1];
-        }
-    }
-
-    private void ReOrder(List<(char, string?)> tokens)
-    {
-        var stack = new List<SorterStack> { new SorterStack { Start = 0, Middle = -1, End = tokens.Count - 1 } };
-        for (var i = 0; i < tokens.Count; i++)
-        {
-            var (token, accessor) = tokens[i];
-            var entry = stack.Last();
-            switch (token)
-            {
-                case '{':
-                    stack.Add(new SorterStack { Start = i + 1, Middle = -1, End = -1 });
-                    break;
-                case '}':
-                    entry.End = i - 1;
-                    stack.Pop().Swap(tokens);
-                    break;
-                case ':':
-                    entry.Middle = i;
-                    break;
-            }
-        }
-        stack.Pop().Swap(tokens);
-    }
-
 }
