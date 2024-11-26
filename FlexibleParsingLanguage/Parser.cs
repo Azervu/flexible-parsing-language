@@ -1,10 +1,17 @@
-﻿using System.Text.Json;
+﻿using System.Collections;
+using System.ComponentModel;
+using System.Reflection.PortableExecutable;
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace FlexibleParsingLanguage;
 
 internal enum ParseOperationType
 {
+    UnbranchForeach,
+
+
     WriteInitRootMap,
     WriteInitRootArray,
 
@@ -14,12 +21,14 @@ internal enum ParseOperationType
     WriteAccess,
     WriteAccessInt,
     WriteFromRead,
+    WriteForeach,
     AddFromRead,
     ReadRoot,
     ReadLoad,
     ReadSave,
     ReadAccess,
     ReadAccessInt,
+    ReadForeach,
 }
 
 internal class ParseOperation
@@ -48,6 +57,8 @@ public interface IReadingModule
     public List<Type> HandledTypes { get; }
     public object Parse(object raw, string acc);
     public object Parse(object raw, int acc);
+
+    public IEnumerable Foreach(object raw);
 }
 
 public interface IWritingModule
@@ -110,15 +121,41 @@ public class Parser
         Type activeType = null;
 
 
+        var i = 0;
+        ParseInner(
+            store,
+            writer,
+            ref reader,
+            ref readRoot,
+            ref writeRoot,
+            ref readHead,
+            ref writeHead,
+            ref activeType,
+            ref i,
+            0
+        );
 
-        var x = "";
+        return writeRoot;
+    }
 
-        foreach (var o in _ops)
+
+
+    private void ParseInner(
+        Dictionary<int, object> stored,
+        IWritingModule writer,
+        ref IReadingModule reader,
+        ref object readRoot,
+        ref object writeRoot,
+        ref object readHead,
+        ref object writeHead,
+        ref Type activeType,
+        ref int i,
+        int depth
+        )
+    {
+        for (; i < _ops.Count; i++)
         {
-            var debug = _ops.Select(x => $"{(x == o ? "*" : " ")} {x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
-
-            x += "\n" + JsonSerializer.Serialize(readHead) + $" | {o.OpType} {o.IntAcc} {o.StringAcc}";
-
+            var o = _ops[i];
 
             var t = readHead?.GetType() ?? typeof(void);
             if (t != activeType)
@@ -126,89 +163,92 @@ public class Parser
                 activeType = t;
                 reader = LookupModule(t);
             }
-            ParseInner(
-                writer,
-                reader,
-                store,
-                ref readRoot,
-                ref writeRoot,
-                ref readHead,
-                ref writeHead,
-                o
-            );
 
-
-            if (readHead == null)
+            switch (o.OpType)
             {
-                throw new Exception($"Active read result in null | op = {o.OpType} | acc = {o.StringAcc} | i = {o.IntAcc}");
+                case ParseOperationType.WriteInitRootArray:
+                    writeRoot = writer.BlankArray();
+                    writeHead = writeRoot;
+                    break;
+                case ParseOperationType.WriteInitRootMap:
+                    writeRoot = writer.BlankMap();
+                    writeHead = writeRoot;
+                    break;
+                case ParseOperationType.WriteRoot:
+                    writeHead = writeRoot;
+                    break;
+                case ParseOperationType.WriteAccessInt:
+                    var w1 = writer.BlankArray();
+                    writer.Write(writeHead, o.IntAcc, w1);
+                    writeHead = w1;
+                    break;
+                case ParseOperationType.WriteAccess:
+                    var w2 = writer.BlankMap();
+                    writer.Write(writeHead, o.StringAcc, w2);
+                    writeHead = w2;
+                    break;
+                case ParseOperationType.WriteFromRead:
+                    writer.Write(writeHead, o.StringAcc, readHead);
+                    //write.Write(ref writeHead, o.IntAcc, readHead);
+                    break;
+                case ParseOperationType.ReadRoot:
+                    readHead = readRoot;
+                    break;
+                case ParseOperationType.ReadAccess:
+                    readHead = reader.Parse(readHead, o.StringAcc);
+                    break;
+                case ParseOperationType.ReadAccessInt:
+                    readHead = reader.Parse(readHead, o.IntAcc);
+                    break;
+                case ParseOperationType.WriteLoad:
+                    writeHead = stored[o.IntAcc];
+                    break;
+                case ParseOperationType.ReadLoad:
+                    readHead = stored[o.IntAcc];
+                    break;
+                case ParseOperationType.WriteSave:
+                    stored[o.IntAcc] = writeHead;
+                    break;
+                case ParseOperationType.ReadSave:
+                    stored[o.IntAcc] = readHead;
+                    break;
+                case ParseOperationType.AddFromRead:
+                    writer.Append(writeHead, readHead);
+                    break;
+                case ParseOperationType.WriteForeach:
+                    break;
+                case ParseOperationType.ReadForeach:
+                    i++;
+                    var maxI = i;
+                    var readResult = new List<object>();
+                    foreach (var x in reader.Foreach(readHead))
+                    {
+                        var y = x;
+                        var ii = i;
+                        ParseInner(
+                            stored,
+                            writer,
+                            ref reader,
+                            ref readRoot,
+                            ref writeRoot,
+                            ref y,
+                            ref writeHead,
+                            ref activeType,
+                            ref ii,
+                            depth + 1
+                        );
+                        readResult.Add(y);
+                        if (ii > maxI)
+                            maxI = ii;
+                    }
+                    readHead = readResult;
+                    i = maxI;
+                    break;
+                case ParseOperationType.UnbranchForeach:
+                    return;
             }
 
-        }
-        return writeRoot;
-    }
 
-    private void ParseInner(
-        IWritingModule write,
-        IReadingModule activeModule,
-        Dictionary<int, object> stored,
-        ref object readRoot,
-        ref object writeRoot,
-        ref object readHead,
-        ref object writeHead,
-        ParseOperation o
-        )
-    {
-        switch (o.OpType)
-        {
-            case ParseOperationType.WriteInitRootArray:
-                writeRoot = write.BlankArray();
-                writeHead = writeRoot;
-                break;
-            case ParseOperationType.WriteInitRootMap:
-                writeRoot = write.BlankMap();
-                writeHead = writeRoot;
-                break;
-            case ParseOperationType.WriteRoot:
-                writeHead = writeRoot;
-                break;
-            case ParseOperationType.WriteAccessInt:
-                var w1 = write.BlankArray();
-                write.Write(writeHead, o.IntAcc, w1);
-                writeHead = w1;
-                break;
-            case ParseOperationType.WriteAccess:
-                var w2 = write.BlankMap();
-                write.Write(writeHead, o.StringAcc, w2);
-                writeHead = w2;
-                break;
-            case ParseOperationType.WriteFromRead:
-                write.Write(writeHead, o.StringAcc, readHead);
-                //write.Write(ref writeHead, o.IntAcc, readHead);
-                break;
-            case ParseOperationType.ReadRoot:
-                readHead = readRoot;
-                break;
-            case ParseOperationType.ReadAccess:
-                readHead = activeModule.Parse(readHead, o.StringAcc);
-                break;
-            case ParseOperationType.ReadAccessInt:
-                readHead = activeModule.Parse(readHead, o.IntAcc);
-                break;
-            case ParseOperationType.WriteLoad:
-                writeHead = stored[o.IntAcc];
-                break;
-            case ParseOperationType.ReadLoad:
-                readHead = stored[o.IntAcc];
-                break;
-            case ParseOperationType.WriteSave:
-                stored[o.IntAcc] = writeHead;
-                break;
-            case ParseOperationType.ReadSave:
-                stored[o.IntAcc] = readHead;
-                break;
-            case ParseOperationType.AddFromRead:
-                write.Append(writeHead, readHead);
-                break;
         }
     }
 }

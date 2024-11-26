@@ -15,18 +15,28 @@ internal class Tokenizer
     private char DefaultOp { get; set; }
     private char UnescapeToken { get; set; }
     private HashSet<char> TerminatorTokens { get; set; }
+    private HashSet<char> SingularTokens { get; set; }
     private HashSet<char> EscapeTokens { get; set; }
 
 
-    public Tokenizer(string operators, char defaultOperator, string escapeTokens, char unescapeToken)
+    public Tokenizer(
+        string operators,
+        string singularOperators,
+        char defaultOperator,
+        string escapeTokens, char unescapeToken
+    )
     {
         DefaultOp = defaultOperator;
         UnescapeToken = unescapeToken;
 
         EscapeTokens = escapeTokens.ToHashSet();
 
+
+        SingularTokens = singularOperators.ToHashSet();
         TerminatorTokens = operators.ToHashSet();
         TerminatorTokens.Add(defaultOperator);
+        foreach (var c in SingularTokens)
+            TerminatorTokens.Add(c);
 
         foreach (var c in EscapeTokens)
             TerminatorTokens.Add(c);
@@ -43,6 +53,9 @@ internal class Tokenizer
 
             if (!TerminatorTokens.Contains(c))
                 continue;
+
+
+            //TODO handle non-singular tokens
 
             if (i > completedIndex)
             {

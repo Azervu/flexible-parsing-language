@@ -44,13 +44,14 @@ internal class ParseData
     internal int IdCounter { get; set; }
     internal int LoadedWriteId { get; set; }
     internal int LoadedReadId { get; set; }
+    internal int ActiveDepth { get; set; }
 }
 internal class ParseContext
 {
     internal List<AccessorData> Accessors = new List<AccessorData>();
-    internal char LastWriteOp { get; set; } = '*';
     internal int ReadId { get; set; }
     internal int WriteId { get; set; }
+    internal int TargetDepth { get; set; }
     internal WriteMode WriteMode { get; set; } = WriteMode.Read;
     internal ParseContext Parent { get; set; }
 }
@@ -95,7 +96,7 @@ internal partial class Lexicalizer
 
     public Lexicalizer()
     {
-        Tokenizer = new Tokenizer("${}:", '.', "'\"", '\\');
+        Tokenizer = new Tokenizer("", "${}:*", '.', "'\"", '\\');
     }
 
     public Parser Lexicalize(string raw)
@@ -139,9 +140,6 @@ internal partial class Lexicalizer
                     ctx.Accessors.Add(new AccessorData(t, a));
                     break;
                 default:
-
-                    if (ctx.WriteMode == WriteMode.Write)
-                        ctx.LastWriteOp = t;
                     ctx.Accessors.Add(new AccessorData(t, a));
                     break;
             }
@@ -204,12 +202,26 @@ internal partial class Lexicalizer
             if (a.Ctx != null)
             {
                 ProcessContext(data, a.Ctx, ctx);
+
+                for (; data.ActiveDepth > ctx.TargetDepth; data.ActiveDepth--)
+                    data.Ops.Add(new ParseOperation(ParseOperationType.UnbranchForeach));
+
                 continue;
             }
             switch (a.Operator)
             {
                 case ':':
                     ctx.WriteMode = WriteMode.Write;
+                    break;
+                case '*':
+                    EnsureWriteOpLoaded(data, ctx, a);
+                    data.ActiveDepth++;
+                    ctx.TargetDepth++;
+
+                    if (ctx.WriteMode == WriteMode.Read)
+                        data.Ops.Add(new ParseOperation(ParseOperationType.ReadForeach));
+                    else
+                        data.Ops.Add(new ParseOperation(ParseOperationType.WriteForeach));
                     break;
                 case '.':
                 case '\'':

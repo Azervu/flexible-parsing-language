@@ -47,6 +47,8 @@ public class ParserTest
         new object[] { "{ \"aa\": \"value\" }", "aa:b.b", "{\"b\":{\"b\":\"value\"}}" },
         new object[] { "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{k2}k1", "[\"v2\",\"v1\"]" },
         new object[] { "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{k1:h1}{k2:h2}", "{\"h1\":\"v1\",\"h2\":\"v2\"}" },
+
+        new object[] { "{ \"root\": [{\"v\": 1}, {\"v\": 2}, {\"v\": 3}]}", "root*v", "[1,2,3]" },
     };
 
     [TestMethod]

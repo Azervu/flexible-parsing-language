@@ -7,7 +7,7 @@ public class TokenizerTest
 
 
     [TestMethod]
-    public void QueryParserTest() => TestUtil("'-\\'-'aaa.bbb{ccc}\" \"", [('\'', "-'-"), ('.', "aaa"), ('.', "bbb"), ('{', null), ('.', "ccc"), ('}', null), ('"', " ")]);
+    public void QueryParserTest() => TestUtil("'-\\'-'aaa*bbb{ccc}\" \"", [('\'', "-'-"), ('.', "aaa"), ('*', null), ('.', "bbb"), ('{', null), ('.', "ccc"), ('}', null), ('"', " ")]);
 
 
     public void TestUtil(string parserString, List<(char, string?)> excpectedResult)
