@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FlexibleParsingLanguage
+namespace FlexibleParsingLanguage.Modules
 {
     public class HierarchyModule<T>
     {

@@ -204,7 +204,7 @@ internal partial class Lexicalizer
                 ProcessContext(data, a.Ctx, ctx);
 
                 for (; data.ActiveDepth > ctx.TargetDepth; data.ActiveDepth--)
-                    data.Ops.Add(new ParseOperation(ParseOperationType.UnbranchForeach));
+                    data.Ops.Add(new ParseOperation(ParseOperationType.UnbranchRead));
 
                 continue;
             }
@@ -214,7 +214,6 @@ internal partial class Lexicalizer
                     ctx.WriteMode = WriteMode.Write;
                     break;
                 case '*':
-                    EnsureWriteOpLoaded(data, ctx, a);
                     data.ActiveDepth++;
                     ctx.TargetDepth++;
 
@@ -316,10 +315,11 @@ internal partial class Lexicalizer
         }
         data.OpsMap.Add(key, WRITE_ROOT);
 
-        if (acc == null || acc.Numeric || ctx.WriteMode == WriteMode.Read)
-            data.Ops.Add(new ParseOperation(ParseOperationType.WriteInitRootArray));
-        else
-            data.Ops.Add(new ParseOperation(ParseOperationType.WriteInitRootMap));
+
+        data.Ops.Insert(0, new ParseOperation(acc == null || acc.Numeric || ctx.WriteMode == WriteMode.Read
+            ? ParseOperationType.WriteInitRootArray
+            : ParseOperationType.WriteInitRootMap
+        ));
         ctx.WriteId = data.LoadedWriteId;
     }
 }
