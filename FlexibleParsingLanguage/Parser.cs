@@ -1,10 +1,5 @@
 ﻿using FlexibleParsingLanguage.Modules;
 using System.Collections;
-using System.ComponentModel;
-using System.Reflection.PortableExecutable;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace FlexibleParsingLanguage;
 
@@ -146,7 +141,8 @@ public class Parser
                     store[o.IntAcc] = readContext.ReadHead;
                     break;
                 case ParseOperationType.AddFromRead:
-                    writer.Append(writeHead, readContext.ReadHead);
+                    foreach (var x in readContext.Iterable())
+                        writer.Append(writeHead, x);
                     break;
                 case ParseOperationType.WriteForeach:
                     break;

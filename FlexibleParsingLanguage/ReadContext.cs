@@ -59,10 +59,23 @@ internal class ReadContext
         ReadHead = readResult;
     }
 
+    internal IEnumerable Iterable()
+    {
+        if (_readStack.Count == 0)
+        {
+            UpdateModule(ReadHead);
+            return new List<object>() { ReadHead };
+        }
+
+        return _readStack.Last();
+    }
+
     internal void ReadFlatten()
     {
         if (_readStack.Count == 0)
         {
+            UpdateModule(ReadHead);
+
             _stackHead = ReadHead;
             var reads = Module.Foreach(_stackHead);
 
