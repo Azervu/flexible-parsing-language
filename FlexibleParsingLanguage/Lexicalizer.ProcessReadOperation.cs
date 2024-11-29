@@ -3,19 +3,19 @@ internal partial class Lexicalizer
 {
     private void ProcessReadOperator(ParseData parser, ParseContext ctx, AccessorData data)
     {
-        var key = new OperatorKey(ctx.ReadId, data.Operator, data.Accessor, false);
+        var key = new OperatorKey(ctx.ActiveId, data.Operator, data.Accessor, false);
         if (parser.OpsMap.TryGetValue(key, out var readId))
         {
-            ctx.ReadId = readId;
+            ctx.ActiveId = readId;
             return;
         }
 
         EnsureReadOpLoaded(parser, ctx);
-        ctx.ReadId = ++parser.IdCounter;
-        parser.SaveOps.Add(ctx.ReadId);
-        parser.LoadedReadId = ctx.ReadId;
-        parser.OpsMap.Add(key, ctx.ReadId);
+        ctx.ActiveId = ++parser.IdCounter;
+        parser.SaveOps.Add(ctx.ActiveId);
+        parser.LoadedId = ctx.ActiveId;
+        parser.OpsMap.Add(key, ctx.ActiveId);
         parser.Ops.Add(new ParseOperation(ParseOperationType.ReadAccess, data.Accessor));
-        parser.Ops.Add(new ParseOperation(ParseOperationType.ReadSave, ctx.ReadId));
+        parser.Ops.Add(new ParseOperation(ParseOperationType.Save, ctx.ActiveId));
     }
 }

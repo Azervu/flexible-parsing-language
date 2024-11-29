@@ -11,8 +11,19 @@ public class ParserTest
 
     public static IEnumerable<object[]> Payloads
     {
-        get =>
-            Directory.EnumerateFiles("../../../JsonPayloads").Where(f => !f.EndsWith(".result.json") && !f.EndsWith(".query")).Select(x => new object[] { x });
+        /*
+         
+        *{k1:h1{*.k2:{*:h2}}}
+        *k1*k2*:h1.h2
+
+
+
+        *k1*:h1*h2{k2*}
+        
+        */
+
+
+        get => Directory.EnumerateFiles("../../../Payloads").Where(f => !f.EndsWith(".result.json") && !f.EndsWith(".query")).Select(x => new object[] { x });
     }
 
     [TestMethod]
@@ -38,9 +49,9 @@ public class ParserTest
 
     public static IEnumerable<object[]> SimplePayloads => new List<object[]>
     {
-        new object[] { "{\"k\": \"test_v\"}", "k", "[\"test_v\"]" },
-        new object[] { "{\"k\" : \"v\"}", "k", "[\"v\"]" },
-        new object[] { "{\"k\" : \"v\"}", "k:h", "{\"h\":\"v\"}" },
+        new object[] { "{ \"k\": \"test_v\" }", "k", "[\"test_v\"]" },
+        new object[] { "{ \"k\" : \"v\" }", "k", "[\"v\"]" },
+        new object[] { "{ \"k\" : \"v\" }", "k:h", "{\"h\":\"v\"}" },
         new object[] { "{ \"a\": { \"a\": \"value\" }}", "a.a:bb", "{\"bb\":\"value\"}" },
         new object[] { "{ \"aa\": \"value\" }", "aa:b.b", "{\"b\":{\"b\":\"value\"}}" },
         new object[] { "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{k2}k1", "[\"v2\",\"v1\"]" },
@@ -48,10 +59,8 @@ public class ParserTest
         new object[] { "{ \"root\": [{\"v\": 1}, {\"v\": 2}, {\"v\": 3}]}", "root*v", "[1,2,3]" },
         new object[] { "{ \"root\": [{\"v\": {\"v\": 1}}, {\"v\": {\"v\": 2}}, {\"v\": {\"v\": 3}}]}", "root*v.v", "[1,2,3]" },
         new object[] { "{ \"root\": [{\"v\": [1, 11, 111]}, {\"v\": [2, 22, 222]}, {\"v\": [3, 33, 333]}]}", "root*v*", "[1,11,111,2,22,222,3,33,333]" },
-
         new object[] { "{ \"root\": [{\"v\": [{\"v2\": 1}, {\"v2\": 11}, {\"v2\": 111}]}, {\"v\": [{\"v2\": 2}, {\"v2\": 22}, {\"v2\": 222}]}, {\"v\": [{\"v2\": 3}, {\"v2\": 33}, {\"v2\":333}]}]}", "root*v*v2", "[1,11,111,2,22,222,3,33,333]" },
         new object[] { "{ \"root\": [{\"v\": 1}, {\"v\": 2}, {\"v\": 3}]}", "root*v:h", "{\"h\":[1,2,3]}" },
-
         new object[] { "[[[[1,2,3],[11,12,13]],[[21,22,23],[31,42,53]]],  [[[99]]]    ]", "*.*.*.*", "[1,2,3,11,12,13,21,22,23,31,42,53,99]" }
     };
 

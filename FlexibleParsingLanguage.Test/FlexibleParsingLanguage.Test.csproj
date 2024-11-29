@@ -25,10 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="JsonPayloads\MultiWrite.json">
+    <None Update="Payloads\MultiWrite.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
-    <None Update="JsonPayloads\MultiWrite.result.json">
+    <None Update="Payloads\MultiWrite.result.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -1,22 +1,22 @@
 ﻿namespace FlexibleParsingLanguage;
 internal partial class Lexicalizer
 {
-    private void ProcessWriteOperator(ParseData data, ParseContext ctx, AccessorData acc)
+    private void ProcessWriteOperator(ParserConfig config, ParseData data, ParseContext ctx, AccessorData acc)
     {
         ctx.WriteMode = WriteMode.Written;
-        var key = new OperatorKey(ctx.WriteId, acc.Operator, acc.Accessor, true);
+        var key = new OperatorKey(ctx.ActiveId, acc.Operator, acc.Accessor, true);
 
         if (data.OpsMap.TryGetValue(key, out var writeId))
         {
-            ctx.WriteId = writeId;
+            ctx.ActiveId = writeId;
             return;
         }
 
-        EnsureWriteOpLoaded(data, ctx, acc);
+        EnsureWriteOpLoaded(config, data, ctx, acc);
 
-        ctx.WriteId = ++data.IdCounter;
-        data.LoadedWriteId = ctx.WriteId;
-        data.OpsMap.Add(key, ctx.WriteId);
+        ctx.ActiveId = ++data.IdCounter;
+        data.LoadedId = ctx.ActiveId;
+        data.OpsMap.Add(key, ctx.ActiveId);
 
         if (acc.Numeric)
         {
