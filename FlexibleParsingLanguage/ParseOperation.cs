@@ -55,7 +55,7 @@ internal class ParseOperation
                 break;
 
 
-                /*
+
             case ParseOperationType.WriteForeachArray:
                 foreach (var x in ctx.Iterable())
                     ctx.WritingModule.Append(ctx.WriteHead, x);
@@ -66,10 +66,26 @@ internal class ParseOperation
                     ctx.WritingModule.Append(ctx.WriteHead, x);
                 break;
             case ParseOperationType.WriteFromRead:
+
+
+                ctx.Action((m, x) => {
+                    var (r, w) = x;
+
+
+
+                    m.Write(w, StringAcc, r);
+                    return (r, w);
+                });
+
+
+                ctx.WriteAction((m, writeHeader) => {
+                    m.Write(writeHeader, StringAcc, w2);
+                    return w2;
+                });
+
                 ctx.WritingModule.Write(ctx.WriteHead, StringAcc, ctx.ReadHead);
                 break;
 
-                */
 
 
 
@@ -81,9 +97,6 @@ internal class ParseOperation
                 break;
             case ParseOperationType.ReadForeach:
                 ctx.ReadFlatten();
-                break;
-            case ParseOperationType.UnbranchRead:
-                ctx.UnbranchRead();
                 break;
         }
     }

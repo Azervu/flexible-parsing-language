@@ -43,13 +43,11 @@ internal class ParseData
 
     internal int IdCounter { get; set; }
     internal int LoadedId { get; set; }
-    internal int ActiveDepth { get; set; }
 }
 internal class ParseContext
 {
     internal List<AccessorData> Accessors = new List<AccessorData>();
     internal int ActiveId { get; set; }
-    internal int TargetDepth { get; set; }
     internal WriteMode WriteMode { get; set; } = WriteMode.Read;
     internal ParseContext Parent { get; set; }
 }
@@ -195,10 +193,6 @@ internal partial class Lexicalizer
             if (a.Ctx != null)
             {
                 ProcessContext(config, data, a.Ctx, ctx);
-
-                for (; data.ActiveDepth > ctx.TargetDepth; data.ActiveDepth--)
-                    data.Ops.Add(new ParseOperation(ParseOperationType.UnbranchRead));
-
                 continue;
             }
             switch (a.Operator)
@@ -207,9 +201,6 @@ internal partial class Lexicalizer
                     ctx.WriteMode = WriteMode.Write;
                     break;
                 case '*':
-                    data.ActiveDepth++;
-                    ctx.TargetDepth++;
-
                     if (ctx.WriteMode == WriteMode.Read)
                         data.Ops.Add(new ParseOperation(ParseOperationType.ReadForeach));
                     else
