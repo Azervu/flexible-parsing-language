@@ -274,7 +274,7 @@ internal partial class Lexicalizer
             return;
         }
 
-        throw new Exception("Unknown read id " + ctx.ActiveId);
+        throw new Exception("Query parsing error | Unknown read id " + ctx.ActiveId);
     }
 
     private void EnsureWriteOpLoaded(ParserConfig config, ParseData data, ParseContext ctx, AccessorData? acc)
