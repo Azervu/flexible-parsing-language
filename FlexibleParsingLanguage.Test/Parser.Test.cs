@@ -7,7 +7,6 @@ namespace FlexibleParsingLanguage.Test;
 public class ParserTest
 {
     private Lexicalizer L { get; } = new Lexicalizer();
-    private JsonSerializerOptions O { get; } = new JsonSerializerOptions { WriteIndented = true };
 
     public static IEnumerable<object[]> Payloads
     {
@@ -28,23 +27,11 @@ public class ParserTest
 
     [TestMethod]
     [DynamicData(nameof(Payloads))]
-    public void JsonParserTest(string payload) {
-        try
-        {
-            var text = File.ReadAllText(payload);
-            var query = File.ReadAllText(payload.Replace(".json", ".query"));
-            var parser = L.Lexicalize(query);
-            var raw = JsonSerializer.Deserialize<JsonNode>(text);
-
-            var result = parser.Parse(raw);
-            var serialized = JsonSerializer.Serialize(result, O);
-            var expected = File.ReadAllText(payload.Replace(".json", ".result.json"));
-            Assert.AreEqual(expected, serialized, $"parsing result {payload}");
-        }
-        catch (Exception ex)
-        {
-            Assert.Fail(payload + " " + ex.Message + "\n" + ex.StackTrace);
-        }
+    public void JsonParserTest(string payloadFile) {
+        var payload = File.ReadAllText(payloadFile);
+        var query = File.ReadAllText(payloadFile.Replace(".json", ".query"));
+        var expected = File.ReadAllText(payloadFile.Replace(".json", ".result.json"));
+        TestCompleteParsingStep(payload, query, expected, new JsonSerializerOptions { WriteIndented = true });
     }
 
     public static IEnumerable<object[]> SimplePayloads => new List<object[]>
@@ -66,14 +53,27 @@ public class ParserTest
 
     [TestMethod]
     [DynamicData(nameof(SimplePayloads))]
-    public void SimpleJsonParserTest(string payload, string query, string expected)
+    public void SimpleJsonParserTest(string payload, string query, string expected) => TestCompleteParsingStep(payload, query, expected, null);
+
+
+    private void TestCompleteParsingStep(string payload, string query, string expected, JsonSerializerOptions serilizationOptions)
     {
+        Parser parser;
         try
         {
-            var parser = L.Lexicalize(query);
+            parser = L.Lexicalize(query);
+        }
+        catch (Exception ex)
+        {
+            Assert.Fail($"Lexicalizations step failed | query = {query} | error = {ex.Message}\n\n{ex.StackTrace}" );
+            return;
+        }
+
+        try
+        {
             var raw = JsonSerializer.Deserialize<JsonNode>(payload);
             var result = parser.Parse(raw);
-            var serialized = JsonSerializer.Serialize(result);
+            var serialized = JsonSerializer.Serialize(result, serilizationOptions);
             Assert.AreEqual(expected, serialized, $"payload {payload}");
         }
         catch (Exception ex)
@@ -81,4 +81,14 @@ public class ParserTest
             Assert.Fail(payload + " " + ex.Message + "\n" + ex.StackTrace);
         }
     }
+
+
+
+
+
+
+
+
+
+
 }
