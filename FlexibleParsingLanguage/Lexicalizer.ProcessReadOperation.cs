@@ -15,7 +15,7 @@ internal partial class Lexicalizer
         parser.SaveOps.Add(ctx.ActiveId);
         parser.LoadedId = ctx.ActiveId;
         parser.OpsMap.Add(key, ctx.ActiveId);
-        parser.Ops.Add(new ParseOperation(ParseOperationType.ReadAccess, data.Accessor));
+        parser.Ops.Add(new ParseOperation(ParseOperationType.Read, data.Accessor));
         parser.Ops.Add(new ParseOperation(ParseOperationType.Save, ctx.ActiveId));
     }
 }

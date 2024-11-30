@@ -1,18 +1,4 @@
-﻿using FlexibleParsingLanguage.Modules;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-
-namespace FlexibleParsingLanguage;
-
-
-
+﻿namespace FlexibleParsingLanguage;
 
 internal partial class ParsingContext
 {
@@ -22,9 +8,6 @@ internal partial class ParsingContext
         internal bool MultiRead;
         internal object Write;
     }
-
-
-
 
     internal object ReadRoot;
     internal IReadingModule ReadingModule;
@@ -112,17 +95,74 @@ internal partial class ParsingContext
         Focus = result;
     }
 
+    internal void WriteFlatten()
+    {
+        var result = new List<ParsingFocusEntry>();
+        foreach (var focusEntry in Focus)
+        {
+            foreach (var read in focusEntry.Reads)
+            {
+                var w = WritingModule.BlankMap();
+                WritingModule.Append(focusEntry.Write, w);
+                result.Add(new ParsingFocusEntry
+                {
+                    Reads = [read],
+                    MultiRead = false,
+                    Write = w
+                });
+            }
 
-    internal void WriteFromRead(Action<IWritingModule, object, object> writeFunc)
+
+
+
+            /*
+            var innerResult = new List<object>();
+            foreach (var read in focusEntry.Reads)
+            {
+                result.Add(new ParsingFocusEntry
+                {
+                    Reads = [read],
+                    MultiRead = false,
+                    Write = focusEntry.Write
+                });
+            }
+            */
+        }
+        Focus = result;
+    }
+
+    internal void WriteFlattenArray()
+    {
+        var result = new List<ParsingFocusEntry>();
+        foreach (var focusEntry in Focus)
+        {
+            foreach (var read in focusEntry.Reads)
+            {
+                var w = WritingModule.BlankArray();
+                WritingModule.Append(focusEntry.Write, w);
+                result.Add(new ParsingFocusEntry
+                {
+                    Reads = [read],
+                    MultiRead = false,
+                    Write = w
+                });
+            }
+        }
+        Focus = result;
+    }
+
+    internal void WriteFromRead(string acc)
     {
         foreach (var focusEntry in Focus)
         {
             //UpdateWriteModule(w);
-            writeFunc(WritingModule, focusEntry.MultiRead ? focusEntry.Reads : focusEntry.Reads[0], focusEntry.Write);
+            var r = focusEntry.MultiRead ? focusEntry.Reads : focusEntry.Reads[0];
+            WritingModule.Write(focusEntry.Write, acc, r);
+
         }
     }
 
-    internal void WriteAddRead(Action<IWritingModule, object, object> writeFunc)
+    internal void WriteAddRead()
     {
         foreach (var focusEntry in Focus)
         {
@@ -130,12 +170,10 @@ internal partial class ParsingContext
             if (focusEntry.MultiRead)
             {
                 foreach (var r in focusEntry.Reads)
-                {
-                    writeFunc(WritingModule, r, focusEntry.Write);
-                }
+                    WritingModule.Append(focusEntry.Write, r);
                 continue;
             }
-            writeFunc(WritingModule, focusEntry.Reads[0], focusEntry.Write);
+            WritingModule.Append(focusEntry.Write, focusEntry.Reads[0]);
         }
     }
 

@@ -8,33 +8,26 @@ public class ParserTest
 {
     private Lexicalizer L { get; } = new Lexicalizer();
 
-    public static IEnumerable<object[]> Payloads
+    public static IEnumerable<object[]> PayloadFiles
     {
         /*
-         
         *{k1:h1{*.k2:{*:h2}}}
         *k1*k2*:h1.h2
-
-
-
         *k1*:h1*h2{k2*}
-        
         */
-
-
         get => Directory.EnumerateFiles("../../../Payloads").Where(f => !f.EndsWith(".result.json") && !f.EndsWith(".query")).Select(x => new object[] { x });
     }
 
     [TestMethod]
-    [DynamicData(nameof(Payloads))]
-    public void JsonParserTest(string payloadFile) {
+    [DynamicData(nameof(PayloadFiles))]
+    public void JsonFileParserTest(string payloadFile) {
         var payload = File.ReadAllText(payloadFile);
         var query = File.ReadAllText(payloadFile.Replace(".json", ".query"));
         var expected = File.ReadAllText(payloadFile.Replace(".json", ".result.json"));
         TestCompleteParsingStep(payload, query, expected, new JsonSerializerOptions { WriteIndented = true });
     }
 
-    public static IEnumerable<object[]> SimplePayloads => new List<object[]>
+    public static IEnumerable<object[]> JsonQueries => new List<object[]>
     {
         new object[] { "{ \"k\": \"test_v\" }", "k", "[\"test_v\"]" },
         new object[] { "{ \"k\" : \"v\" }", "k", "[\"v\"]" },
@@ -52,11 +45,27 @@ public class ParserTest
     };
 
     [TestMethod]
-    [DynamicData(nameof(SimplePayloads))]
-    public void SimpleJsonParserTest(string payload, string query, string expected) => TestCompleteParsingStep(payload, query, expected, null);
+    [DynamicData(nameof(JsonQueries))]
+    public void JsonParserTest(string payload, string query, string expected) => TestCompleteParsingStep(payload, query, expected, null);
 
 
-    private void TestCompleteParsingStep(string payload, string query, string expected, JsonSerializerOptions serilizationOptions)
+    public static IEnumerable<object[]> SimpleJsonQueries => new List<object[]>
+    {
+        new object[] { "Header Branching Test A", "[[1,2,3], [4, 5], [6, 8]]", "*:h1.h2", "{'h1':{'h2':[[1,2,3],[4,5],[6,8]]}}" },
+        new object[] { "Header Branching Test B", "[[1,2,3], [4, 5], [6, 8]]", "*:h1{:h2}", "{'h1':{'h2':[[1,2,3],[4,5],[6,8]]}}" },
+        new object[] { "Header Branching Test C", "[[1,2,3], [4, 5], [6, 8]]", "*:h1*h2", "{'h1':[{'h2':[1,2,3]},{'h2':[4,5]},{'h2':[6,8]}]}" },
+        new object[] { "Header Branching Test D", "[[1,2,3], [4, 5], [6, 8]]", "*.*:h1*h2", "{'h1':[{'h2':1},{'h2':2},{'h2':3},{'h2':4},{'h2':5},{'h2':6},{'h2':8}]}" },
+        new object[] { "Header Branching Test E", "[[1,2,3], [4, 5], [6, 8]]", "*:*a{*:*b}", "{'h1':[{'h2':1},{'h2':2},{'h2':3},{'h2':4},{'h2':5},{'h2':6},{'h2':8}]}" },
+    };
+
+
+    [TestMethod]
+    [DynamicData(nameof(SimpleJsonQueries))]
+    public void SimpleJsonParserTest(string name, string payload, string query, string expected) => TestCompleteParsingStep(payload, query, expected, null, true);
+
+
+
+    private void TestCompleteParsingStep(string payload, string query, string expected, JsonSerializerOptions? serilizationOptions = null, bool singleQuotes = false)
     {
         Parser parser;
         try
@@ -74,6 +83,10 @@ public class ParserTest
             var raw = JsonSerializer.Deserialize<JsonNode>(payload);
             var result = parser.Parse(raw);
             var serialized = JsonSerializer.Serialize(result, serilizationOptions);
+
+            if (singleQuotes)
+                serialized = serialized.Replace('"', '\'');
+
             Assert.AreEqual(expected, serialized, $"payload {payload}");
         }
         catch (Exception ex)

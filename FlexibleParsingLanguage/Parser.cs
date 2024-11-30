@@ -8,16 +8,22 @@ internal enum ParseOperationType
     Root,
     Save,
     Load,
- 
-    WriteAccess,
-    WriteAccessInt,
+
+    Read,
+    ReadInt,
+    ReadFlatten,
+
+    Write,
+    WriteInt,
+
+    WriteArray,
+    WriteArrayInt,
+
+    WriteFlattenObj,
+    WriteFlattenArray,
+
     WriteFromRead,
-    WriteForeachArray,
     WriteAddRead,
-    
-    ReadAccess,
-    ReadAccessInt,
-    ReadForeach,
 }
 
 public interface IReadingModule

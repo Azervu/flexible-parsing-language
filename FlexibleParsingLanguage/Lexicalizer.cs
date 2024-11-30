@@ -58,7 +58,7 @@ internal class AccessorData
     internal string? Accessor { get; set; }
     internal ParseContext Ctx { get; set; }
 
-    internal bool Numeric { get => Operator == '['; }
+    internal bool Numeric { get => Operator == '[' || Operator == '*'; }
 
     internal AccessorData(char op, string? acc, ParseContext ctx = null)
     {
@@ -100,7 +100,14 @@ internal partial class Lexicalizer
         var (ops, config) = ProcessTokensGroup(root);
 
 
+#if DEBUG
+
         var debug = ops.Select(x => $"{x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
+
+        var s = 345534;
+#endif
+
+
 
         return new Parser(ops, config);
     }
@@ -144,7 +151,12 @@ internal partial class Lexicalizer
 
     private (List<ParseOperation>, ParserConfig) ProcessTokensGroup(ParseContext root)
     {
-        var config = new ParserConfig();
+
+
+        var config = new ParserConfig
+        {
+            WriteArrayRoot = FirstRead(root)?.Numeric ?? true
+        };
 
         root.ActiveId = ROOT_ID;
 
@@ -174,13 +186,16 @@ internal partial class Lexicalizer
         }
 
 
+
+
+
         if (config.WriteArrayRoot == null)
             config.WriteArrayRoot = true;
 
         return (outOps, config);
     }
 
-    private void ProcessContext(ParserConfig config, ParseData data, ParseContext ctx, ParseContext parent)
+    private void ProcessContext(ParserConfig config, ParseData parser, ParseContext ctx, ParseContext parent)
     {
         if (parent != null)
         {
@@ -196,7 +211,7 @@ internal partial class Lexicalizer
             var a = ctx.Accessors[i];
             if (a.Ctx != null)
             {
-                ProcessContext(config, data, a.Ctx, ctx);
+                ProcessContext(config, parser, a.Ctx, ctx);
                 continue;
             }
             switch (a.Operator)
@@ -206,9 +221,9 @@ internal partial class Lexicalizer
                     break;
                 case '*':
                     if (ctx.WriteMode == WriteMode.Read)
-                        data.Ops.Add(new ParseOperation(ParseOperationType.ReadForeach));
+                        parser.Ops.Add(new ParseOperation(ParseOperationType.ReadFlatten));
                     else
-                        data.Ops.Add(new ParseOperation(ParseOperationType.WriteForeachArray));
+                        ProcessWriteFlattenOperator(i, config, parser, ctx, a);
                     break;
                 case '.':
                 case '\'':
@@ -216,16 +231,16 @@ internal partial class Lexicalizer
                 case '[':
                     if (ctx.WriteMode == WriteMode.Read)
                     {
-                        ProcessReadOperator(data, ctx, a);
+                        ProcessReadOperator(parser, ctx, a);
                     }
                     else if (i == ctx.Accessors.Count - 1)
                     {
                         processedEnd = true;
-                        ProcessContextEndingOperator(config, data, ctx, a);
+                        ProcessContextEndingOperator(config, parser, ctx, a);
                     }
                     else
                     {
-                        ProcessWriteOperator(config, data, ctx, a);
+                        ProcessWriteOperator(i, config, parser, ctx, a);
                     }
                     break;
                 default:
@@ -234,7 +249,7 @@ internal partial class Lexicalizer
         }
 
         if (!processedEnd && ctx.WriteMode == WriteMode.Read)
-            ProcessContextEndingOperator(config, data, ctx, null);
+            ProcessContextEndingOperator(config, parser, ctx, null);
     }
 
     private void ProcessContextEndingOperator(ParserConfig config, ParseData data, ParseContext ctx, AccessorData? acc)

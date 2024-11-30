@@ -33,49 +33,76 @@ internal class ParseOperation
 
         switch (OpType)
         {
+            case ParseOperationType.Root:
+                ctx.ToRoot();
+                break;
             case ParseOperationType.Save:
                 ctx.Store[IntAcc] = ctx.Focus;
                 break;
             case ParseOperationType.Load:
                 ctx.Focus = ctx.Store[IntAcc];
                 break;
-            case ParseOperationType.Root:
-                ctx.ToRoot();
+
+            case ParseOperationType.Read:
+                ctx.ReadAction((m, readSrc) => m.Parse(readSrc, StringAcc));
                 break;
-            case ParseOperationType.WriteAccessInt:
-                var w1 = ctx.WritingModule.BlankArray();
-                ctx.WriteAction((m, writeHeader) => {
+            case ParseOperationType.ReadInt:
+                ctx.ReadAction((m, readSrc) => m.Parse(readSrc, IntAcc));
+                break;
+            case ParseOperationType.ReadFlatten:
+                ctx.ReadFlatten();
+                break;
+
+            case ParseOperationType.WriteInt:
+        
+                ctx.WriteAction((m, writeHeader) =>
+                {
+                    var w = ctx.WritingModule.BlankMap();
+                    m.Write(writeHeader, IntAcc, w);
+                    return w;
+                });
+                break;
+            case ParseOperationType.Write:
+
+                ctx.WriteAction((m, writeHeader) =>
+                {
+                    var w = m.BlankMap();
+                    m.Write(writeHeader, StringAcc, w);
+                    return w;
+                });
+                break;
+
+            case ParseOperationType.WriteArray:
+
+                ctx.WriteAction((m, writeHeader) =>
+                {
+                    var w2 = m.BlankArray();
+                    m.Write(writeHeader, StringAcc, w2);
+                    return w2;
+                });
+                break;
+
+            case ParseOperationType.WriteArrayInt:
+
+                ctx.WriteAction((m, writeHeader) =>
+                {
+                    var w1 = m.BlankArray();
                     m.Write(writeHeader, IntAcc, w1);
                     return w1;
                 });
                 break;
-            case ParseOperationType.WriteAccess:
-
-
-                var w2 = ctx.WritingModule.BlankMap();
-                ctx.WriteAction((m, writeHeader) => {
-                    m.Write(writeHeader, StringAcc, w2);
-                    return w2;
-                });
-
-
-
-                break;
 
             case ParseOperationType.WriteAddRead:
-                ctx.WriteAddRead((m, r, w) => m.Append(w, r));
+                ctx.WriteAddRead();
                 break;
             case ParseOperationType.WriteFromRead:
-                ctx.WriteFromRead((m, r, w) => m.Write(w, StringAcc, r));
+                ctx.WriteFromRead(StringAcc);
                 break;
-            case ParseOperationType.ReadAccess:
-                ctx.ReadAction((m, readSrc) => m.Parse(readSrc, StringAcc));
+            case ParseOperationType.WriteFlattenArray:
+                ctx.WriteFlattenArray();
                 break;
-            case ParseOperationType.ReadAccessInt:
-                ctx.ReadAction((m, readSrc) => m.Parse(readSrc, IntAcc));
-                break;
-            case ParseOperationType.ReadForeach:
-                ctx.ReadFlatten();
+            case ParseOperationType.WriteFlattenObj:
+                ctx.WriteFlatten();
                 break;
         }
     }
