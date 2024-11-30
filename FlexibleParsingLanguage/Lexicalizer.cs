@@ -185,13 +185,6 @@ internal partial class Lexicalizer
             outOps.Add(o);
         }
 
-
-
-
-
-        if (config.WriteArrayRoot == null)
-            config.WriteArrayRoot = true;
-
         return (outOps, config);
     }
 

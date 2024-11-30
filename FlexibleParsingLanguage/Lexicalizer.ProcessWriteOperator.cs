@@ -14,9 +14,6 @@ internal partial class Lexicalizer
             return;
         }
 
-        if (config.WriteArrayRoot == null)
-            config.WriteArrayRoot = acc == null || acc.Numeric || ctx.WriteMode == WriteMode.Read;
-
         EnsureWriteOpLoaded(config, parser, ctx, acc);
 
         ctx.ActiveId = ++parser.IdCounter;
