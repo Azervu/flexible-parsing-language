@@ -71,7 +71,8 @@ public class ParserTest
         try
         {
             var parser = L.Lexicalize(query);
-            var result = parser.Parse(JsonSerializer.Deserialize<JsonNode>(payload));
+            var raw = JsonSerializer.Deserialize<JsonNode>(payload);
+            var result = parser.Parse(raw);
             var serialized = JsonSerializer.Serialize(result);
             Assert.AreEqual(expected, serialized, $"payload {payload}");
         }

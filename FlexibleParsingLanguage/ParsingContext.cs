@@ -50,31 +50,26 @@ internal partial class ParsingContext
     }
 
 
-
-    internal void Action(Func<IWritingModule, (object, object), (object, object)> writeFunc)
+    internal void Action(Action<IWritingModule, (object, object)> writeFunc)
     {
-        var result = new List<(object, object)>();
+
+        throw new Exception("Write iter");
+
         foreach (var x in Focus)
-            result.Add(writeFunc(WritingModule, x));
-        Focus = result;
+            writeFunc(WritingModule, x);
     }
-
-
-
 
 
     internal void ReadAction(Func<IReadingModule, object, object> readFunc)
     {
-        var readResult = new List<(object, object)>();
-
+        var result = new List<(object, object)>();
         foreach (var (r, w) in Focus)
         {
             UpdateReadModule(r);
             var r2 = readFunc(ReadingModule, r);
-            readResult.Add((r2, w));
+            result.Add((r2, w));
         }
-
-        var debugB = JsonSerializer.Serialize(readResult, new JsonSerializerOptions { WriteIndented = true });
+        Focus = result;
     }
 
     internal void ReadFlatten()
@@ -95,11 +90,14 @@ internal partial class ParsingContext
         foreach (var (r, w) in Focus)
         {
             //UpdateReadModule(r);
-            var w2 = writeFunc(WritingModule, r);
+            var w2 = writeFunc(WritingModule, w);
             result.Add((r, w2));
         }
         Focus = result;
     }
+
+
+
 
     private void UpdateReadModule(object obj)
     {
@@ -110,10 +108,4 @@ internal partial class ParsingContext
             ReadingModule = _modules.LookupModule(t);
         }
     }
-
-
-
-
-
-
 }

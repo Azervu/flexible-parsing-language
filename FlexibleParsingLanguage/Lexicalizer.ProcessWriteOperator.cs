@@ -12,6 +12,9 @@ internal partial class Lexicalizer
             return;
         }
 
+        if (config.WriteArrayRoot == null)
+            config.WriteArrayRoot = acc == null || acc.Numeric || ctx.WriteMode == WriteMode.Read;
+
         EnsureWriteOpLoaded(config, data, ctx, acc);
 
         ctx.ActiveId = ++data.IdCounter;
@@ -20,9 +23,9 @@ internal partial class Lexicalizer
 
         if (acc.Numeric)
         {
-            if (!int.TryParse(acc.Accessor, out var id))
+            if (!int.TryParse(acc.Accessor, out var intAcc))
                 throw new ArgumentException("");
-            data.Ops.Add(new ParseOperation(ParseOperationType.WriteAccess, acc.Accessor));
+            data.Ops.Add(new ParseOperation(ParseOperationType.WriteAccessInt, intAcc));
         }
         else
         {

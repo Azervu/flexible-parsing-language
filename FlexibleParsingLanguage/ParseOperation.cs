@@ -28,6 +28,9 @@ internal class ParseOperation
 
     internal void AppyOperation(ParsingContext ctx)
     {
+
+        var s = 456654;
+
         switch (OpType)
         {
             case ParseOperationType.Save:
@@ -47,48 +50,30 @@ internal class ParseOperation
                 });
                 break;
             case ParseOperationType.WriteAccess:
+
+
                 var w2 = ctx.WritingModule.BlankMap();
                 ctx.WriteAction((m, writeHeader) => {
                     m.Write(writeHeader, StringAcc, w2);
                     return w2;
                 });
-                break;
 
 
 
-            case ParseOperationType.WriteForeachArray:
-                foreach (var x in ctx.Iterable())
-                    ctx.WritingModule.Append(ctx.WriteHead, x);
                 break;
 
             case ParseOperationType.AddFromRead:
-                foreach (var x in ctx.Iterable())
-                    ctx.WritingModule.Append(ctx.WriteHead, x);
-                break;
-            case ParseOperationType.WriteFromRead:
-
-
                 ctx.Action((m, x) => {
                     var (r, w) = x;
-
-
-
-                    m.Write(w, StringAcc, r);
-                    return (r, w);
+                    ctx.WritingModule.Append(w, r);
                 });
-
-
-                ctx.WriteAction((m, writeHeader) => {
-                    m.Write(writeHeader, StringAcc, w2);
-                    return w2;
-                });
-
-                ctx.WritingModule.Write(ctx.WriteHead, StringAcc, ctx.ReadHead);
                 break;
-
-
-
-
+            case ParseOperationType.WriteFromRead:
+                ctx.Action((m, x) => {
+                    var (r, w) = x;
+                    m.Write(w, StringAcc, r);
+                });
+                break;
             case ParseOperationType.ReadAccess:
                 ctx.ReadAction((m, readSrc) => m.Parse(readSrc, StringAcc));
                 break;

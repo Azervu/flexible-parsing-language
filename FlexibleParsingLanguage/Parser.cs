@@ -41,7 +41,7 @@ public interface IWritingModule
 
 public class ParserConfig
 {
-    public bool WriteArrayRoot { get; set; }
+    public bool? WriteArrayRoot { get; set; }
 }
 
 public class Parser
@@ -68,7 +68,7 @@ public class Parser
             writer,
             _modules,
             readRoot,
-            _parserConfig.WriteArrayRoot ? writer.BlankArray() : writer.BlankMap()
+            _parserConfig.WriteArrayRoot == true ? writer.BlankArray() : writer.BlankMap()
         );
 
         foreach (var o in _ops)

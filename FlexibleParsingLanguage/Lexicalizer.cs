@@ -173,6 +173,10 @@ internal partial class Lexicalizer
             outOps.Add(o);
         }
 
+
+        if (config.WriteArrayRoot == null)
+            config.WriteArrayRoot = true;
+
         return (outOps, config);
     }
 
@@ -235,6 +239,7 @@ internal partial class Lexicalizer
 
     private void ProcessContextEndingOperator(ParserConfig config, ParseData data, ParseContext ctx, AccessorData? acc)
     {
+
         if (ctx.Accessors.Count != 0 && ctx.Accessors.Last().Ctx != null)
             return;
 
@@ -274,6 +279,12 @@ internal partial class Lexicalizer
 
     private void EnsureWriteOpLoaded(ParserConfig config, ParseData data, ParseContext ctx, AccessorData? acc)
     {
+
+        if (config.WriteArrayRoot == null)
+            config.WriteArrayRoot = acc == null || acc.Numeric || ctx.WriteMode == WriteMode.Read;
+
+
+
         if (ctx.ActiveId == data.LoadedId)
             return;
 
@@ -298,7 +309,7 @@ internal partial class Lexicalizer
         }
         data.OpsMap.Add(key, ROOT_ID);
 
-        config.WriteArrayRoot = acc == null || acc.Numeric || ctx.WriteMode == WriteMode.Read;
+ 
         ctx.ActiveId = data.LoadedId;
     }
 }
