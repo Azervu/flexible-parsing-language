@@ -247,7 +247,7 @@ internal partial class Lexicalizer
         EnsureWriteOpLoaded(config, data, ctx, acc);
 
         if (acc == null || ctx.WriteMode == WriteMode.Read)
-            data.Ops.Add(new ParseOperation(ParseOperationType.AddFromRead));
+            data.Ops.Add(new ParseOperation(ParseOperationType.WriteAddRead));
         else if (acc.Numeric)
             data.Ops.Add(new ParseOperation(ParseOperationType.WriteFromRead)); //Int
         else

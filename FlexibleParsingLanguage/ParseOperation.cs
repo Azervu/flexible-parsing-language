@@ -62,17 +62,11 @@ internal class ParseOperation
 
                 break;
 
-            case ParseOperationType.AddFromRead:
-                ctx.Action((m, x) => {
-                    var (r, w) = x;
-                    ctx.WritingModule.Append(w, r);
-                });
+            case ParseOperationType.WriteAddRead:
+                ctx.WriteAddRead((m, r, w) => m.Append(w, r));
                 break;
             case ParseOperationType.WriteFromRead:
-                ctx.Action((m, x) => {
-                    var (r, w) = x;
-                    m.Write(w, StringAcc, r);
-                });
+                ctx.WriteFromRead((m, r, w) => m.Write(w, StringAcc, r));
                 break;
             case ParseOperationType.ReadAccess:
                 ctx.ReadAction((m, readSrc) => m.Parse(readSrc, StringAcc));

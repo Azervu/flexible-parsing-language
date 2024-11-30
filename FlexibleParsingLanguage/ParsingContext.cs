@@ -11,16 +11,29 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage;
 
+
+
+
 internal partial class ParsingContext
 {
+    internal struct ParsingFocusEntry
+    {
+        internal List<object> Reads;
+        internal bool MultiRead;
+        internal object Write;
+    }
+
+
+
+
     internal object ReadRoot;
     internal IReadingModule ReadingModule;
 
     internal object WriteRoot;
     internal IWritingModule WritingModule;
 
-    internal readonly Dictionary<int, IEnumerable<(object, object)>> Store;
-    internal IEnumerable<(object, object)> Focus;
+    internal readonly Dictionary<int, List<ParsingFocusEntry>> Store;
+    internal List<ParsingFocusEntry> Focus;
 
     private Type _activeType = null;
     private ModuleHandler _modules;
@@ -35,63 +48,111 @@ internal partial class ParsingContext
         _modules = modules;
         ReadRoot = readRoot;
         WriteRoot = writeRoot;
-        Focus = new List<(object, object)> { (readRoot, writeRoot) };
-        Store = new Dictionary<int, IEnumerable<(object, object)>> {
+        Focus = new List<ParsingFocusEntry> {
+            new ParsingFocusEntry
+            {
+                Reads = new List<object> { readRoot },
+                MultiRead = false,
+                Write = writeRoot
+            }
+        };
+        Store = new Dictionary<int, List<ParsingFocusEntry>> {
             { 1, Focus }
         };
         WritingModule = writingModule;
 
     }
 
-
     internal void ToRoot()
     {
         Focus = Store[1];
     }
 
-
-    internal void Action(Action<IWritingModule, (object, object)> writeFunc)
-    {
-
-        throw new Exception("Write iter");
-
-        foreach (var x in Focus)
-            writeFunc(WritingModule, x);
-    }
-
-
     internal void ReadAction(Func<IReadingModule, object, object> readFunc)
     {
-        var result = new List<(object, object)>();
-        foreach (var (r, w) in Focus)
+        var result = new List<ParsingFocusEntry>();
+        foreach (var focusEntry in Focus)
         {
-            UpdateReadModule(r);
-            var r2 = readFunc(ReadingModule, r);
-            result.Add((r2, w));
+            var innerResult = new List<object>();
+            foreach (var rr in focusEntry.Reads)
+            {
+                UpdateReadModule(rr);
+                var r2 = readFunc(ReadingModule, rr);
+                innerResult.Add(r2);
+            }
+            result.Add(new ParsingFocusEntry
+            {
+                Reads = innerResult,
+                MultiRead = focusEntry.MultiRead,
+                Write = focusEntry.Write
+            });
         }
         Focus = result;
     }
 
     internal void ReadFlatten()
     {
-        var result = new List<(object, object)>();
-        foreach (var (read, write) in Focus)
+        var result = new List<ParsingFocusEntry>();
+        foreach (var focusEntry in Focus)
         {
-            UpdateReadModule(read);
-            foreach (var rr in ReadingModule.Foreach(read))
-                result.Add((rr, write));
+            var innerResult = new List<object>();
+            foreach (var read in focusEntry.Reads)
+            {
+                UpdateReadModule(read);
+                foreach (var r in ReadingModule.Foreach(read))
+                    innerResult.Add(r);
+            }
+            result.Add(new ParsingFocusEntry
+            {
+                Reads = innerResult,
+                MultiRead = true,
+                Write = focusEntry.Write
+            });
         }
         Focus = result;
     }
 
+
+    internal void WriteFromRead(Action<IWritingModule, object, object> writeFunc)
+    {
+        foreach (var focusEntry in Focus)
+        {
+            //UpdateWriteModule(w);
+            writeFunc(WritingModule, focusEntry.MultiRead ? focusEntry.Reads : focusEntry.Reads[0], focusEntry.Write);
+        }
+    }
+
+    internal void WriteAddRead(Action<IWritingModule, object, object> writeFunc)
+    {
+        foreach (var focusEntry in Focus)
+        {
+            //UpdateWriteModule(w);
+            if (focusEntry.MultiRead)
+            {
+                foreach (var r in focusEntry.Reads)
+                {
+                    writeFunc(WritingModule, r, focusEntry.Write);
+                }
+                continue;
+            }
+            writeFunc(WritingModule, focusEntry.Reads[0], focusEntry.Write);
+        }
+    }
+
+
     internal void WriteAction(Func<IWritingModule, object, object> writeFunc)
     {
-        var result = new List<(object, object)>();
-        foreach (var (r, w) in Focus)
+        var result = new List<ParsingFocusEntry>();
+        foreach (var focusEntry in Focus)
         {
-            //UpdateReadModule(r);
-            var w2 = writeFunc(WritingModule, w);
-            result.Add((r, w2));
+            //UpdateWriteModule(w);
+            var w2 = writeFunc(WritingModule, focusEntry.Write);
+            result.Add(new ParsingFocusEntry
+            {
+                Reads = focusEntry.Reads,
+                MultiRead = focusEntry.MultiRead,
+                Write = w2
+            });
         }
         Focus = result;
     }

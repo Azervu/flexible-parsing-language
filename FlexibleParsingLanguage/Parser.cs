@@ -13,7 +13,7 @@ internal enum ParseOperationType
     WriteAccessInt,
     WriteFromRead,
     WriteForeachArray,
-    AddFromRead,
+    WriteAddRead,
     
     ReadAccess,
     ReadAccessInt,
