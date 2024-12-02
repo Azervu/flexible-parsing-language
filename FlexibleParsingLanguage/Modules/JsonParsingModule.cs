@@ -18,22 +18,30 @@ public class JsonParsingModule : IReadingModule
         throw new NotImplementedException();
     }
 
-    public IEnumerable Foreach(object raw)
+    public IEnumerable<(object key, object value)> Foreach(object raw)
     {
-
+        var d = new Dictionary<object, object>();
         switch (raw)
         {
             case JsonObject jsonNode:
                 foreach (var x in jsonNode)
-                    yield return x.Value;
+                    yield return (x.Key, x.Value);
                 break;
             case JsonArray jsonArray:
                 for (int i = 0; i < jsonArray.Count; i++)
-                    yield return jsonArray[i];
+                    yield return (i, jsonArray[i]);
+                break;
+            case ICollection<KeyValuePair<object, object>> dict:
+                foreach (var kv in dict)
+                    yield return (kv.Key, kv.Value);
                 break;
             case IEnumerable enumerable:
+                var ii = 0;
                 foreach (var x in enumerable)
-                    yield return x;
+                {
+                    yield return (ii, x);
+                    ii++;
+                }
                 break;
         }
     }

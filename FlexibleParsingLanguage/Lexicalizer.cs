@@ -90,7 +90,7 @@ internal partial class Lexicalizer
 
     public Lexicalizer()
     {
-        Tokenizer = new Tokenizer("", "${}:*", '.', "'\"", '\\');
+        Tokenizer = new Tokenizer("", "${}:*~", '.', "'\"", '\\');
     }
 
     public Parser Lexicalize(string raw)
@@ -201,22 +201,29 @@ internal partial class Lexicalizer
         var processedEnd = false;
         for (var i = 0; i < ctx.Accessors.Count; i++)
         {
-            var a = ctx.Accessors[i];
-            if (a.Ctx != null)
+            var accessor = ctx.Accessors[i];
+            if (accessor.Ctx != null)
             {
-                ProcessContext(config, parser, a.Ctx, ctx);
+                ProcessContext(config, parser, accessor.Ctx, ctx);
                 continue;
             }
-            switch (a.Operator)
+            switch (accessor.Operator)
             {
                 case ':':
                     ctx.WriteMode = WriteMode.Write;
                     break;
                 case '*':
                     if (ctx.WriteMode == WriteMode.Read)
-                        parser.Ops.Add(new ParseOperation(ParseOperationType.ReadFlatten));
+                        ProcessReadFlattenOperator(parser, ctx, accessor);
                     else
-                        ProcessWriteFlattenOperator(i, config, parser, ctx, a);
+                        ProcessWriteFlattenOperator(i, config, parser, ctx, accessor);
+                    break;
+                case '~':
+                    if (ctx.WriteMode == WriteMode.Read)
+                        parser.Ops.Add(new ParseOperation(ParseOperationType.ReadName));
+                    else
+                        parser.Ops.Add(new ParseOperation(ParseOperationType.WriteNameFromRead));
+
                     break;
                 case '.':
                 case '\'':
@@ -224,16 +231,16 @@ internal partial class Lexicalizer
                 case '[':
                     if (ctx.WriteMode == WriteMode.Read)
                     {
-                        ProcessReadOperator(parser, ctx, a);
+                        ProcessReadOperator(parser, ctx, accessor);
                     }
                     else if (i == ctx.Accessors.Count - 1)
                     {
                         processedEnd = true;
-                        ProcessContextEndingOperator(config, parser, ctx, a);
+                        ProcessContextEndingOperator(config, parser, ctx, accessor);
                     }
                     else
                     {
-                        ProcessWriteOperator(i, config, parser, ctx, a);
+                        ProcessWriteOperator(i, config, parser, ctx, accessor);
                     }
                     break;
                 default:

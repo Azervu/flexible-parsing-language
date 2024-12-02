@@ -28,9 +28,9 @@ internal class ParseOperation
 
     internal void AppyOperation(ParsingContext ctx)
     {
-
+#if DEBUG
         var s = 456654;
-
+#endif
         switch (OpType)
         {
             case ParseOperationType.Root:
@@ -53,8 +53,11 @@ internal class ParseOperation
                 ctx.ReadFlatten();
                 break;
 
+            case ParseOperationType.ReadName:
+                ctx.ReadName();
+                break;
             case ParseOperationType.WriteInt:
-        
+
                 ctx.WriteAction((m, writeHeader) =>
                 {
                     var w = ctx.WritingModule.BlankMap();
@@ -103,6 +106,9 @@ internal class ParseOperation
                 break;
             case ParseOperationType.WriteFlattenObj:
                 ctx.WriteFlatten();
+                break;
+            case ParseOperationType.WriteNameFromRead:
+
                 break;
         }
     }

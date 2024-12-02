@@ -12,20 +12,19 @@ namespace FlexibleParsingLanguage.Modules
     {
         public List<Type> HandledTypes => [typeof(IList), typeof(IDictionary)];
 
-        public IEnumerable Foreach(object raw)
+        public IEnumerable<(object key, object value)> Foreach(object raw)
         {
-
-
-
-
             switch (raw)
             {
                 case IList x:
-                    return x;
+                    for (var i = 0; i < x.Count; i++)
+                        yield return (i, x[i]);
+                    break;
                 case IDictionary x:
-                    return x;
+                    foreach (var k in x.Keys)
+                        yield return (k, x[k]);
+                    break;
             }
-            return null;
         }
 
         public object Parse(object raw, string acc)

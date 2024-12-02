@@ -12,6 +12,7 @@ internal enum ParseOperationType
     Read,
     ReadInt,
     ReadFlatten,
+    ReadName,
 
     Write,
     WriteInt,
@@ -24,6 +25,7 @@ internal enum ParseOperationType
 
     WriteFromRead,
     WriteAddRead,
+    WriteNameFromRead,
 }
 
 public interface IReadingModule
@@ -32,7 +34,7 @@ public interface IReadingModule
     public object Parse(object raw, string acc);
     public object Parse(object raw, int acc);
 
-    public IEnumerable Foreach(object raw);
+    public IEnumerable<(object key, object value)> Foreach(object raw);
 }
 
 public interface IWritingModule

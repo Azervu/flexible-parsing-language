@@ -58,6 +58,9 @@ public class ParserTest
         new object[] { "Header Branching Test E", "[[1,2,3], [4, 5], [6, 8]]", "*:*a{*:*b}", "[{'a':[{'b':1},{'b':2},{'b':3}]},{'a':[{'b':4},{'b':5}]},{'a':[{'b':6},{'b':8}]}]" },
 
 
+        new object[] { "Unbranch test", "{'a': {'f':1, 'f2': 11}, 'b': {'f':2, 'f2': 12}, 'c': {'f':3, 'f2': 13}}", "*:*{f:fh}{f2:fh2}", "[{'fh':1},{'fh':2},{'fh':3}]" },
+
+        new object[] { "Name operator test", "{'a': 1, 'b': 2, 'c': 3}", "*:*{~:n}{:v}", "[{'n':'a','v':1},{'n':'b','v':2},{'n':'c','v':3}]" },
 
 
     };
@@ -84,6 +87,9 @@ public class ParserTest
 
         try
         {
+            if (singleQuotes)
+                payload = payload.Replace('\'', '"');
+
             var raw = JsonSerializer.Deserialize<JsonNode>(payload);
             var result = parser.Parse(raw);
             var serialized = JsonSerializer.Serialize(result, serilizationOptions);

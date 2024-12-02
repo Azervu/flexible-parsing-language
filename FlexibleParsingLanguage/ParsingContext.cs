@@ -4,6 +4,7 @@ internal partial class ParsingContext
 {
     internal struct ParsingFocusEntry
     {
+        internal List<object> Keys;
         internal List<object> Reads;
         internal bool MultiRead;
         internal object Write;
@@ -34,6 +35,7 @@ internal partial class ParsingContext
         Focus = new List<ParsingFocusEntry> {
             new ParsingFocusEntry
             {
+                Keys = new List<object> { null },
                 Reads = new List<object> { readRoot },
                 MultiRead = false,
                 Write = writeRoot
@@ -56,15 +58,18 @@ internal partial class ParsingContext
         var result = new List<ParsingFocusEntry>();
         foreach (var focusEntry in Focus)
         {
+            var keys = new List<object>();
             var innerResult = new List<object>();
             foreach (var rr in focusEntry.Reads)
             {
                 UpdateReadModule(rr);
                 var r2 = readFunc(ReadingModule, rr);
+                keys.Add(rr);
                 innerResult.Add(r2);
             }
             result.Add(new ParsingFocusEntry
             {
+                Keys = keys,
                 Reads = innerResult,
                 MultiRead = focusEntry.MultiRead,
                 Write = focusEntry.Write
@@ -78,17 +83,39 @@ internal partial class ParsingContext
         var result = new List<ParsingFocusEntry>();
         foreach (var focusEntry in Focus)
         {
+            var keys = new List<object>();
             var innerResult = new List<object>();
             foreach (var read in focusEntry.Reads)
             {
                 UpdateReadModule(read);
-                foreach (var r in ReadingModule.Foreach(read))
-                    innerResult.Add(r);
+                foreach (var (k, v) in ReadingModule.Foreach(read))
+                {
+                    keys.Add(k);
+                    innerResult.Add(v);
+                }
+               
             }
             result.Add(new ParsingFocusEntry
             {
+                Keys = keys,
                 Reads = innerResult,
                 MultiRead = true,
+                Write = focusEntry.Write
+            });
+        }
+        Focus = result;
+    }
+
+    internal void ReadName()
+    {
+        var result = new List<ParsingFocusEntry>();
+        foreach (var focusEntry in Focus)
+        {
+            result.Add(new ParsingFocusEntry
+            {
+                Keys = focusEntry.Keys,
+                Reads = focusEntry.Keys,
+                MultiRead = focusEntry.MultiRead,
                 Write = focusEntry.Write
             });
         }
@@ -106,6 +133,7 @@ internal partial class ParsingContext
                 WritingModule.Append(focusEntry.Write, w);
                 result.Add(new ParsingFocusEntry
                 {
+                    Keys = focusEntry.Keys,
                     Reads = [read],
                     MultiRead = false,
                     Write = w
