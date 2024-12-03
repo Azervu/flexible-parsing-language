@@ -5,7 +5,7 @@ namespace FlexibleParsingLanguage;
 
 internal enum ParseOperationType
 {
-    Root,
+    ReadRoot,
     Save,
     Load,
 

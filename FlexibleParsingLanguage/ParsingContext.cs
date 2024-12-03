@@ -48,9 +48,21 @@ internal partial class ParsingContext
 
     }
 
-    internal void ToRoot()
+    internal void ToRootRead()
     {
-        Focus = Store[1];
+        var root = Store[1][0];
+        var result = new List<ParsingFocusEntry>();
+        foreach (var f in Focus) {
+            result.Add(new ParsingFocusEntry
+            {
+                Keys = root.Keys,
+                Reads = root.Reads,
+                MultiRead = root.MultiRead,
+                Write = f.Write
+            });
+        }
+
+        Focus = result;
     }
 
     internal void ReadAction(Func<IReadingModule, object, object> readFunc)
@@ -191,7 +203,6 @@ internal partial class ParsingContext
         }
     }
 
-
     internal void WriteAction(Func<IWritingModule, object, object> writeFunc)
     {
         var result = new List<ParsingFocusEntry>();
@@ -208,10 +219,6 @@ internal partial class ParsingContext
         }
         Focus = result;
     }
-
-
-
-
     private void UpdateReadModule(object obj)
     {
         var t = obj?.GetType() ?? typeof(void);

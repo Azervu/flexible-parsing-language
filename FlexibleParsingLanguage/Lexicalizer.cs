@@ -139,7 +139,7 @@ internal partial class Lexicalizer
             LoadedId = ROOT_ID,
             IdCounter = 3,
             Ops = [],
-            OpsMap = new Dictionary<(int LastOp, ParseOperation), int> { { (-1, new ParseOperation(ParseOperationType.Root)), 1 } },
+            OpsMap = new Dictionary<(int LastOp, ParseOperation), int> { { (-1, new ParseOperation(ParseOperationType.ReadRoot)), 1 } },
         };
 
         ProcessContext(config, parseData, root, null);
@@ -184,15 +184,23 @@ internal partial class Lexicalizer
 
             switch (accessor.Operator)
             {
+                case '$':
+                    op = new ParseOperation(ParseOperationType.ReadRoot);
+                    break;
                 case ':':
                     ctx.WriteMode = WriteMode.Write;
                     break;
                 case '*':
-                    //var nextAcc = NextReadOperator(i, ctx);
+     
                     if (ctx.WriteMode == WriteMode.Read)
+                    {
                         op = new ParseOperation(ParseOperationType.ReadFlatten, accessor.Accessor);
+                    }
                     else
-                        op = new ParseOperation(accessor.Numeric ? ParseOperationType.WriteFlattenObj : ParseOperationType.WriteFlattenArray);
+                    {
+                        var nextNumeric = NextReadOperator(i, ctx)?.Numeric ?? true;
+                        op = new ParseOperation(nextNumeric ? ParseOperationType.WriteFlattenArray: ParseOperationType.WriteFlattenObj);
+                    }
                     break;
                 case '~':
                     if (ctx.WriteMode == WriteMode.Read)
@@ -225,7 +233,9 @@ internal partial class Lexicalizer
 
             if (op != null)
             {
-                var key = (ctx.ActiveId, op);
+
+                var activeId = op.OpType == ParseOperationType.ReadRoot ? -1 : ctx.ActiveId;
+                var key = (activeId, op);
                 if (parser.OpsMap.TryGetValue(key, out var readId))
                 {
                     ctx.ActiveId = readId;
@@ -276,7 +286,7 @@ internal partial class Lexicalizer
 
         if (ctx.ActiveId == ROOT_ID)
         {
-            data.Ops.Add(new ParseOperation(ParseOperationType.Root));
+            data.Ops.Add(new ParseOperation(ParseOperationType.ReadRoot));
             return;
         }
 
@@ -314,7 +324,7 @@ internal partial class Lexicalizer
             throw new Exception("Unknown write id " + ctx.ActiveId);
 
 
-        var op = new ParseOperation(ParseOperationType.Root);
+        var op = new ParseOperation(ParseOperationType.ReadRoot);
 
         var key = (-1, op);
         if (data.OpsMap.ContainsKey(key))

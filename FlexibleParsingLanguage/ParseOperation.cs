@@ -33,8 +33,8 @@ internal class ParseOperation
 #endif
         switch (OpType)
         {
-            case ParseOperationType.Root:
-                ctx.ToRoot();
+            case ParseOperationType.ReadRoot:
+                ctx.ToRootRead();
                 break;
             case ParseOperationType.Save:
                 ctx.Store[IntAcc] = ctx.Focus;
