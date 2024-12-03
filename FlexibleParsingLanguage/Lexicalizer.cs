@@ -1,4 +1,6 @@
-﻿namespace FlexibleParsingLanguage;
+﻿using static System.Runtime.InteropServices.JavaScript.JSType;
+
+namespace FlexibleParsingLanguage;
 
 public struct OperatorKey
 {
@@ -196,7 +198,6 @@ internal partial class Lexicalizer
             ctx.ActiveId = parent.ActiveId;
         }
 
-
         ctx.WriteMode = WriteMode.Read;
         var processedEnd = false;
         for (var i = 0; i < ctx.Accessors.Count; i++)
@@ -207,6 +208,9 @@ internal partial class Lexicalizer
                 ProcessContext(config, parser, accessor.Ctx, ctx);
                 continue;
             }
+
+            (ParseOperation, OperatorKey)? opKey = null;
+
             switch (accessor.Operator)
             {
                 case ':':
@@ -214,7 +218,7 @@ internal partial class Lexicalizer
                     break;
                 case '*':
                     if (ctx.WriteMode == WriteMode.Read)
-                        ProcessReadFlattenOperator(parser, ctx, accessor);
+                        opKey = (new ParseOperation(ParseOperationType.ReadFlatten, accessor.Accessor), new OperatorKey(ctx.ActiveId, accessor.Operator, accessor.Accessor, false));
                     else
                         ProcessWriteFlattenOperator(i, config, parser, ctx, accessor);
                     break;
@@ -224,6 +228,11 @@ internal partial class Lexicalizer
                     else
                         parser.Ops.Add(new ParseOperation(ParseOperationType.WriteNameFromRead));
 
+
+                    //ctx.ActiveId = ++parser.IdCounter;
+                    //parser.SaveOps.Add(ctx.ActiveId);
+                    //parser.Ops.Add(new ParseOperation(ParseOperationType.Save, ctx.ActiveId));
+
                     break;
                 case '.':
                 case '\'':
@@ -231,7 +240,7 @@ internal partial class Lexicalizer
                 case '[':
                     if (ctx.WriteMode == WriteMode.Read)
                     {
-                        ProcessReadOperator(parser, ctx, accessor);
+                        opKey = (new ParseOperation(ParseOperationType.Read, accessor.Accessor), new OperatorKey(ctx.ActiveId, accessor.Operator, accessor.Accessor, false));
                     }
                     else if (i == ctx.Accessors.Count - 1)
                     {
@@ -246,7 +255,63 @@ internal partial class Lexicalizer
                 default:
                     break;
             }
+
+
+
+
+        /*
+             
+
+
+
+
+
+        var opId = ++parser.IdCounter;
+        var op = new ParseOperation(ParseOperationType.ReadFlatten, data.Accessor);
+
+        var key = new OperatorKey(ctx.ActiveId, data.Operator, data.Accessor, false);
+        if (parser.OpsMap.TryGetValue(key, out var readId))
+        {
+            ctx.ActiveId = readId;
+            return;
         }
+
+        EnsureReadOpLoaded(parser, ctx);
+        ctx.ActiveId = opId;
+        parser.SaveOps.Add(ctx.ActiveId);
+        parser.LoadedId = ctx.ActiveId;
+        parser.OpsMap.Add(key, ctx.ActiveId);
+        parser.Ops.Add(op);
+        parser.Ops.Add(new ParseOperation(ParseOperationType.Save, ctx.ActiveId));
+
+        */
+
+
+
+
+            if (opKey != null)
+            {
+                var (op, key) = opKey.Value;
+
+                if (parser.OpsMap.TryGetValue(key, out var readId))
+                {
+                    ctx.ActiveId = readId;
+                }
+                else
+                {
+                    EnsureReadOpLoaded(parser, ctx);
+                    ctx.ActiveId = ++parser.IdCounter;
+                    parser.SaveOps.Add(ctx.ActiveId);
+                    parser.LoadedId = ctx.ActiveId;
+                    parser.OpsMap.Add(key, ctx.ActiveId);
+                    parser.Ops.Add(op);
+                    parser.Ops.Add(new ParseOperation(ParseOperationType.Save, ctx.ActiveId));
+                }
+            }
+
+        }
+
+
 
         if (!processedEnd && ctx.WriteMode == WriteMode.Read)
             ProcessContextEndingOperator(config, parser, ctx, null);

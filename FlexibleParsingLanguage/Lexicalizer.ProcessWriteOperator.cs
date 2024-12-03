@@ -44,6 +44,7 @@ internal partial class Lexicalizer
 
         }
         parser.Ops.Add(new ParseOperation(ParseOperationType.Save, ctx.ActiveId));
+
     }
 
     private void ProcessWriteFlattenOperator(int i, ParserConfig config, ParseData parser, ParseContext ctx, AccessorData acc)

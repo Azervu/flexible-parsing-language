@@ -127,34 +127,20 @@ internal partial class ParsingContext
         var result = new List<ParsingFocusEntry>();
         foreach (var focusEntry in Focus)
         {
-            foreach (var read in focusEntry.Reads)
+            for (var i = 0; i < focusEntry.Reads.Count; i++)
             {
+                var key = focusEntry.Keys?[i] ?? null;
+                var value = focusEntry.Reads[i];
                 var w = WritingModule.BlankMap();
                 WritingModule.Append(focusEntry.Write, w);
                 result.Add(new ParsingFocusEntry
                 {
-                    Keys = focusEntry.Keys,
-                    Reads = [read],
+                    Keys = [key],
+                    Reads = [value],
                     MultiRead = false,
                     Write = w
                 });
             }
-
-
-
-
-            /*
-            var innerResult = new List<object>();
-            foreach (var read in focusEntry.Reads)
-            {
-                result.Add(new ParsingFocusEntry
-                {
-                    Reads = [read],
-                    MultiRead = false,
-                    Write = focusEntry.Write
-                });
-            }
-            */
         }
         Focus = result;
     }

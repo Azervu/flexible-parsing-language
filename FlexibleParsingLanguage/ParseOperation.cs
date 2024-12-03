@@ -112,5 +112,4 @@ internal class ParseOperation
                 break;
         }
     }
-
 }
