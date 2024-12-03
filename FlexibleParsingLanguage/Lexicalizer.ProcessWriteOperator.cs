@@ -3,24 +3,9 @@
 namespace FlexibleParsingLanguage;
 internal partial class Lexicalizer
 {
-    private void ProcessWriteOperator(int i, ParserConfig config, ParseData parser, ParseContext ctx, AccessorData acc)
+    private ParseOperation? ProcessWriteOperator(int i, ParserConfig config, ParseData parser, ParseContext ctx, AccessorData acc)
     {
         ctx.WriteMode = WriteMode.Written;
-        var key = new OperatorKey(ctx.ActiveId, acc.Operator, acc.Accessor, true);
-
-        if (parser.OpsMap.TryGetValue(key, out var writeId))
-        {
-            ctx.ActiveId = writeId;
-            return;
-        }
-
-        EnsureWriteOpLoaded(config, parser, ctx, acc);
-
-        ctx.ActiveId = ++parser.IdCounter;
-        parser.SaveOps.Add(ctx.ActiveId);
-        parser.LoadedId = ctx.ActiveId;
-        parser.OpsMap.Add(key, ctx.ActiveId);
-
 
         var nextAcc = NextReadOperator(i, ctx);
         var nextIsArray = nextAcc?.Numeric != false;
@@ -31,20 +16,18 @@ internal partial class Lexicalizer
                 throw new ArgumentException("Invalid Query | accessor not int");
 
             if (nextIsArray)
-                parser.Ops.Add(new ParseOperation(ParseOperationType.WriteArrayInt, intAcc));
+                return new ParseOperation(ParseOperationType.WriteArrayInt, intAcc);
             else
-                parser.Ops.Add(new ParseOperation(ParseOperationType.WriteInt, intAcc));
+                return new ParseOperation(ParseOperationType.WriteInt, intAcc);
         }
         else
         {
             if (nextIsArray)
-                parser.Ops.Add(new ParseOperation(ParseOperationType.WriteArray, acc.Accessor));
+                return new ParseOperation(ParseOperationType.WriteArray, acc.Accessor);
             else
-                parser.Ops.Add(new ParseOperation(ParseOperationType.Write, acc.Accessor));
+                return new ParseOperation(ParseOperationType.Write, acc.Accessor);
 
         }
-        parser.Ops.Add(new ParseOperation(ParseOperationType.Save, ctx.ActiveId));
-
     }
 
     private AccessorData NextReadOperator(int i, ParseContext ctx)
