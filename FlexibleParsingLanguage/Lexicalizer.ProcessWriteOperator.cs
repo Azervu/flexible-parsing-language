@@ -47,15 +47,6 @@ internal partial class Lexicalizer
 
     }
 
-    private void ProcessWriteFlattenOperator(int i, ParserConfig config, ParseData parser, ParseContext ctx, AccessorData acc)
-    {
-        //parser.Ops.Add(new ParseOperation(ParseOperationType.ReadFlatten));
-        var nextAcc = NextReadOperator(i, ctx);
-        parser.Ops.Add(new ParseOperation(acc.Numeric ? ParseOperationType.WriteFlattenObj : ParseOperationType.WriteFlattenArray));
-        //var nextWriteOp = 
-        //parser.Ops.Add(new ParseOperation(ParseOperationType.WriteFlatten));
-    }
-
     private AccessorData NextReadOperator(int i, ParseContext ctx)
     {
         for (var j = i + 1; j < ctx.Accessors.Count; j++)

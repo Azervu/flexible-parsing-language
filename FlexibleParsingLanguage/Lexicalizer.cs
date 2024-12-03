@@ -217,22 +217,17 @@ internal partial class Lexicalizer
                     ctx.WriteMode = WriteMode.Write;
                     break;
                 case '*':
+                    //var nextAcc = NextReadOperator(i, ctx);
                     if (ctx.WriteMode == WriteMode.Read)
                         opKey = (new ParseOperation(ParseOperationType.ReadFlatten, accessor.Accessor), new OperatorKey(ctx.ActiveId, accessor.Operator, accessor.Accessor, false));
                     else
-                        ProcessWriteFlattenOperator(i, config, parser, ctx, accessor);
+                        opKey = (new ParseOperation(accessor.Numeric ? ParseOperationType.WriteFlattenObj : ParseOperationType.WriteFlattenArray), new OperatorKey(ctx.ActiveId, accessor.Operator, accessor.Accessor, false));
                     break;
                 case '~':
                     if (ctx.WriteMode == WriteMode.Read)
-                        parser.Ops.Add(new ParseOperation(ParseOperationType.ReadName));
+                        opKey = (new ParseOperation(ParseOperationType.ReadName), new OperatorKey(ctx.ActiveId, accessor.Operator, accessor.Accessor, false));
                     else
-                        parser.Ops.Add(new ParseOperation(ParseOperationType.WriteNameFromRead));
-
-
-                    //ctx.ActiveId = ++parser.IdCounter;
-                    //parser.SaveOps.Add(ctx.ActiveId);
-                    //parser.Ops.Add(new ParseOperation(ParseOperationType.Save, ctx.ActiveId));
-
+                        opKey = (new ParseOperation(ParseOperationType.WriteNameFromRead), new OperatorKey(ctx.ActiveId, accessor.Operator, accessor.Accessor, true));
                     break;
                 case '.':
                 case '\'':
@@ -255,38 +250,6 @@ internal partial class Lexicalizer
                 default:
                     break;
             }
-
-
-
-
-        /*
-             
-
-
-
-
-
-        var opId = ++parser.IdCounter;
-        var op = new ParseOperation(ParseOperationType.ReadFlatten, data.Accessor);
-
-        var key = new OperatorKey(ctx.ActiveId, data.Operator, data.Accessor, false);
-        if (parser.OpsMap.TryGetValue(key, out var readId))
-        {
-            ctx.ActiveId = readId;
-            return;
-        }
-
-        EnsureReadOpLoaded(parser, ctx);
-        ctx.ActiveId = opId;
-        parser.SaveOps.Add(ctx.ActiveId);
-        parser.LoadedId = ctx.ActiveId;
-        parser.OpsMap.Add(key, ctx.ActiveId);
-        parser.Ops.Add(op);
-        parser.Ops.Add(new ParseOperation(ParseOperationType.Save, ctx.ActiveId));
-
-        */
-
-
 
 
             if (opKey != null)
