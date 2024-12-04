@@ -9,7 +9,7 @@ internal enum WriteMode
 
 internal class ParseData
 {
-    internal List<ParseOperation> Ops { get; set; }
+    internal List<(int, ParseOperation)> Ops { get; set; }
     internal Dictionary<(int LastOp, ParseOperation), int> OpsMap { get; set; }
 
     internal HashSet<int> SaveOps { get; set; } = new HashSet<int>();
@@ -127,6 +127,10 @@ internal partial class Lexicalizer
     {
 
 
+
+
+
+
         var config = new ParserConfig
         {
             WriteArrayRoot = FirstRead(root)?.Numeric ?? true
@@ -144,9 +148,36 @@ internal partial class Lexicalizer
 
         ProcessContext(config, parseData, root, null);
 
-        var outOps = new List<ParseOperation>();
 
-        foreach (var o in parseData.Ops)
+        var opsMap = parseData.OpsMap.ToDictionary(x => x.Value, x => x.Key);
+
+        /*
+        foreach (var w in parseData.Ops)
+        {
+            if (!w.Item2.OpType.IsWriteOperation())
+                continue;
+
+            var operatorId = w.Item1;
+
+            while (opsMap.ContainsKey(operatorId))
+            {
+                var (parentId, op) = opsMap[operatorId];
+
+                if (!op.OpType.IsReadOperation())
+                {
+                    operatorId = parentId;
+                    continue;
+                }
+                config.WriteArrayRoot = op.OpType.IsNumericOperation();
+                break;
+            }
+            break;
+        }
+        */
+
+
+        var outOps = new List<ParseOperation>();
+        foreach (var o in parseData.Ops.Select(x => x.Item2))
         {
             if (o.OpType == ParseOperationType.Save)
             {
@@ -157,7 +188,6 @@ internal partial class Lexicalizer
             }
             outOps.Add(o);
         }
-
         return (outOps, config);
     }
 
@@ -185,13 +215,18 @@ internal partial class Lexicalizer
             switch (accessor.Operator)
             {
                 case '$':
-                    op = new ParseOperation(ParseOperationType.ReadRoot);
+
+                    if (ctx.WriteMode == WriteMode.Read)
+                        op = new ParseOperation(ParseOperationType.ReadRoot);
+                    else
+                        op = new ParseOperation(ParseOperationType.WriteRoot);
+
                     break;
                 case ':':
                     ctx.WriteMode = WriteMode.Write;
                     break;
                 case '*':
-     
+
                     if (ctx.WriteMode == WriteMode.Read)
                     {
                         op = new ParseOperation(ParseOperationType.ReadFlatten, accessor.Accessor);
@@ -199,7 +234,7 @@ internal partial class Lexicalizer
                     else
                     {
                         var nextNumeric = NextReadOperator(i, ctx)?.Numeric ?? true;
-                        op = new ParseOperation(nextNumeric ? ParseOperationType.WriteFlattenArray: ParseOperationType.WriteFlattenObj);
+                        op = new ParseOperation(nextNumeric ? ParseOperationType.WriteFlattenArray : ParseOperationType.WriteFlattenObj);
                     }
                     break;
                 case '~':
@@ -219,7 +254,7 @@ internal partial class Lexicalizer
                     else if (i == ctx.Accessors.Count - 1)
                     {
                         processedEnd = true;
-                        ProcessContextEndingOperator(config, parser, ctx, accessor);
+                        op = ProcessContextEndingOperator(config, parser, ctx, accessor);
                     }
                     else
                     {
@@ -230,52 +265,72 @@ internal partial class Lexicalizer
                     break;
             }
 
-
-            if (op != null)
-            {
-
-                var activeId = op.OpType == ParseOperationType.ReadRoot ? -1 : ctx.ActiveId;
-                var key = (activeId, op);
-                if (parser.OpsMap.TryGetValue(key, out var readId))
-                {
-                    ctx.ActiveId = readId;
-                }
-                else
-                {
-                    EnsureReadOpLoaded(parser, ctx);
-
-                    ctx.ActiveId = ++parser.IdCounter;
-                    parser.SaveOps.Add(ctx.ActiveId);
-                    parser.LoadedId = ctx.ActiveId;
-                    parser.OpsMap.Add(key, ctx.ActiveId);
-                    parser.Ops.Add(op);
-                    parser.Ops.Add(new ParseOperation(ParseOperationType.Save, ctx.ActiveId));
-                }
-            }
-
+            HandleOp(config, parser, ctx, op);
         }
 
 
 
         if (!processedEnd && ctx.WriteMode == WriteMode.Read)
-            ProcessContextEndingOperator(config, parser, ctx, null);
+        {
+            var op = ProcessContextEndingOperator(config, parser, ctx, null);
+            HandleOp(config, parser, ctx, op);
+        }
+
     }
 
-    private void ProcessContextEndingOperator(ParserConfig config, ParseData data, ParseContext ctx, AccessorData? acc)
+
+
+    private void HandleOp(ParserConfig config, ParseData parser, ParseContext ctx, ParseOperation? op)
+    {
+        if (op == null)
+            return;
+
+        var activeId = op.OpType == ParseOperationType.ReadRoot ? -1 : ctx.ActiveId;
+        var key = (activeId, op);
+        if (parser.OpsMap.TryGetValue(key, out var readId))
+        {
+            ctx.ActiveId = readId;
+            return;
+        }
+
+        EnsureReadOpLoaded(parser, ctx);
+
+        ctx.ActiveId = ++parser.IdCounter;
+        parser.SaveOps.Add(ctx.ActiveId);
+        parser.LoadedId = ctx.ActiveId;
+
+        if (parser.OpsMap.ContainsKey(key))
+        {
+            throw new Exception($"Repeated {key.activeId} ");
+        }
+        parser.Ops.Add((ctx.ActiveId, op));
+        parser.OpsMap.Add(key, ctx.ActiveId);
+
+        parser.IdCounter++;
+        var saveOp = new ParseOperation(ParseOperationType.Save, ctx.ActiveId);
+        parser.Ops.Add((parser.IdCounter, saveOp));
+        parser.OpsMap.Add((activeId, saveOp), parser.IdCounter);
+
+
+    }
+
+
+
+    private ParseOperation? ProcessContextEndingOperator(ParserConfig config, ParseData data, ParseContext ctx, AccessorData? acc)
     {
 
         if (ctx.Accessors.Count != 0 && ctx.Accessors.Last().Ctx != null)
-            return;
+            return null;
 
         EnsureReadOpLoaded(data, ctx);
         EnsureWriteOpLoaded(config, data, ctx, acc);
 
         if (acc == null || ctx.WriteMode == WriteMode.Read)
-            data.Ops.Add(new ParseOperation(ParseOperationType.WriteAddRead));
+            return new ParseOperation(ParseOperationType.WriteAddRead);
         else if (acc.Numeric)
-            data.Ops.Add(new ParseOperation(ParseOperationType.WriteFromRead)); //Int
+            return new ParseOperation(ParseOperationType.WriteFromRead); //Int
         else
-            data.Ops.Add(new ParseOperation(ParseOperationType.WriteFromRead, acc.Accessor));
+            return new ParseOperation(ParseOperationType.WriteFromRead, acc.Accessor);
     }
 
 
@@ -286,14 +341,14 @@ internal partial class Lexicalizer
 
         if (ctx.ActiveId == ROOT_ID)
         {
-            data.Ops.Add(new ParseOperation(ParseOperationType.ReadRoot));
+            data.Ops.Add((ROOT_ID, new ParseOperation(ParseOperationType.ReadRoot)));
             return;
         }
 
         if (data.SaveOps.Contains(ctx.ActiveId))
         {
             data.LoadedOps.Add(ctx.ActiveId);
-            data.Ops.Add(new ParseOperation(ParseOperationType.Load, ctx.ActiveId));
+            data.Ops.Add((-1, new ParseOperation(ParseOperationType.Load, ctx.ActiveId)));
             data.LoadedId = ctx.ActiveId;
             return;
         }
@@ -315,7 +370,7 @@ internal partial class Lexicalizer
         if (data.SaveOps.Contains(ctx.ActiveId))
         {
             data.LoadedOps.Add(ctx.ActiveId);
-            data.Ops.Add(new ParseOperation(ParseOperationType.Load, ctx.ActiveId));
+            data.Ops.Add((-1, new ParseOperation(ParseOperationType.Load, ctx.ActiveId)));
             ctx.ActiveId = data.LoadedId;
             return;
         }
@@ -323,19 +378,16 @@ internal partial class Lexicalizer
         if (ctx.ActiveId != ROOT_ID)
             throw new Exception("Unknown write id " + ctx.ActiveId);
 
-
-        var op = new ParseOperation(ParseOperationType.ReadRoot);
-
-        var key = (-1, op);
+        var key = (-1, new ParseOperation(ParseOperationType.ReadRoot));
         if (data.OpsMap.ContainsKey(key))
         {
-            data.Ops.Add(op);
+            data.Ops.Add((data.LoadedId, key.Item2));
             ctx.ActiveId = data.LoadedId;
             return;
         }
         data.OpsMap.Add(key, ROOT_ID);
 
- 
+
         ctx.ActiveId = data.LoadedId;
     }
 }

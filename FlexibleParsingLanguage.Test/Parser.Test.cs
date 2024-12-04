@@ -48,10 +48,10 @@ public class ParserTest
     [DynamicData(nameof(JsonQueries))]
     public void JsonParserTest(string name, string payload, string query, string expected) => TestCompleteParsingStep(payload, query, expected, null);
 
-
     public static IEnumerable<object[]> SimpleJsonQueries => new List<object[]>
     {
-        new object[] { "Root Test", "{'name':'nv', 'values':[1,2,3]}", "values*{$name:n}{:v}", "[{'n':'nv','v':1},{'n':'nv','v':2},{'n':'nv','v':3}]"},
+        new object[] { "Read Root Test", "{'name':'nv', 'values':[1,2,3]}", "values*:*{$name:n}{:v}", "[{'n':'nv','v':1},{'n':'nv','v':2},{'n':'nv','v':3}]"},
+        new object[] { "Write Root Test", "{'k1': {'k2': 1, 'k3': 2}}", "k1:o1{k2:o2}{k3:$o3}", "{'o1':{'o2':1},'o3':2}"},
         new object[] { "Header Branching Test A", "[[1,2,3], [4, 5], [6, 8]]", "*:h1.h2", "{'h1':{'h2':[[1,2,3],[4,5],[6,8]]}}" },
         new object[] { "Header Branching Test B", "[[1,2,3], [4, 5], [6, 8]]", "*:h1{:h2}", "{'h1':{'h2':[[1,2,3],[4,5],[6,8]]}}" },
         new object[] { "Header Branching Test C", "[[1,2,3], [4, 5], [6, 8]]", "*:h1*h2", "{'h1':[{'h2':[1,2,3]},{'h2':[4,5]},{'h2':[6,8]}]}" },
@@ -67,8 +67,6 @@ public class ParserTest
     [TestMethod]
     [DynamicData(nameof(SimpleJsonQueries))]
     public void SimpleJsonParserTest(string name, string payload, string query, string expected) => TestCompleteParsingStep(payload, query, expected, null, true);
-
-
 
     private void TestCompleteParsingStep(string payload, string query, string expected, JsonSerializerOptions? serilizationOptions = null, bool singleQuotes = false)
     {

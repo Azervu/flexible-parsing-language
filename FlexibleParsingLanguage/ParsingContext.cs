@@ -53,15 +53,34 @@ internal partial class ParsingContext
         var root = Store[1][0];
         var result = new List<ParsingFocusEntry>();
         foreach (var f in Focus) {
+
             result.Add(new ParsingFocusEntry
             {
                 Keys = root.Keys,
                 Reads = root.Reads,
-                MultiRead = root.MultiRead,
+                MultiRead = f.MultiRead,
                 Write = f.Write
             });
         }
 
+        Focus = result;
+    }
+
+
+    internal void ToRootWrite()
+    {
+        var root = Store[1][0];
+        var result = new List<ParsingFocusEntry>();
+        foreach (var f in Focus)
+        {
+            result.Add(new ParsingFocusEntry
+            {
+                Keys = root.Keys,
+                Reads = f.Reads,
+                MultiRead = f.MultiRead,
+                Write = root.Write
+            });
+        }
         Focus = result;
     }
 

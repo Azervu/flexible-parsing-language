@@ -3,31 +3,6 @@ using System.Collections;
 
 namespace FlexibleParsingLanguage;
 
-internal enum ParseOperationType
-{
-    ReadRoot,
-    Save,
-    Load,
-
-    Read,
-    ReadInt,
-    ReadFlatten,
-    ReadName,
-
-    Write,
-    WriteInt,
-
-    WriteArray,
-    WriteArrayInt,
-
-    WriteFlattenObj,
-    WriteFlattenArray,
-
-    WriteFromRead,
-    WriteAddRead,
-    WriteNameFromRead,
-}
-
 public interface IReadingModule
 {
     public List<Type> HandledTypes { get; }
@@ -49,7 +24,7 @@ public interface IWritingModule
 
 public class ParserConfig
 {
-    public bool? WriteArrayRoot { get; set; }
+    public bool WriteArrayRoot { get; set; }
 }
 
 public class Parser

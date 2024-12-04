@@ -36,6 +36,9 @@ internal class ParseOperation
             case ParseOperationType.ReadRoot:
                 ctx.ToRootRead();
                 break;
+            case ParseOperationType.WriteRoot:
+                ctx.ToRootWrite();
+                break;
             case ParseOperationType.Save:
                 ctx.Store[IntAcc] = ctx.Focus;
                 break;
@@ -66,7 +69,6 @@ internal class ParseOperation
                 });
                 break;
             case ParseOperationType.Write:
-
                 ctx.WriteAction((m, writeHeader) =>
                 {
                     var w = m.BlankMap();
@@ -74,9 +76,7 @@ internal class ParseOperation
                     return w;
                 });
                 break;
-
             case ParseOperationType.WriteArray:
-
                 ctx.WriteAction((m, writeHeader) =>
                 {
                     var w2 = m.BlankArray();
@@ -84,9 +84,7 @@ internal class ParseOperation
                     return w2;
                 });
                 break;
-
             case ParseOperationType.WriteArrayInt:
-
                 ctx.WriteAction((m, writeHeader) =>
                 {
                     var w1 = m.BlankArray();
@@ -94,7 +92,6 @@ internal class ParseOperation
                     return w1;
                 });
                 break;
-
             case ParseOperationType.WriteAddRead:
                 ctx.WriteAddRead();
                 break;
