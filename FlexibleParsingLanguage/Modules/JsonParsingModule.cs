@@ -1,11 +1,6 @@
-﻿using System;
+﻿using FlexibleParsingLanguage.Parse;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Modules;
 
@@ -13,14 +8,13 @@ public class JsonParsingModule : IReadingModule
 {
     public List<Type> HandledTypes { get; } = [typeof(JsonNode), typeof(JsonObject)];
 
-    public object Foreach(object raw, int acc)
+    public object ExtractValue(object? val)
     {
-        throw new NotImplementedException();
+        return val;
     }
 
     public IEnumerable<(object key, object value)> Foreach(object raw)
     {
-        var d = new Dictionary<object, object>();
         switch (raw)
         {
             case JsonObject jsonNode:

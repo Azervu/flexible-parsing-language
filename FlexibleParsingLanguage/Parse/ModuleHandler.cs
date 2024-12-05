@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FlexibleParsingLanguage;
+namespace FlexibleParsingLanguage.Parse;
 internal class ModuleHandler
 {
     private List<(List<Type>, IReadingModule)> _modules;
@@ -34,7 +34,7 @@ internal class ModuleHandler
             }
         }
 
-        throw new Exception($"{t.Name} not supported by parser");
+        return null;
     }
 
 }

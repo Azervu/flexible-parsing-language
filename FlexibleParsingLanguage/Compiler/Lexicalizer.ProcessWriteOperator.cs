@@ -1,6 +1,6 @@
-﻿using static System.Runtime.InteropServices.JavaScript.JSType;
+﻿using FlexibleParsingLanguage.Parse;
 
-namespace FlexibleParsingLanguage;
+namespace FlexibleParsingLanguage.Compiler;
 internal partial class Lexicalizer
 {
     private ParseOperation? ProcessWriteOperator(int i, ParserConfig config, ParseData parser, ParseContext ctx, AccessorData acc)

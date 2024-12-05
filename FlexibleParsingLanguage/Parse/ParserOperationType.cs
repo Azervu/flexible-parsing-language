@@ -5,30 +5,26 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FlexibleParsingLanguage;
+namespace FlexibleParsingLanguage.Parse;
 
 internal enum ParseOperationType
 {
     Save,
     Load,
-
+    TransformRead,
+    TransformWrite,
     ReadRoot,
     Read,
     ReadInt,
     ReadFlatten,
     ReadName,
-
-
     Write,
     WriteRoot,
     WriteInt,
-
     WriteArray,
     WriteArrayInt,
-
     WriteFlattenObj,
     WriteFlattenArray,
-
     WriteFromRead,
     WriteAddRead,
     WriteNameFromRead,
@@ -51,7 +47,9 @@ internal static class ParseOperationTypeExtension
             case ParseOperationType.WriteAddRead:
             case ParseOperationType.WriteNameFromRead:
             case ParseOperationType.WriteRoot:
+            case ParseOperationType.TransformWrite:
                 return true;
+            case ParseOperationType.TransformRead:
             case ParseOperationType.ReadRoot:
             case ParseOperationType.Save:
             case ParseOperationType.Load:
@@ -80,6 +78,7 @@ internal static class ParseOperationTypeExtension
             case ParseOperationType.Save:
             case ParseOperationType.Load:
             case ParseOperationType.WriteRoot:
+            case ParseOperationType.TransformWrite:
             default:
                 return false;
             case ParseOperationType.ReadRoot:
@@ -87,6 +86,7 @@ internal static class ParseOperationTypeExtension
             case ParseOperationType.ReadInt:
             case ParseOperationType.ReadFlatten:
             case ParseOperationType.ReadName:
+            case ParseOperationType.TransformRead:
                 return true;
         }
     }
@@ -114,6 +114,8 @@ internal static class ParseOperationTypeExtension
             case ParseOperationType.ReadRoot:
             case ParseOperationType.Read:
             case ParseOperationType.ReadName:
+            case ParseOperationType.TransformWrite:
+            case ParseOperationType.TransformRead:
             default:
                 return false;
         }

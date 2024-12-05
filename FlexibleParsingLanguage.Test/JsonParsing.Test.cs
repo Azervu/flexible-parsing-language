@@ -1,20 +1,18 @@
+
+using FlexibleParsingLanguage.Compiler;
+using FlexibleParsingLanguage.Parse;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace FlexibleParsingLanguage.Test;
 
 [TestClass]
-public class ParserTest
+public class JsonParsingTest
 {
     private Lexicalizer L { get; } = new Lexicalizer();
 
     public static IEnumerable<object[]> PayloadFiles
     {
-        /*
-        *{k1:h1{*.k2:{*:h2}}}
-        *k1*k2*:h1.h2
-        *k1*:h1*h2{k2*}
-        */
         get => Directory.EnumerateFiles("../../../Payloads").Where(f => !f.EndsWith(".result.json") && !f.EndsWith(".query")).Select(x => new object[] { x });
     }
 
@@ -100,14 +98,4 @@ public class ParserTest
             Assert.Fail(payload + " " + ex.Message + "\n" + ex.StackTrace);
         }
     }
-
-
-
-
-
-
-
-
-
-
 }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FlexibleParsingLanguage;
+namespace FlexibleParsingLanguage.Parse;
 
 internal class ParseOperation
 {
@@ -15,18 +15,18 @@ internal class ParseOperation
 
     internal ParseOperation(ParseOperationType opType, string acc = null)
     {
-        this.OpType = opType;
-        this.StringAcc = acc;
-        this.IntAcc = -1;
+        OpType = opType;
+        StringAcc = acc;
+        IntAcc = -1;
     }
 
     internal ParseOperation(ParseOperationType opType, int acc)
     {
-        this.OpType = opType;
-        this.IntAcc = acc;
+        OpType = opType;
+        IntAcc = acc;
     }
 
-    internal void AppyOperation(ParsingContext ctx)
+    internal void AppyOperation(Parser parser, ParsingContext ctx)
     {
 #if DEBUG
         var s = 456654;
@@ -106,6 +106,14 @@ internal class ParseOperation
                 break;
             case ParseOperationType.WriteNameFromRead:
 
+                break;
+            case ParseOperationType.TransformRead:
+                var transfomer = parser._converter[StringAcc];
+                ctx.ReadTransform(transfomer.Convert);
+                break;
+            case ParseOperationType.TransformWrite:
+                var t2 = parser._converter[StringAcc];
+                ctx.WriteTransform(t2.Convert);
                 break;
         }
     }

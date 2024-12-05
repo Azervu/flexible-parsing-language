@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FlexibleParsingLanguage.Parse;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,11 @@ namespace FlexibleParsingLanguage.Modules
     internal class CollectionParsingModule : IReadingModule
     {
         public List<Type> HandledTypes => [typeof(IList), typeof(IDictionary)];
+
+        public object ExtractValue(object? val)
+        {
+            return val;
+        }
 
         public IEnumerable<(object key, object value)> Foreach(object raw)
         {

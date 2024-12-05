@@ -1,4 +1,7 @@
-﻿namespace FlexibleParsingLanguage;
+﻿
+using FlexibleParsingLanguage.Parse;
+
+namespace FlexibleParsingLanguage.Compiler;
 
 internal enum WriteMode
 {
@@ -64,7 +67,7 @@ internal partial class Lexicalizer
 
     public Lexicalizer()
     {
-        Tokenizer = new Tokenizer("", "${}:*~", '.', "'\"", '\\');
+        Tokenizer = new Tokenizer("|", "${}:*~", '.', "'\"", '\\');
     }
 
     public Parser Lexicalize(string raw)
@@ -125,12 +128,6 @@ internal partial class Lexicalizer
 
     private (List<ParseOperation>, ParserConfig) ProcessTokensGroup(ParseContext root)
     {
-
-
-
-
-
-
         var config = new ParserConfig
         {
             WriteArrayRoot = FirstRead(root)?.Numeric ?? true
@@ -214,13 +211,17 @@ internal partial class Lexicalizer
 
             switch (accessor.Operator)
             {
+                case '|':
+                    if (ctx.WriteMode == WriteMode.Read)
+                        op = new ParseOperation(ParseOperationType.TransformRead, accessor.Accessor);
+                    else
+                        op = new ParseOperation(ParseOperationType.TransformWrite, accessor.Accessor);
+                    break;
                 case '$':
-
                     if (ctx.WriteMode == WriteMode.Read)
                         op = new ParseOperation(ParseOperationType.ReadRoot);
                     else
                         op = new ParseOperation(ParseOperationType.WriteRoot);
-
                     break;
                 case ':':
                     ctx.WriteMode = WriteMode.Write;

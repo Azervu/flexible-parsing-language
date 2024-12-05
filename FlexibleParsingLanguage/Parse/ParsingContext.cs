@@ -1,4 +1,4 @@
-﻿namespace FlexibleParsingLanguage;
+﻿namespace FlexibleParsingLanguage.Parse;
 
 internal partial class ParsingContext
 {
@@ -52,7 +52,8 @@ internal partial class ParsingContext
     {
         var root = Store[1][0];
         var result = new List<ParsingFocusEntry>();
-        foreach (var f in Focus) {
+        foreach (var f in Focus)
+        {
 
             result.Add(new ParsingFocusEntry
             {
@@ -109,6 +110,30 @@ internal partial class ParsingContext
         Focus = result;
     }
 
+    internal void ReadTransform(Func<object, object> readFunc)
+    {
+        var result = new List<ParsingFocusEntry>();
+        foreach (var focusEntry in Focus)
+        {
+            var keys = new List<object>();
+            var innerResult = new List<object>();
+            foreach (var rr in focusEntry.Reads)
+            {
+                var r2 = readFunc(rr);
+                keys.Add(rr);
+                innerResult.Add(r2);
+            }
+            result.Add(new ParsingFocusEntry
+            {
+                MultiRead = focusEntry.MultiRead,
+                Keys = keys,
+                Reads = innerResult,
+                Write = focusEntry.Write
+            });
+        }
+        Focus = result;
+    }
+
     internal void ReadFlatten()
     {
         var result = new List<ParsingFocusEntry>();
@@ -124,7 +149,7 @@ internal partial class ParsingContext
                     keys.Add(k);
                     innerResult.Add(v);
                 }
-               
+
             }
             result.Add(new ParsingFocusEntry
             {
@@ -187,7 +212,7 @@ internal partial class ParsingContext
                 WritingModule.Append(focusEntry.Write, w);
                 result.Add(new ParsingFocusEntry
                 {
-                    Reads = [read],
+                    Reads = [TransformRead(read)],
                     MultiRead = false,
                     Write = w
                 });
@@ -201,7 +226,7 @@ internal partial class ParsingContext
         foreach (var focusEntry in Focus)
         {
             //UpdateWriteModule(w);
-            var r = focusEntry.MultiRead ? focusEntry.Reads : focusEntry.Reads[0];
+            var r = focusEntry.MultiRead ? focusEntry.Reads.Select(TransformRead).ToList() : TransformRead(focusEntry.Reads[0]);
             WritingModule.Write(focusEntry.Write, acc, r);
 
         }
@@ -215,11 +240,27 @@ internal partial class ParsingContext
             if (focusEntry.MultiRead)
             {
                 foreach (var r in focusEntry.Reads)
-                    WritingModule.Append(focusEntry.Write, r);
+                    WritingModule.Append(focusEntry.Write, TransformRead(r));
                 continue;
             }
             WritingModule.Append(focusEntry.Write, focusEntry.Reads[0]);
         }
+    }
+
+    internal void WriteTransform(Func<object, object> writeFunc)
+    {
+        var result = new List<ParsingFocusEntry>();
+        foreach (var focusEntry in Focus)
+        {
+            result.Add(new ParsingFocusEntry
+            {
+                Reads = focusEntry.Reads,
+                Write = writeFunc(focusEntry.Write),
+                Keys = focusEntry.Keys,
+                MultiRead = focusEntry.MultiRead,
+            });
+        }
+        Focus = result;
     }
 
     internal void WriteAction(Func<IWritingModule, object, object> writeFunc)
@@ -227,13 +268,12 @@ internal partial class ParsingContext
         var result = new List<ParsingFocusEntry>();
         foreach (var focusEntry in Focus)
         {
-            //UpdateWriteModule(w);
-            var w2 = writeFunc(WritingModule, focusEntry.Write);
             result.Add(new ParsingFocusEntry
             {
                 Reads = focusEntry.Reads,
+                Write = writeFunc(WritingModule, focusEntry.Write),
                 MultiRead = focusEntry.MultiRead,
-                Write = w2
+                Keys = focusEntry.Keys,
             });
         }
         Focus = result;
@@ -246,5 +286,13 @@ internal partial class ParsingContext
             _activeType = t;
             ReadingModule = _modules.LookupModule(t);
         }
+    }
+
+    private object TransformRead(object raw)
+    {
+        UpdateReadModule(raw);
+        if (ReadingModule == null)
+            return raw;
+        return ReadingModule.ExtractValue(raw);
     }
 }
