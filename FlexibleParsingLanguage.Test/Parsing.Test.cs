@@ -18,14 +18,15 @@ public class Parsing
 
     public static IEnumerable<object[]> SimpleQueries => new List<object[]>
     {
-        new object[] { "ConverterTest", "<a><b1>bbb</b1><b2>bb2</b2></a>", "|xml.a.b2:h1", "{'h1':'bb2'}"},
+        new object[] { "ConvertXmlTest", "<a><b1>bbb</b1><b2>bb2</b2></a>", "|xml.a.b2:h1", "{'h1':'bb2'}"},
+        new object[] { "ConvertJsonTest", "{'a':{'b1':'bbb','b2':'bb2'}}", "|json.a.b2:h1", "{'h1':'bb2'}"},
     };
 
     [TestMethod]
     [DynamicData(nameof(SimpleQueries))]
-    public void SimpleParserTest(string name, string payload, string query, string expected) => TestCompleteParsingStep(payload, query, expected, null, true);
+    public void SimpleParserTest(string name, string payload, string query, string expected) => TestCompleteParsingStep(payload, query, expected, true);
 
-    private void TestCompleteParsingStep(string payload, string query, string expected, JsonSerializerOptions? serilizationOptions = null, bool singleQuotes = false)
+    private void TestCompleteParsingStep(string payload, string query, string expected, bool singleQuotes = false)
     {
         Parser parser;
         try
@@ -44,8 +45,6 @@ public class Parsing
                 payload = payload.Replace('\'', '"');
 
             var result = parser.Parse(payload);
-
-
             object v = null;
             if (result is IDictionary dict)
             {
@@ -53,9 +52,7 @@ public class Parsing
                     v = key;
             }
 
-
-            var serialized = JsonSerializer.Serialize(result, serilizationOptions);
-
+            var serialized = JsonSerializer.Serialize(result);
             if (singleQuotes)
                 serialized = serialized.Replace('"', '\'');
 
