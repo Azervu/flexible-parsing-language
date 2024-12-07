@@ -31,8 +31,13 @@ internal class Tokenizer
         EscapeTokens = escapeTokens.ToHashSet();
         SingularTokens = singularOperators.ToHashSet();
         AccessorToken = operators.ToHashSet();
+
+
         TerminatorTokens = operators.ToHashSet();
-        TerminatorTokens.Add(defaultOperator);
+       
+        TerminatorTokens.Add(DefaultOp);
+
+
         foreach (var c in SingularTokens)
             TerminatorTokens.Add(c);
 
@@ -40,56 +45,11 @@ internal class Tokenizer
             TerminatorTokens.Add(c);
     }
 
-    internal List<(char, string?)> Tokenize(string raw)
-    {
-        var tokens = new List<(char, string?)>();
-        var completedIndex = 0;
-
-        for (int i = 0; i < raw.Length; i++)
-        {
-            var c = raw[i];
-
-            if (!TerminatorTokens.Contains(c))
-                continue;
-
-            if (i > completedIndex)
-            {
-                var ac = raw.Substring(completedIndex, i - completedIndex);
-                completedIndex = i;
-                tokens.Add((DefaultOp, ac));
-            }
 
 
-
-            if (AccessorToken.Contains(c))
-            {
-
-                var start = i + 1;
-                var end = i + 1;
-                for (; end < raw.Length; end++)
-                {
-                    var c2 = raw[end];
-                    if (TerminatorTokens.Contains(c2))
-                        break;
-                }
-                string acc = null;
-                if (end > start)
-                {
-                    acc = raw.Substring(start, end - start);
-                    i = end;
-                    completedIndex = end + 1;
-                }
-                else
-                {
-                    completedIndex = i + 1;
-                }
-
-
-                tokens.Add((c, acc));
-                continue;
-            }
-
-            if (EscapeTokens.Contains(c))
+    /*
+     
+                if (EscapeTokens.Contains(c))
             {
                 i++;
                 var escapedStringArray = new List<char>();
@@ -105,21 +65,76 @@ internal class Tokenizer
                 completedIndex = i + 1;
                 tokens.Add((c, escapedString));
             }
-            else if (c != DefaultOp)
+
+     */
+
+    internal List<(char, string?)> Tokenize(string raw)
+    {
+        var tokens = new List<(char, string?)>();
+        foreach (var (c, acc) in SplitString(raw))
+        {
+            if (SingularTokens.Contains(c))
             {
-                tokens.Add((c, null));
-                completedIndex = i + 1;
+                tokens.Add((c, string.Empty));
+
+                if (acc.Length > 0)
+                    tokens.Add((DefaultOp, acc));
             }
             else
             {
-                completedIndex = i + 1;
+                tokens.Add((c, acc));
             }
-        }
-
-        if (completedIndex < raw.Length)
-        {
-            tokens.Add((DefaultOp, raw.Substring(completedIndex, raw.Length - completedIndex)));
         }
         return tokens;
     }
+
+
+    private IEnumerable<(char, string)> SplitString(string raw)
+    {
+        bool unescape = false;
+        var active = DefaultOp;
+        var accessor = new List<char>();
+
+        foreach (var c in raw)
+        {
+            if (EscapeTokens.Contains(active))
+            {
+                if (!unescape)
+                {
+                    if (c == active)
+                    {
+                        yield return (c, string.Concat(accessor));
+                        active = DefaultOp;
+                        accessor.Clear();
+                        continue;
+                    }
+
+                    if (c == UnescapeToken)
+                    {
+                        unescape = true;
+                        continue;
+                    }
+                }
+
+                unescape = false;
+                accessor.Add(c);
+                continue;
+            }
+
+            if (!TerminatorTokens.Contains(c))
+            {
+                accessor.Add(c);
+                continue;
+            }
+
+            if (accessor.Count() > 0 || active != DefaultOp)
+                yield return (active, string.Concat(accessor));
+            accessor.Clear();
+            active = c;
+        }
+
+        if (accessor.Count() > 0 || active != DefaultOp)
+            yield return (active, string.Concat(accessor));
+    }
+
 }

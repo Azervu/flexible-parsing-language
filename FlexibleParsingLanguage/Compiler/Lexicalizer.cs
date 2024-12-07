@@ -60,17 +60,16 @@ internal partial class Lexicalizer
 
     public const char WRITE = '_';
 
-
     public const int ROOT_ID = 1;
 
     internal Tokenizer Tokenizer { get; private set; }
 
     public Lexicalizer()
     {
-        Tokenizer = new Tokenizer("|", "${}:*~", '.', "'\"", '\\');
+        Tokenizer = new Tokenizer("|", "${}:*~@", '.', "'\"", '\\');
     }
 
-    public Parser Lexicalize(string raw)
+    public Parser Lexicalize(string raw, ParsingConfigContext configContext)
     {
         var tokens = Tokenizer.Tokenize(raw);
         var root = GroupContexts(tokens);
@@ -225,6 +224,9 @@ internal partial class Lexicalizer
                     break;
                 case ':':
                     ctx.WriteMode = WriteMode.Write;
+                    break;
+                case '@':
+                    op = new ParseOperation(ParseOperationType.LookupRead);
                     break;
                 case '*':
 

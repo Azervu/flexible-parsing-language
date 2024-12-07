@@ -33,14 +33,15 @@ public class Parser
         };
     }
 
-    public object Parse(object readRoot)
+    public object Parse(object readRoot, ParsingConfigContext config)
     {
         IWritingModule writer = new CollectionWritingModule();
         var ctx = new ParsingContext(
             writer,
             _modules,
             readRoot,
-            _parserConfig.WriteArrayRoot == true ? writer.BlankArray() : writer.BlankMap()
+            _parserConfig.WriteArrayRoot == true ? writer.BlankArray() : writer.BlankMap(),
+            config ?? new ParsingConfigContext(new Dictionary<string, string>(), new List<Dictionary<string, string>>())
         );
         foreach (var o in _ops)
             o.AppyOperation(this, ctx);
