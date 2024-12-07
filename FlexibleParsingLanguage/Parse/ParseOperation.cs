@@ -115,35 +115,10 @@ internal class ParseOperation
                 ctx.WriteTransform(t2.Convert);
                 break;
             case ParseOperationType.LookupRead:
-                ctx.ReadTransform((config, x) => {
-
-                    var s = x.ToString();
-                    //var k = config.Data.Keys.Select(x => x.ToString()+"(" + x.GetType().Name + ")").Join(" ");
-
-                    var log = "";
-                    foreach (var kv in config.Data)
-                    {
-
-
-                        if (kv.Key is string ss)
-                        {
-
-                        }
-
-
-
-                        var k = kv.Key;
-
-                        log += "\n'" + k.ToString() + "'_'" + x.ToString() + "'_" + (k == x ? "*" : "#");
-                    }
-
-                    if (config.Data.TryGetValue(x.ToString(), out var rrr))
-                    {
-
-                    }
-
-
-                    return config.Data[x.ToString()];
+                ctx.ReadTransform((focus, x) => {
+                    if (focus.Config.Data.TryGetValue(x.ToString(), out var r))
+                        return r;
+                    return null;
                 });
                 break;
         }

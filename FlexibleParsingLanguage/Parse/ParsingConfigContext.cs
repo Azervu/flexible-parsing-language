@@ -6,6 +6,17 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Parse;
 
+
+
+public class ParsingConfigContext2
+{
+    public string Value { get; internal set; }
+    public Dictionary<string, ParsingConfigContext2> Entries { get; internal set; }
+}
+
+
+
+
 public class ParsingConfigContext
 {
     public ParsingConfigContext(Dictionary<string, string> config, List<Dictionary<string, string>> configEntries)
