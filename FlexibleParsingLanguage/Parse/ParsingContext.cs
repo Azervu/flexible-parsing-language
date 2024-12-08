@@ -57,47 +57,6 @@ internal partial class ParsingContext
         Focus = results;
     }
 
-
-    internal void ConfigTransform(Func<ParsingFocusEntry, ParsingFocusEntry> transformAction)
-    {
-
-
-
-        var results = new List<ParsingFocusEntry>();
-        foreach (var focusEntry in Focus)
-            results.Add(transformAction(focusEntry));
-        Focus = results;
-    }
-
-
-
-
-
-
-
-
-
-
-
-    internal void ToRootRead()
-    {
-        var root = Store[1][0];
-        var result = new List<ParsingFocusEntry>();
-        foreach (var f in Focus)
-        {
-            result.Add(new ParsingFocusEntry
-            {
-                Keys = root.Keys,
-                Reads = root.Reads,
-                MultiRead = f.MultiRead,
-                Write = f.Write,
-                Config = f.Config,
-            });
-        }
-
-        Focus = result;
-    }
-
     internal void ToRootWrite()
     {
         var root = Store[1][0];

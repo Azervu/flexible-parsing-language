@@ -9,11 +9,38 @@ namespace FlexibleParsingLanguage.Parse;
 internal partial class ParsingContext
 {
     internal void ReadAction(Func<IReadingModule, object, object> readTransform) => MapFocus((x) => ReadInner(x, readTransform));
-    internal void ReadTransform(Func<ParsingFocusEntry, object, object> readTransform) => MapFocus((x) => ReadTransformInner(x, readTransform));
-    internal void ReadName() => MapFocus(ReadNameInner);
+    internal void ReadTransform(Func<ParsingFocusEntry, object, object> readTransform) => MapFocus((focus) => new ParsingFocusEntry
+    {
+        Reads = focus.Reads.Select(x => readTransform(focus, x)).ToList(),
+        Write = focus.Write,
+        Keys = focus.Reads,
+        MultiRead = focus.MultiRead,
+        Config = focus.Config,
+    });
+
+    internal void ReadName() => MapFocus((focus) => new ParsingFocusEntry
+    {
+        Reads = focus.Keys,
+        Write = focus.Write,
+        Keys = focus.Keys,
+        MultiRead = focus.MultiRead,
+        Config = focus.Config,
+    });
     internal void ReadFlatten() => MapFocus(ReadFlattenInner);
 
-    internal void ReadConfig() => MapFocus(ReadFlattenInner);
+    internal void ToRootRead()
+    {
+        var root = Store[1][0];
+        MapFocus((f) => new ParsingFocusEntry
+        {
+            Keys = root.Keys,
+            Reads = root.Reads,
+            MultiRead = f.MultiRead,
+            Write = f.Write,
+            Config = f.Config,
+        });
+    }
+
 
     private ParsingFocusEntry ReadInner(ParsingFocusEntry focus, Func<IReadingModule, object, object> readTransform)
     {
@@ -32,24 +59,6 @@ internal partial class ParsingContext
             Config = focus.Config,
         };
     }
-
-    private ParsingFocusEntry ReadTransformInner(ParsingFocusEntry focus, Func<ParsingFocusEntry, object, object> readTransform) => new ParsingFocusEntry
-    {
-        Reads = focus.Reads.Select(x => readTransform(focus, x)).ToList(),
-        Write = focus.Write,
-        Keys = focus.Reads,
-        MultiRead = focus.MultiRead,
-        Config = focus.Config,
-    };
-
-    private ParsingFocusEntry ReadNameInner(ParsingFocusEntry focus) => new ParsingFocusEntry
-    {
-        Reads = focus.Keys,
-        Write = focus.Write,
-        Keys = focus.Keys,
-        MultiRead = focus.MultiRead,
-        Config = focus.Config,
-    };
 
     private ParsingFocusEntry ReadFlattenInner(ParsingFocusEntry focus)
     {
@@ -75,30 +84,6 @@ internal partial class ParsingContext
         };
     }
 
-
-    private ParsingFocusEntry ReadConfigInner(ParsingFocusEntry focus)
-    {
-        var keys = new List<object>();
-        var innerResult = new List<object>();
-        foreach (var read in focus.Reads)
-        {
-            UpdateReadModule(read);
-            foreach (var (k, v) in ReadingModule.Foreach(read))
-            {
-                keys.Add(k);
-                innerResult.Add(v);
-            }
-
-        }
-        return new ParsingFocusEntry
-        {
-            Keys = keys,
-            Reads = innerResult,
-            MultiRead = true,
-            Write = focus.Write,
-            Config = focus.Config,
-        };
-    }
 
 
     private void UpdateReadModule(object obj)
