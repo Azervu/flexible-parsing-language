@@ -85,7 +85,7 @@ public class JsonParsingTest
                 payload = payload.Replace('\'', '"');
 
             var raw = JsonSerializer.Deserialize<JsonNode>(payload);
-            var result = parser.Parse(raw, null);
+            var result = parser.Parse(raw);
             var serialized = JsonSerializer.Serialize(result, serilizationOptions);
 
             if (singleQuotes)

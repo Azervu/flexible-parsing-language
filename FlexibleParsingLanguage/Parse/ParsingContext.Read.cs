@@ -8,10 +8,12 @@ namespace FlexibleParsingLanguage.Parse;
 
 internal partial class ParsingContext
 {
-    internal void ReadAction(Func<IReadingModule, object, object> readTransform) => BaseTransform((x) => ReadInner(x, readTransform));
-    internal void ReadTransform(Func<ParsingFocusEntry, object, object> readTransform) => BaseTransform((x) => ReadTransformInner(x, readTransform));
-    internal void ReadName() => BaseTransform(ReadNameInner);
-    internal void ReadFlatten() => BaseTransform(ReadFlattenInner);
+    internal void ReadAction(Func<IReadingModule, object, object> readTransform) => MapFocus((x) => ReadInner(x, readTransform));
+    internal void ReadTransform(Func<ParsingFocusEntry, object, object> readTransform) => MapFocus((x) => ReadTransformInner(x, readTransform));
+    internal void ReadName() => MapFocus(ReadNameInner);
+    internal void ReadFlatten() => MapFocus(ReadFlattenInner);
+
+    internal void ReadConfig() => MapFocus(ReadFlattenInner);
 
     private ParsingFocusEntry ReadInner(ParsingFocusEntry focus, Func<IReadingModule, object, object> readTransform)
     {
@@ -44,7 +46,7 @@ internal partial class ParsingContext
     {
         Reads = focus.Keys,
         Write = focus.Write,
-        Keys = focus.Reads,
+        Keys = focus.Keys,
         MultiRead = focus.MultiRead,
         Config = focus.Config,
     };
@@ -72,6 +74,32 @@ internal partial class ParsingContext
             Config = focus.Config,
         };
     }
+
+
+    private ParsingFocusEntry ReadConfigInner(ParsingFocusEntry focus)
+    {
+        var keys = new List<object>();
+        var innerResult = new List<object>();
+        foreach (var read in focus.Reads)
+        {
+            UpdateReadModule(read);
+            foreach (var (k, v) in ReadingModule.Foreach(read))
+            {
+                keys.Add(k);
+                innerResult.Add(v);
+            }
+
+        }
+        return new ParsingFocusEntry
+        {
+            Keys = keys,
+            Reads = innerResult,
+            MultiRead = true,
+            Write = focus.Write,
+            Config = focus.Config,
+        };
+    }
+
 
     private void UpdateReadModule(object obj)
     {

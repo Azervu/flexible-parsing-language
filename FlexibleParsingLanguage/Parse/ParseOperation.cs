@@ -115,11 +115,7 @@ internal class ParseOperation
                 ctx.WriteTransform(t2.Convert);
                 break;
             case ParseOperationType.LookupRead:
-                ctx.ReadTransform((focus, x) => {
-                    if (focus.Config.Data.TryGetValue(x.ToString(), out var r))
-                        return r;
-                    return null;
-                });
+                ctx.ReadTransform((focus, x) => focus.Config[x.ToString()]?.Value);
                 break;
         }
     }

@@ -13,11 +13,13 @@ public class Parser
     private List<ParseOperation> _ops;
     private ModuleHandler _modules;
     private ParserConfig _parserConfig;
+    private ParsingConfigContext _rootConfigContext;
     internal Dictionary<string, IConverter> _converter;
 
-    internal Parser(List<ParseOperation> ops, ParserConfig parserConfig)
+    internal Parser(List<ParseOperation> ops, ParserConfig parserConfig, ParsingConfigContext rootConfigContext)
     {
         _parserConfig = parserConfig;
+        _rootConfigContext = rootConfigContext;
         _ops = ops;
         _modules = new ModuleHandler([
             new CollectionParsingModule(),
@@ -33,7 +35,7 @@ public class Parser
         };
     }
 
-    public object Parse(object readRoot, ParsingConfigContext config)
+    public object Parse(object readRoot)
     {
         IWritingModule writer = new CollectionWritingModule();
         var ctx = new ParsingContext(
@@ -41,7 +43,7 @@ public class Parser
             _modules,
             readRoot,
             _parserConfig.WriteArrayRoot == true ? writer.BlankArray() : writer.BlankMap(),
-            config ?? new ParsingConfigContext(new Dictionary<string, string>(), new List<Dictionary<string, string>>())
+           _rootConfigContext
         );
         foreach (var o in _ops)
             o.AppyOperation(this, ctx);

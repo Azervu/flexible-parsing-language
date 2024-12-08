@@ -85,7 +85,7 @@ internal partial class Lexicalizer
 
 
 
-        return new Parser(ops, config);
+        return new Parser(ops, config, configContext);
     }
 
 

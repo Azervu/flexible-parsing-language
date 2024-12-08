@@ -31,24 +31,19 @@ public class Parsing
 
     private void TestCompleteParsingStep(string payload, string query, string expected, List<(string, string)> configData, List<List<(string, string)>> configEntries, bool singleQuotes = false)
     {
-        if (configData == null)
-            configData = new List<(string, string)>();
-        if (configEntries == null)
-            configEntries = new List<List<(string, string)>>();
-        var cd = configData.ToDictionary(x => x.Item1, x => x.Item2);
-        var ce = configEntries.Select(x => x.ToDictionary(x => x.Item1, x => x.Item2)).ToList();
-        var config = new ParsingConfigContext(cd, ce);
+        var rootConfig = new ParsingConfigContext();
 
+        if (configData != null)
+            rootConfig.AddEntries(configData);
 
-
-
-
-
+        if (configEntries != null)
+            foreach (var entry in configEntries)
+                rootConfig.AddContext(entry);
 
         Parser parser;
         try
         {
-            parser = L.Lexicalize(query, config);
+            parser = L.Lexicalize(query, rootConfig);
         }
         catch (Exception ex)
         {
@@ -61,7 +56,7 @@ public class Parsing
             if (singleQuotes)
                 payload = payload.Replace('\'', '"');
 
-            var result = parser.Parse(payload, config);
+            var result = parser.Parse(payload);
             object v = null;
             if (result is IDictionary dict)
             {
