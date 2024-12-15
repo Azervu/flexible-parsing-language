@@ -8,7 +8,7 @@ internal partial class Lexicalizer
         ctx.WriteMode = WriteMode.Written;
 
         var nextAcc = NextReadOperator(i, ctx);
-        var nextIsArray = nextAcc?.Numeric != false;
+        var nextIsArray = nextAcc?.Numeric == true;
 
         if (acc.Numeric)
         {

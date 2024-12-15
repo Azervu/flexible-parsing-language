@@ -202,125 +202,11 @@ internal partial class Lexicalizer
         ctx.WriteMode = WriteMode.Read;
         var processedEnd = false;
 
-
-        var it = ctx.Accessors.GetEnumerator();
-
-
-        while (it.Current != null)
-        {
-            var accessor = it.Current;
-
-            if (accessor.Ctx != null)
-            {
-                ProcessContext(config, parser, accessor.Ctx, ctx);
-                continue;
-            }
-
-            ParseOperation? op = null;
-            var lastOp = ctx.WriteMode == WriteMode.Read;
-
-            switch (accessor.Operator)
-            {
-                case '|':
-                    if (ctx.WriteMode == WriteMode.Read)
-                        op = new ParseOperation(ParseOperationType.TransformRead, accessor.Accessor);
-                    else
-                        op = new ParseOperation(ParseOperationType.TransformWrite, accessor.Accessor);
-                    break;
-                case '$':
-                    if (ctx.WriteMode == WriteMode.Read)
-                        op = new ParseOperation(ParseOperationType.ReadRoot);
-                    else
-                        op = new ParseOperation(ParseOperationType.WriteRoot);
-                    break;
-                case ':':
-                    ctx.WriteMode = WriteMode.Write;
-                    break;
-                case '@':
-
-                    it.MoveNext();
-
-
-                    if (it.Current != null)
-                    {
-
-
-                        if (it.Current.Operator == '#')
-                        {
-                            op = new ParseOperation(ParseOperationType.LookupLiteral, it.Current.Accessor);
-                        }
-                        else if (it.Current.Operator == '.')
-                        {
-                            op = new ParseOperation(ParseOperationType.LookupReadAccess, it.Current.Accessor);
-                        }
-                        else
-                        {
-                            if (lastOp)
-                                op = new ParseOperation(ParseOperationType.LookupRead);
-                            else
-                                op = new ParseOperation(ParseOperationType.LookupReadValue);
-                            continue;
-                        }
-
-
-
-                    }
-
-
-
-
-
-                    break;
-                case '*':
-
-                    if (ctx.WriteMode == WriteMode.Read)
-                    {
-                        op = new ParseOperation(ParseOperationType.ReadFlatten, accessor.Accessor);
-                    }
-                    else
-                    {
-                        var nextNumeric = NextReadOperator(i, ctx)?.Numeric ?? true;
-                        op = new ParseOperation(nextNumeric ? ParseOperationType.WriteFlattenArray : ParseOperationType.WriteFlattenObj);
-                    }
-                    break;
-                case '~':
-                    if (ctx.WriteMode == WriteMode.Read)
-                        op = new ParseOperation(ParseOperationType.ReadName);
-                    else
-                        op = new ParseOperation(ParseOperationType.WriteNameFromRead);
-                    break;
-                case '.':
-                case '\'':
-                case '"':
-                case '[':
-                    if (ctx.WriteMode == WriteMode.Read)
-                    {
-                        op = new ParseOperation(ParseOperationType.Read, accessor.Accessor);
-                    }
-                    else if (lastOp)
-                    {
-                        processedEnd = true;
-                        op = ProcessContextEndingOperator(config, parser, ctx, accessor);
-                    }
-                    else
-                    {
-                        op = ProcessWriteOperator(i, config, parser, ctx, accessor);
-                    }
-                    break;
-                default:
-                    break;
-            }
-
-            HandleOp(config, parser, ctx, op);
-
-
-            it.MoveNext();
-        }
-
-
         for (var i = 0; i < ctx.Accessors.Count; i++)
         {
             var accessor = ctx.Accessors[i];
+            var nextAccessor = i + 1 < ctx.Accessors.Count ? ctx.Accessors[i + 1] : null;
+
             if (accessor.Ctx != null)
             {
                 ProcessContext(config, parser, accessor.Ctx, ctx);
@@ -329,7 +215,9 @@ internal partial class Lexicalizer
 
             ParseOperation? op = null;
 
-            var lastOp = ctx.WriteMode == WriteMode.Read;
+            var lastWriteOp =
+                   (ctx.WriteMode == WriteMode.Write || ctx.WriteMode == WriteMode.Written)
+                && (nextAccessor == null || nextAccessor.Operator == '}');
 
 
             switch (accessor.Operator)
@@ -351,9 +239,26 @@ internal partial class Lexicalizer
                     break;
                 case '@':
 
+                    // TODO handle paramter group ()
+
+                    if (nextAccessor.Operator == '#')
+                    {
+
+                    }
+                    else
+                    {
+
+                    }
+
+                    
 
 
-                    if (lastOp)
+
+
+                    var oo4 = nextAccessor?.Accessor;
+                    var ooo = accessor.Accessor;
+
+                    if (lastWriteOp)
                         op = new ParseOperation(ParseOperationType.LookupRead);
                     else
                         op = new ParseOperation(ParseOperationType.LookupReadValue);
@@ -384,7 +289,7 @@ internal partial class Lexicalizer
                     {
                         op = new ParseOperation(ParseOperationType.Read, accessor.Accessor);
                     }
-                    else if (lastOp)
+                    else if (lastWriteOp)
                     {
                         processedEnd = true;
                         op = ProcessContextEndingOperator(config, parser, ctx, accessor);
