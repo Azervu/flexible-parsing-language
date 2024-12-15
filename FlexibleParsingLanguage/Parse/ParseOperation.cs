@@ -108,14 +108,33 @@ internal class ParseOperation
                 break;
             case ParseOperationType.TransformRead:
                 var transfomer = parser._converter[StringAcc];
-                ctx.ReadTransform((_, x) => transfomer.Convert(x));
+                ctx.ReadTransformValue(transfomer.Convert);
                 break;
             case ParseOperationType.TransformWrite:
                 var t2 = parser._converter[StringAcc];
                 ctx.WriteTransform(t2.Convert);
                 break;
             case ParseOperationType.LookupRead:
-                ctx.ReadTransform((focus, x) => focus.Config[x.ToString()]?.Value);
+                ctx.ReadTransform((f) => {
+                    var c = f.Config[f.Read.ToString()];
+                    return new ParsingFocusRead
+                    {
+                        Config = c,
+                        Key = f.Key,
+                        Read = f.Config,
+                    };
+                });
+                break;
+            case ParseOperationType.LookupReadValue:
+                ctx.ReadTransform((f) => {
+                    var c = f.Config[f.Read.ToString()];
+                    return new ParsingFocusRead
+                    {
+                        Config = c,
+                        Key = f.Key,
+                        Read = c?.Value,
+                    };
+                });
                 break;
         }
     }

@@ -2,15 +2,6 @@
 
 internal partial class ParsingContext
 {
-    internal struct ParsingFocusEntry
-    {
-        internal ParsingConfigContext Config;
-        internal List<object> Keys;
-        internal List<object> Reads;
-        internal bool MultiRead;
-        internal object Write;
-    }
-
     internal ParsingConfigContext ConfigRoot;
     internal object ReadRoot;
     internal IReadingModule ReadingModule;
@@ -35,11 +26,9 @@ internal partial class ParsingContext
         Focus = new List<ParsingFocusEntry> {
             new ParsingFocusEntry
             {
-                Keys = new List<object> { null },
-                Reads = new List<object> { readRoot },
+                Reads = new List<ParsingFocusRead> { new ParsingFocusRead { Key = null, Read = ReadRoot, Config = parsingConfig } },
                 MultiRead = false,
                 Write = writeRoot,
-                Config = parsingConfig
             }
         };
         Store = new Dictionary<int, List<ParsingFocusEntry>> {
@@ -65,15 +54,11 @@ internal partial class ParsingContext
         {
             result.Add(new ParsingFocusEntry
             {
-                Keys = root.Keys,
                 Reads = f.Reads,
                 MultiRead = f.MultiRead,
                 Write = root.Write,
-                Config = f.Config,
             });
         }
         Focus = result;
     }
-
-
 }

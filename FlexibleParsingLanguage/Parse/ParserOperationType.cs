@@ -29,6 +29,10 @@ internal enum ParseOperationType
     WriteAddRead,
     WriteNameFromRead,
     LookupRead,
+    LookupReadValue,
+
+    LookupLiteral,
+    LookupReadAccess,
 }
 
 

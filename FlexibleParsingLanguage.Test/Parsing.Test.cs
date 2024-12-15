@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Nodes;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 using FlexibleParsingLanguage.Parse;
 using FlexibleParsingLanguage.Compiler;
 using System.Collections;
-using static FlexibleParsingLanguage.Parse.ParsingContext;
 
 namespace FlexibleParsingLanguage.Test;
 
@@ -22,6 +15,10 @@ public class Parsing
         new object[] { "ConvertXmlTest", "<a><b1>bbb</b1><b2>bb2</b2></a>", "|xml.a.b2:h1", "{'h1':'bb2'}", null, null },
         new object[] { "ConvertJsonTest", "{'a':{'b1':'bbb','b2':'bb2'}}", "|json.a.b2:h1", "{'h1':'bb2'}", null, null },
         new object[] { "ConvertConfigTest", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*id@", "['n53','a81']", new List<(string, string)> { ("bob", "n53"), ("trj", "a81") }, new List<List<(string, string)>> { } },
+        new object[] { "LookupTest", "[{'name': 'name_a'}, {'name': 'name_b'}]", "@#name_config|json*@name@#id_config", "['n53','a81']", new List<(string, string)> { }, new List<List<(string, string)>> { 
+            new List<(string, string)> { ("name_config", "name_a"), ("id_config", "id_a") },
+            new List<(string, string)> { ("name_config", "name_b"), ("id_config", "id_b") },
+        }},
     };
 
 

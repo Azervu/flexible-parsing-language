@@ -66,7 +66,7 @@ internal partial class Lexicalizer
 
     public Lexicalizer()
     {
-        Tokenizer = new Tokenizer("|", "${}:*~@", '.', "'\"", '\\');
+        Tokenizer = new Tokenizer("|#", "${}:*~@", '.', "'\"", '\\');
     }
 
     public Parser Lexicalize(string raw, ParsingConfigContext configContext)
@@ -187,6 +187,10 @@ internal partial class Lexicalizer
         return (outOps, config);
     }
 
+
+
+
+
     private void ProcessContext(ParserConfig config, ParseData parser, ParseContext ctx, ParseContext parent)
     {
         if (parent != null)
@@ -197,9 +201,15 @@ internal partial class Lexicalizer
 
         ctx.WriteMode = WriteMode.Read;
         var processedEnd = false;
-        for (var i = 0; i < ctx.Accessors.Count; i++)
+
+
+        var it = ctx.Accessors.GetEnumerator();
+
+
+        while (it.Current != null)
         {
-            var accessor = ctx.Accessors[i];
+            var accessor = it.Current;
+
             if (accessor.Ctx != null)
             {
                 ProcessContext(config, parser, accessor.Ctx, ctx);
@@ -207,6 +217,7 @@ internal partial class Lexicalizer
             }
 
             ParseOperation? op = null;
+            var lastOp = ctx.WriteMode == WriteMode.Read;
 
             switch (accessor.Operator)
             {
@@ -226,7 +237,39 @@ internal partial class Lexicalizer
                     ctx.WriteMode = WriteMode.Write;
                     break;
                 case '@':
-                    op = new ParseOperation(ParseOperationType.LookupRead);
+
+                    it.MoveNext();
+
+
+                    if (it.Current != null)
+                    {
+
+
+                        if (it.Current.Operator == '#')
+                        {
+                            op = new ParseOperation(ParseOperationType.LookupLiteral, it.Current.Accessor);
+                        }
+                        else if (it.Current.Operator == '.')
+                        {
+                            op = new ParseOperation(ParseOperationType.LookupReadAccess, it.Current.Accessor);
+                        }
+                        else
+                        {
+                            if (lastOp)
+                                op = new ParseOperation(ParseOperationType.LookupRead);
+                            else
+                                op = new ParseOperation(ParseOperationType.LookupReadValue);
+                            continue;
+                        }
+
+
+
+                    }
+
+
+
+
+
                     break;
                 case '*':
 
@@ -254,7 +297,94 @@ internal partial class Lexicalizer
                     {
                         op = new ParseOperation(ParseOperationType.Read, accessor.Accessor);
                     }
-                    else if (i == ctx.Accessors.Count - 1)
+                    else if (lastOp)
+                    {
+                        processedEnd = true;
+                        op = ProcessContextEndingOperator(config, parser, ctx, accessor);
+                    }
+                    else
+                    {
+                        op = ProcessWriteOperator(i, config, parser, ctx, accessor);
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            HandleOp(config, parser, ctx, op);
+
+
+            it.MoveNext();
+        }
+
+
+        for (var i = 0; i < ctx.Accessors.Count; i++)
+        {
+            var accessor = ctx.Accessors[i];
+            if (accessor.Ctx != null)
+            {
+                ProcessContext(config, parser, accessor.Ctx, ctx);
+                continue;
+            }
+
+            ParseOperation? op = null;
+
+            var lastOp = ctx.WriteMode == WriteMode.Read;
+
+
+            switch (accessor.Operator)
+            {
+                case '|':
+                    if (ctx.WriteMode == WriteMode.Read)
+                        op = new ParseOperation(ParseOperationType.TransformRead, accessor.Accessor);
+                    else
+                        op = new ParseOperation(ParseOperationType.TransformWrite, accessor.Accessor);
+                    break;
+                case '$':
+                    if (ctx.WriteMode == WriteMode.Read)
+                        op = new ParseOperation(ParseOperationType.ReadRoot);
+                    else
+                        op = new ParseOperation(ParseOperationType.WriteRoot);
+                    break;
+                case ':':
+                    ctx.WriteMode = WriteMode.Write;
+                    break;
+                case '@':
+
+
+
+                    if (lastOp)
+                        op = new ParseOperation(ParseOperationType.LookupRead);
+                    else
+                        op = new ParseOperation(ParseOperationType.LookupReadValue);
+                    break;
+                case '*':
+
+                    if (ctx.WriteMode == WriteMode.Read)
+                    {
+                        op = new ParseOperation(ParseOperationType.ReadFlatten, accessor.Accessor);
+                    }
+                    else
+                    {
+                        var nextNumeric = NextReadOperator(i, ctx)?.Numeric ?? true;
+                        op = new ParseOperation(nextNumeric ? ParseOperationType.WriteFlattenArray : ParseOperationType.WriteFlattenObj);
+                    }
+                    break;
+                case '~':
+                    if (ctx.WriteMode == WriteMode.Read)
+                        op = new ParseOperation(ParseOperationType.ReadName);
+                    else
+                        op = new ParseOperation(ParseOperationType.WriteNameFromRead);
+                    break;
+                case '.':
+                case '\'':
+                case '"':
+                case '[':
+                    if (ctx.WriteMode == WriteMode.Read)
+                    {
+                        op = new ParseOperation(ParseOperationType.Read, accessor.Accessor);
+                    }
+                    else if (lastOp)
                     {
                         processedEnd = true;
                         op = ProcessContextEndingOperator(config, parser, ctx, accessor);

@@ -27,7 +27,7 @@ public class JsonParsingTest
 
     public static IEnumerable<object[]> JsonQueries => new List<object[]>
     {
-        new object[] { "", "{ \"k\": \"test_v\" }", "k", "[\"test_v\"]" },
+        new object[] { "Single Query", "{ \"k\": \"test_v\" }", "k", "[\"test_v\"]" },
         new object[] { "", "{ \"k\" : \"v\" }", "k", "[\"v\"]" },
         new object[] { "", "{ \"k\" : \"v\" }", "k:h", "{\"h\":\"v\"}" },
         new object[] { "", "{ \"a\": { \"a\": \"value\" }}", "a.a:bb", "{\"bb\":\"value\"}" },
@@ -60,7 +60,6 @@ public class JsonParsingTest
         new object[] { "Multi Foreach", "[[[[1,2,3],[11,12,13]],[[21,22,23],[31,42,53]]],[[[99]]]]", "****", "[1,2,3,11,12,13,21,22,23,31,42,53,99]" },
         new object[] { "Interupted Multi Foreach", "[[[[1,2,3],[11,12,13]],[[21,22,23],[31,42,53]]],[[[99]]]]", "**:*{**}", "[[1,2,3,11,12,13],[21,22,23,31,42,53],[99]]" },
     };
-
 
     [TestMethod]
     [DynamicData(nameof(SimpleJsonQueries))]
