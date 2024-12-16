@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Parse;
@@ -28,9 +29,6 @@ internal class ParseOperation
 
     internal void AppyOperation(Parser parser, ParsingContext ctx)
     {
-#if DEBUG
-        var s = 456654;
-#endif
         switch (OpType)
         {
             case ParseOperationType.ReadRoot:
@@ -95,7 +93,7 @@ internal class ParseOperation
                 ctx.WriteAddRead();
                 break;
             case ParseOperationType.WriteFromRead:
-                ctx.WriteFromRead(StringAcc);
+                ctx.WriteStringFromRead(StringAcc);
                 break;
             case ParseOperationType.WriteFlattenArray:
                 ctx.WriteFlattenArray();
@@ -121,20 +119,18 @@ internal class ParseOperation
                     {
                         Config = c,
                         Key = f.Key,
-                        Read = f.Config,
+                        Read = f.Read,
                     };
                 });
                 break;
             case ParseOperationType.LookupReadValue:
-                ctx.ReadTransform((f) => {
-                    var c = f.Config[f.Read.ToString()];
-                    return new ParsingFocusRead
-                    {
-                        Config = c,
-                        Key = f.Key,
-                        Read = c?.Value,
-                    };
-                });
+                ctx.WriteFromRead(
+                    x => x.Config.Value,
+                    (m, f, r) => {
+
+                        m.Append(f.Write, r);
+                    }
+                );
                 break;
         }
     }

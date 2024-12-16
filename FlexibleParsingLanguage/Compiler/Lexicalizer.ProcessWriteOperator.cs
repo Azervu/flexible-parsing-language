@@ -3,11 +3,11 @@
 namespace FlexibleParsingLanguage.Compiler;
 internal partial class Lexicalizer
 {
-    private ParseOperation? ProcessWriteOperator(int i, ParserConfig config, ParseData parser, ParseContext ctx, AccessorData acc)
+    private ParseOperation? ProcessWriteOperator(ParserConfig config, ParseData parser, ParseContext ctx, AccessorData acc)
     {
         ctx.WriteMode = WriteMode.Written;
 
-        var nextAcc = NextReadOperator(i, ctx);
+        var nextAcc = ctx.NextReadOperator();
         var nextIsArray = nextAcc?.Numeric == true;
 
         if (acc.Numeric)
@@ -29,37 +29,4 @@ internal partial class Lexicalizer
 
         }
     }
-
-    private AccessorData NextReadOperator(int i, ParseContext ctx)
-    {
-        for (var j = i + 1; j < ctx.Accessors.Count; j++)
-        {
-            var op = ctx.Accessors[j];
-
-            if (op.Ctx != null)
-                return FirstRead(op.Ctx);
-
-            return op;
-        }
-        return null;
-    }
-
-    private AccessorData FirstRead(ParseContext ctx)
-    {
-        var writes = false;
-        foreach (var op in ctx.Accessors)
-        {
-            if (op.Ctx != null)
-                return FirstRead(op.Ctx);
-            if (writes)
-                return op;
-            if (op.Operator == ':')
-                writes = true;
- 
-        }
-        return null;
-    }
-
-
-
 }

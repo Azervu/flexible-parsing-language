@@ -45,6 +45,17 @@ public class Parser
             _parserConfig.WriteArrayRoot == true ? writer.BlankArray() : writer.BlankMap(),
            _rootConfigContext
         );
+
+
+#if DEBUG
+        var ops = _ops.Select(x => $"\n    {x.OpType} {x.StringAcc}").Concat();
+
+
+        var s = 456654;
+#endif
+
+
+
         foreach (var o in _ops)
             o.AppyOperation(this, ctx);
         return ctx.WriteRoot;

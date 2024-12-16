@@ -122,4 +122,11 @@ internal partial class ParsingContext
         Config = raw.Config,
     };
 
+    private object TransformReadInner(object raw)
+    {
+        UpdateReadModule(raw);
+        if (ReadingModule == null)
+            return raw;
+        return ReadingModule.ExtractValue(raw);
+    }
 }

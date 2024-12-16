@@ -43,24 +43,32 @@ internal partial class ParsingContext
         Focus = result;
     }
 
-    private object TransformReadInner(object raw)
+    internal void WriteStringFromRead(string acc)
     {
-        UpdateReadModule(raw);
-        if (ReadingModule == null)
-            return raw;
-        return ReadingModule.ExtractValue(raw);
+        WriteFromRead(x => TransformReadInner(x.Read), (m, f, r) => {
+            m.Write(f.Write, acc, r);
+        });
     }
 
-    internal void WriteFromRead(string acc)
+
+
+
+    internal void WriteFromRead(Func<ParsingFocusRead, object> readFunc, Action<IWritingModule, ParsingFocusEntry, object> writeAction)
     {
         foreach (var focusEntry in Focus)
         {
             var r = focusEntry.MultiRead
-                ? focusEntry.Reads.Select(x => TransformReadInner(x.Read)).ToList()
-                : TransformReadInner(focusEntry.Reads[0].Read);
-            WritingModule.Write(focusEntry.Write, acc, r);
+                ? focusEntry.Reads.Select(readFunc).ToList()
+                : readFunc(focusEntry.Reads[0]);
+
+            writeAction(WritingModule, focusEntry, r);
         }
     }
+
+
+
+
+
 
     internal void WriteAddRead()
     {
