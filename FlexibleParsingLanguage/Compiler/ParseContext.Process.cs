@@ -10,100 +10,28 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class ParseContext
 {
-    internal WriteType ProcessContext(ParseData parser)
+    internal WriteType? Process(ParseData parser, bool finalContextOp)
     {
-        if (Accessors != null)
-        {
-
-        }
-        else if (Token.Acc != null)
-        {
-
-        }
-
-        /*
-        k:h:@
-                if (parent.WriteMode == WriteMode.Read)
-                {
-                    
-                }
-                else if (parent.LastWriteOp)
-                {
-                    parent.ProcessedEnd = true;
-                    yield return ProcessContextEndingOperator(config, data, parent, ctx);
-                }
-                else
-                {
-                    yield return ProcessWriteOperator(config, data, parent, ctx);
-                }
-         */
-
-        WriteType? writeStatus = null;
-
         switch (Token.Op?.Operator)
         {
             case "|":
                 HandleOp(parser, this, new ParseOperation(ParseOperationType.Function, Param));
                 break;
             case "{":
-                return ProcessContextBranch(parser);
+                return ProcessBranch(parser);
             case "*":
                 HandleOp(parser, this, new ParseOperation(ParseOperationType.ReadFlatten, Token.Acc));
                 return WriteType.Array;
             case ":":
-                return ProcessWrite(parser);
+                return ProcessWrite(parser, finalContextOp);
             case ".":
             case "\"":
             case "'":
             case "[":
                 HandleOp(parser, this, new ParseOperation(ParseOperationType.Read, Param));
-                return WriteType.Object;
-        }
-
-        return WriteType.Array;
-    }
-
-    internal WriteType ProcessContextBranch(ParseData parser)
-    {
-        var startActiveId = parser.ActiveId;
-        if (Accessors == null)
-            throw new Exception("Context branch missing accessors");
-
-        var lastWriteIndex = -1;
-        for (var i = Accessors.Count - 1; i >= 0; i--)
-        {
-            var accessor = Accessors[i];
-            if (accessor.Operator == ":")
-            {
-                lastWriteIndex = i;
                 break;
-            }
         }
-
-        WriteType? writeType = null;
-
-        for (var i = 0; i < Accessors.Count; i++)
-        {
-            if (i == lastWriteIndex)
-                continue;
-            var accessor = Accessors[i];
-
-            writeType = accessor.ProcessContext(parser);
-        }
-
-        if (lastWriteIndex < 0)
-        {
-            HandleOp(parser, this, new ParseOperation(ParseOperationType.WriteAddRead));
-            parser.ActiveId = startActiveId;
-            return WriteType.Array;
-        }
-    
-        HandleOp(parser, this, new ParseOperation(ParseOperationType.WriteFromRead, Accessors[lastWriteIndex].Param));
-        parser.ActiveId = startActiveId;
-
-        //foreach (var op in ProcessEndingOperation(parser, this, lastWriteIndex >= 0 ? Accessors[lastWriteIndex] : null))
-
-        return WriteType.Object;
+        return null;
     }
 
     private void HandleOp(ParseData parser, ParseContext ctx, ParseOperation? op)
@@ -142,6 +70,7 @@ internal partial class ParseContext
         parser.Ops.Add((parser.IdCounter, saveOp));
         parser.OpsMap.Add((activeId, saveOp), parser.IdCounter);
     }
+
 }
 
 

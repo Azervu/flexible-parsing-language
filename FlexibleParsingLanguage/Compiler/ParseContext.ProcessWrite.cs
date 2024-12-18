@@ -9,12 +9,15 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class ParseContext
 {
-    internal WriteType ProcessWrite(ParseData parser)
+    internal WriteType ProcessWrite(ParseData parser, bool finalContextOp)
     {
         if (Accessors == null)
         {
+            var opt = finalContextOp ? ParseOperationType.WriteFromRead : ParseOperationType.Write;
 
-            HandleOp(parser, this, new ParseOperation(ParseOperationType.Write, Param));
+
+
+            HandleOp(parser, this, new ParseOperation(opt, Param));
             return WriteType.Object;
         }
 

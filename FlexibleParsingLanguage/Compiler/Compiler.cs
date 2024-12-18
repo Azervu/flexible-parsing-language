@@ -66,7 +66,7 @@ internal partial class Compiler
         };
 
         var rootContex = new ParseContext(rootToken);
-        var rootType = rootContex.ProcessContext(parseData);
+        var rootType = rootContex.ProcessBranch(parseData);
         var config = new ParserRootConfig { RootType = rootType };
 
         var ops = FilterOps(parseData, rootContex);
