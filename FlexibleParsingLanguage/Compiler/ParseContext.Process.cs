@@ -42,12 +42,20 @@ internal partial class ParseContext
 
         switch (Token.Op?.Operator)
         {
+            case "|":
+                HandleOp(parser, this, new ParseOperation(ParseOperationType.Function, Param));
+                break;
             case "{":
                 return ProcessContextBranch(parser);
+            case "*":
+                HandleOp(parser, this, new ParseOperation(ParseOperationType.ReadFlatten, Token.Acc));
+                return WriteType.Array;
             case ":":
-                HandleOp(parser, this, new ParseOperation(ParseOperationType.Write, Param));
-                return WriteType.Object;
+                return ProcessWrite(parser);
             case ".":
+            case "\"":
+            case "'":
+            case "[":
                 HandleOp(parser, this, new ParseOperation(ParseOperationType.Read, Param));
                 return WriteType.Object;
         }
@@ -80,12 +88,7 @@ internal partial class ParseContext
                 continue;
             var accessor = Accessors[i];
 
-            var wt = accessor.ProcessContext(parser);
-
-            if (writeType != null && writeType != wt)
-                throw new Exception("***************");
-
-            writeType = wt;
+            writeType = accessor.ProcessContext(parser);
         }
 
         if (lastWriteIndex < 0)
@@ -153,39 +156,18 @@ internal partial class ParseContext
 
 
 /*
-if ()
-
-
-
 switch (ctx.Operator)
 {
-    case "|":
-        yield return new ParseOperation(ParseOperationType.Function, ctx.Accessor);
-        break;
+
     case "$":
         if (parent.WriteMode == WriteMode.Read)
             yield return new ParseOperation(ParseOperationType.ReadRoot);
         else
             yield return new ParseOperation(ParseOperationType.WriteRoot);
         break;
-    case ":":
-        parent.WriteMode = WriteMode.Write;
-        break;
     case "€":
         foreach (var op in ProcessLookupOperation(config, data, parent, ctx))
             yield return op;
-        break;
-    case "*":
-        if (parent.WriteMode == WriteMode.Read)
-        {
-            yield return new ParseOperation(ParseOperationType.ReadFlatten, ctx.Accessor);
-        }
-        else
-        {
-            var nextOp = parent.NextReadOperator();
-            var nextNumeric = nextOp?.Numeric ?? true;
-            yield return new ParseOperation(nextNumeric ? ParseOperationType.WriteFlattenArray : ParseOperationType.WriteFlattenObj);
-        }
         break;
     case "~":
         if (parent.WriteMode == WriteMode.Read)
@@ -193,26 +175,7 @@ switch (ctx.Operator)
         else
             yield return new ParseOperation(ParseOperationType.WriteNameFromRead);
         break;
-    case ".":
-    case "\"":
-    case "'":
-    case "[":
-        if (parent.WriteMode == WriteMode.Read)
-        {
-            yield return new ParseOperation(ParseOperationType.Read, ctx.Accessor);
-        }
-        else if (parent.LastWriteOp)
-        {
-            parent.ProcessedEnd = true;
-            yield return ProcessContextEndingOperator(config, data, parent, ctx);
-        }
-        else
-        {
-            yield return ProcessWriteOperator(config, data, parent, ctx);
-        }
-        break;
-    default:
-        break;
+
 }
 */
 

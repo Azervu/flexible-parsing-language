@@ -37,7 +37,7 @@ public class JsonParsingTest
         new object[] { "", "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{k2}k1", "[\"v2\",\"v1\"]" },
         new object[] { "", "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{k1:h1}{k2:h2}", "{\"h1\":\"v1\",\"h2\":\"v2\"}" },
         new object[] { "", "{ \"root\": [{\"v\": 1}, {\"v\": 2}, {\"v\": 3}]}", "root*v", "[1,2,3]" },
-        new object[] { "", "{ \"root\": [{\"v\": {\"v\": 1}}, {\"v\": {\"v\": 2}}, {\"v\": {\"v\": 3}}]}", "root*v.v", "[1,2,3]" },
+        new object[] { "Foreach Array", "{ \"root\": [{\"v\": {\"v\": 1}}, {\"v\": {\"v\": 2}}, {\"v\": {\"v\": 3}}]}", "root*v.v", "[1,2,3]" },
         new object[] { "", "{ \"root\": [{\"v\": [1, 11, 111]}, {\"v\": [2, 22, 222]}, {\"v\": [3, 33, 333]}]}", "root*v*", "[1,11,111,2,22,222,3,33,333]" },
         new object[] { "", "{ \"root\": [{\"v\": [{\"v2\": 1}, {\"v2\": 11}, {\"v2\": 111}]}, {\"v\": [{\"v2\": 2}, {\"v2\": 22}, {\"v2\": 222}]}, {\"v\": [{\"v2\": 3}, {\"v2\": 33}, {\"v2\":333}]}]}", "root*v*v2", "[1,11,111,2,22,222,3,33,333]" },
         new object[] { "", "{ \"root\": [{\"v\": 1}, {\"v\": 2}, {\"v\": 3}]}", "root*v:h", "{\"h\":[1,2,3]}" },
@@ -50,8 +50,8 @@ public class JsonParsingTest
 
     public static IEnumerable<object[]> SimpleJsonQueries => new List<object[]>
     {
-
-        new object[] { "Write dept 2", "{ 'k': 'value' }", "k:h1:h2:@", "{{'h1':{'h2':'value'}}" },
+        new object[] { "Simple branch test", "{'k': {'ka': 'va', 'kb': 'vb'}}", "k{ka:ha}{kb:hb}", "{'ha':'va','hb':'vb'}" },
+        new object[] { "Unbranch test", "{'a': {'f':1, 'f2': 11}, 'b': {'f':2, 'f2': 12}, 'c': {'f':3, 'f2': 13}}", "*:*{f:fh}{f2:fh2}", "[{'fh':1,'fh2':11},{'fh':2,'fh2':12},{'fh':3,'fh2':13}]" },
 
         new object[] { "Read Root Test", "{'name':'nv', 'values':[1,2,3]}", "values*:*{$name:n}{:v}", "[{'n':'nv','v':1},{'n':'nv','v':2},{'n':'nv','v':3}]"},
         new object[] { "Write Root Test", "{'k1': {'k2': 1, 'k3': 2}}", "k1:o1{k2:o2}{k3:$o3}", "{'o1':{'o2':1},'o3':2}"},
@@ -64,7 +64,7 @@ public class JsonParsingTest
         new object[] { "Read depth 3", "{ 'a': { 'a': { 'a': 'value' } }}", "a.a.a:bb", "{'bb':'value'}" },
         new object[] { "Write dept 3", "{ 'aa': 'value' }", "aa:b1:b2:b3", "{'b1':{'b2':{'b3':'value'}}}" },
 
-        new object[] { "Unbranch test", "{'a': {'f':1, 'f2': 11}, 'b': {'f':2, 'f2': 12}, 'c': {'f':3, 'f2': 13}}", "*:*{f:fh}{f2:fh2}", "[{'fh':1,'fh2':11},{'fh':2,'fh2':12},{'fh':3,'fh2':13}]" },
+
         new object[] { "Name operator test", "{'a': 1, 'b': 2, 'c': 3}", "*:*{~:n}{:v}", "[{'n':'a','v':1},{'n':'b','v':2},{'n':'c','v':3}]" },
         new object[] { "Multi Foreach", "[[[[1,2,3],[11,12,13]],[[21,22,23],[31,42,53]]],[[[99]]]]", "****", "[1,2,3,11,12,13,21,22,23,31,42,53,99]" },
         new object[] { "Interupted Multi Foreach", "[[[[1,2,3],[11,12,13]],[[21,22,23],[31,42,53]]],[[[99]]]]", "**:*{**}", "[[1,2,3,11,12,13],[21,22,23,31,42,53],[99]]" },

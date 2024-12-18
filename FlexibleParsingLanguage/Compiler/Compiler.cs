@@ -14,17 +14,6 @@ internal class ParseData
 
 internal partial class Compiler
 {
-    public const char ROOT = '$';
-
-    public const char BRANCH = '{';
-
-    public const char UNBRANCH = '}';
-
-    public const char SEPARATOR = ':';
-
-    public const char ACCESS = '.';
-
-    public const char WRITE = '_';
 
     public const int ROOT_ID = 1;
 
@@ -83,6 +72,8 @@ internal partial class Compiler
         var ops = FilterOps(parseData, rootContex);
 
 #if DEBUG
+        var token = rootToken.ToString2();
+
         var debug = ops.Select(x => $"{x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
         var s = 345534;
 #endif
