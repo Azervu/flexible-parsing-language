@@ -9,48 +9,73 @@ namespace FlexibleParsingLanguage.Compiler;
 internal class ParseContext
 {
 
-    internal AccessorData Accessor { get => Accessors[Index]; }
+    internal string Operator { get => Token.Op?.Operator; }
+    internal string? Accessor { get => Token.Acc; }
+    internal bool Numeric { get => Operator == "[" || Operator == "*" || Operator == "@"; }
 
-    internal AccessorData? NextAccessor { get => Index + 1 < Accessors.Count ? Accessors[Index + 1] : null; }
+    internal ParseContext CurrentChild { get => Accessors[Index]; }
+    internal ParseContext NextChild { get => Index + 1 < Accessors.Count ? Accessors[Index + 1] : null; }
 
-    internal bool LastWriteOp { get => (WriteMode == WriteMode.Write || WriteMode == WriteMode.Written) && (NextAccessor == null || NextAccessor.Operator == '}'); }
 
-    internal List<AccessorData> Accessors = new List<AccessorData>();
+    internal bool LastWriteOp { get => (WriteMode == WriteMode.Write || WriteMode == WriteMode.Written) && (NextChild == null || NextChild.Operator == "}"); }
+
+    private List<ParseContext> _children;
+    internal List<ParseContext> Accessors {
+        get
+        {
+            if (_children == null)
+            {
+                if (Token.Children == null)
+                    return null;
+
+                _children = Token.Children.Select(x => new ParseContext(x)).ToList();
+            }
+            return _children;
+        }
+    }
+
     internal int ActiveId { get; set; }
     internal WriteMode WriteMode { get; set; } = WriteMode.Read;
 
     internal bool ProcessedEnd { get; set; }
-    internal ParseContext Parent { get; set; }
 
     internal int Index { get; set; }
 
+    internal TokenGroup Token { get; set; }
 
-    internal AccessorData NextReadOperator()
+    internal ParseContext(TokenGroup token)
+    {
+        Token = token;
+    }
+
+    internal ParseContext NextReadOperator()
     {
         for (var j = Index + 1; j < Accessors.Count; j++)
         {
             var op = Accessors[j];
-
-            if (op.Ctx != null)
-                return op.Ctx.FirstRead();
+            if (op != null)
+                return op.FirstRead();
 
             return op;
         }
         return null;
     }
 
-    internal AccessorData FirstRead()
+    internal ParseContext FirstRead()
     {
         var writes = false;
+
+        if (Accessors == null)
+            return this;
+
         foreach (var op in Accessors)
         {
-            if (op.Ctx != null)
-                return FirstRead();
+            if (op != null)
+                return op.FirstRead();
             if (writes)
                 return op;
-            if (op.Operator == ':')
+            if (op.Operator == ":")
                 writes = true;
-
         }
         return null;
     }

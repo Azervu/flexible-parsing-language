@@ -9,9 +9,9 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class Compiler
 {
-    private IEnumerable<ParseOperation> ProcessLookupOperation(ParserConfig config, ParseData parser, ParseContext ctx, AccessorData acc)
+    private IEnumerable<ParseOperation> ProcessLookupOperation(ParserConfig config, ParseData parser, ParseContext ctx, ParseContext acc)
     {
-        var next = ctx.NextAccessor;
+        var next = ctx.NextChild;
         ctx.Index++;
 
         foreach (var o in ProcessOperation(config, parser, ctx, next))

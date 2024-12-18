@@ -3,7 +3,7 @@
 namespace FlexibleParsingLanguage.Compiler;
 internal partial class Compiler
 {
-    private ParseOperation? ProcessWriteOperator(ParserConfig config, ParseData parser, ParseContext ctx, AccessorData acc)
+    private ParseOperation? ProcessWriteOperator(ParserConfig config, ParseData parser, ParseContext ctx, ParseContext acc)
     {
         ctx.WriteMode = WriteMode.Written;
 

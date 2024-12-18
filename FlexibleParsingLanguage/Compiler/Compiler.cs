@@ -20,22 +20,6 @@ internal class ParseData
     internal int LoadedId { get; set; }
 }
 
-internal class AccessorData
-{
-    internal char Operator { get; set; }
-    internal string? Accessor { get; set; }
-    internal ParseContext Ctx { get; set; }
-
-    internal bool Numeric { get => Operator == '[' || Operator == '*' || Operator == '@'; }
-
-    internal AccessorData(char op, string? acc, ParseContext ctx = null)
-    {
-        Operator = op;
-        Accessor = acc;
-        Ctx = ctx;
-    }
-}
-
 internal partial class Compiler
 {
     public const char ROOT = '$';
@@ -81,11 +65,11 @@ internal partial class Compiler
             );
     }
 
-    public Parser Lexicalize(string raw, ParsingConfigContext configContext)
+    public Parser Compile(string raw, ParsingConfigContext configContext)
     {
-        var tokens = Tokenizer.Lexicalize(raw);
+        var root = Tokenizer.Lexicalize(raw);
 
-        //var (ops, config) = ProcessTokensGroup(root);
+        var (ops, config) = ProcessTokensGroup(root);
 
 
 #if DEBUG
@@ -95,13 +79,12 @@ internal partial class Compiler
         var s = 345534;
 #endif
 
-        return null;
-
-        //return new Parser(ops, config, configContext);
+        return new Parser(ops, config, configContext);
     }
 
-    private (List<ParseOperation>, ParserConfig) ProcessTokensGroup(ParseContext root)
+    private (List<ParseOperation>, ParserConfig) ProcessTokensGroup(TokenGroup rootToken)
     {
+        var root = new ParseContext(rootToken);
         var config = new ParserConfig
         {
             WriteArrayRoot = root.FirstRead()?.Numeric ?? true
@@ -119,33 +102,7 @@ internal partial class Compiler
 
         ProcessContext(config, parseData, root, null);
 
-
         var opsMap = parseData.OpsMap.ToDictionary(x => x.Value, x => x.Key);
-
-        /*
-        foreach (var w in parseData.Ops)
-        {
-            if (!w.Item2.OpType.IsWriteOperation())
-                continue;
-
-            var operatorId = w.Item1;
-
-            while (opsMap.ContainsKey(operatorId))
-            {
-                var (parentId, op) = opsMap[operatorId];
-
-                if (!op.OpType.IsReadOperation())
-                {
-                    operatorId = parentId;
-                    continue;
-                }
-                config.WriteArrayRoot = op.OpType.IsNumericOperation();
-                break;
-            }
-            break;
-        }
-        */
-
 
         var outOps = new List<ParseOperation>();
         foreach (var o in parseData.Ops.Select(x => x.Item2))
@@ -162,10 +119,6 @@ internal partial class Compiler
         return (outOps, config);
     }
 
-
-
-
-
     private void ProcessContext(ParserConfig config, ParseData parser, ParseContext ctx, ParseContext parent)
     {
         if (parent != null)
@@ -177,16 +130,52 @@ internal partial class Compiler
         ctx.WriteMode = WriteMode.Read;
         ctx.ProcessedEnd = false;
 
+        ProcessOperation(config, parser, ctx, parent);
+
+        if (ctx.Accessors != null)
+        {
+            foreach (var acc in ctx.Accessors)
+            {
+                ProcessContext(config, parser, acc, ctx);
+            }
+        }
+
+        /*
         for (ctx.Index = 0; ctx.Index < ctx.Accessors.Count; ctx.Index++)
         {
             var accessor = ctx.Accessors[ctx.Index];
+            foreach (var op in ProcessOperation(config, parser, ctx, accessor))
+                HandleOp(config, parser, ctx, op);
+        }
+        */
 
-            if (accessor.Ctx != null)
-            {
-                ProcessContext(config, parser, accessor.Ctx, ctx);
-                continue;
-            }
+        if (!ctx.ProcessedEnd && ctx.WriteMode == WriteMode.Read)
+        {
+            var op = ProcessContextEndingOperator(config, parser, ctx, null);
+            HandleOp(config, parser, ctx, op);
+        }
 
+    }
+
+
+    private void ProcessContext2(ParserConfig config, ParseData parser, ParseContext ctx, ParseContext parent)
+    {
+        if (parent != null)
+        {
+            ctx.ActiveId = parent.ActiveId;
+            ctx.ActiveId = parent.ActiveId;
+        }
+
+        ctx.WriteMode = WriteMode.Read;
+        ctx.ProcessedEnd = false;
+
+
+        if (ctx.Accessors == null)
+            return;
+
+        for (ctx.Index = 0; ctx.Index < ctx.Accessors.Count; ctx.Index++)
+        {
+            var accessor = ctx.Accessors[ctx.Index];
             foreach (var op in ProcessOperation(config, parser, ctx, accessor))
                 HandleOp(config, parser, ctx, op);
         }
@@ -198,8 +187,6 @@ internal partial class Compiler
         }
 
     }
-
-
 
     private void HandleOp(ParserConfig config, ParseData parser, ParseContext ctx, ParseOperation? op)
     {
@@ -237,10 +224,10 @@ internal partial class Compiler
 
 
 
-    private ParseOperation? ProcessContextEndingOperator(ParserConfig config, ParseData data, ParseContext ctx, AccessorData? acc)
+    private ParseOperation? ProcessContextEndingOperator(ParserConfig config, ParseData data, ParseContext ctx, ParseContext? acc)
     {
 
-        if (ctx.Accessors.Count != 0 && ctx.Accessors.Last().Ctx != null)
+        if (ctx.Accessors.Count != 0 && ctx.Accessors.Last() != null)
             return null;
 
         EnsureReadOpLoaded(data, ctx);
@@ -277,13 +264,11 @@ internal partial class Compiler
         throw new Exception("Query parsing error | Unknown read id " + ctx.ActiveId);
     }
 
-    private void EnsureWriteOpLoaded(ParserConfig config, ParseData data, ParseContext ctx, AccessorData? acc)
+    private void EnsureWriteOpLoaded(ParserConfig config, ParseData data, ParseContext ctx, ParseContext? acc)
     {
 
         if (config.WriteArrayRoot == null)
             config.WriteArrayRoot = acc == null || acc.Numeric || ctx.WriteMode == WriteMode.Read;
-
-
 
         if (ctx.ActiveId == data.LoadedId)
             return;
@@ -311,80 +296,4 @@ internal partial class Compiler
 
         ctx.ActiveId = data.LoadedId;
     }
-
-
-
-
-
-
-
-    IEnumerable<ParseOperation> ProcessOperation(ParserConfig config, ParseData parser, ParseContext ctx, AccessorData accessor)
-    {
-        switch (accessor.Operator)
-        {
-            case '|':
-                if (ctx.WriteMode == WriteMode.Read)
-                    yield return new ParseOperation(ParseOperationType.TransformRead, accessor.Accessor);
-                else
-                    yield return new ParseOperation(ParseOperationType.TransformWrite, accessor.Accessor);
-                break;
-            case '$':
-                if (ctx.WriteMode == WriteMode.Read)
-                    yield return new ParseOperation(ParseOperationType.ReadRoot);
-                else
-                    yield return new ParseOperation(ParseOperationType.WriteRoot);
-                break;
-            case ':':
-                ctx.WriteMode = WriteMode.Write;
-                break;
-            case '@':
-                foreach (var op in ProcessLookupOperation(config, parser, ctx, accessor))
-                    yield return op;
-                break;
-            case '*':
-                if (ctx.WriteMode == WriteMode.Read)
-                {
-                    yield return new ParseOperation(ParseOperationType.ReadFlatten, accessor.Accessor);
-                }
-                else
-                {
-                    var nextOp = ctx.NextReadOperator();
-                    var nextNumeric = nextOp?.Numeric ?? true;
-                    yield return new ParseOperation(nextNumeric ? ParseOperationType.WriteFlattenArray : ParseOperationType.WriteFlattenObj);
-                }
-                break;
-            case '~':
-                if (ctx.WriteMode == WriteMode.Read)
-                    yield return new ParseOperation(ParseOperationType.ReadName);
-                else
-                    yield return new ParseOperation(ParseOperationType.WriteNameFromRead);
-                break;
-            case '.':
-            case '\'':
-            case '"':
-            case '[':
-                if (ctx.WriteMode == WriteMode.Read)
-                {
-                    yield return new ParseOperation(ParseOperationType.Read, accessor.Accessor);
-                }
-                else if (ctx.LastWriteOp)
-                {
-                    ctx.ProcessedEnd = true;
-                    yield return ProcessContextEndingOperator(config, parser, ctx, accessor);
-                }
-                else
-                {
-                    yield return ProcessWriteOperator(config, parser, ctx, accessor);
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
-
-
-
-
-
 }

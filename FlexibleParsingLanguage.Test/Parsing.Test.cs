@@ -52,7 +52,7 @@ public class Parsing
         Parser parser;
         try
         {
-            parser = L.Lexicalize(query, rootConfig);
+            parser = L.Compile(query, rootConfig);
         }
         catch (Exception ex)
         {

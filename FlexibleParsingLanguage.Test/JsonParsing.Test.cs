@@ -76,7 +76,7 @@ public class JsonParsingTest
         Parser parser;
         try
         {
-            parser = L.Lexicalize(query, null);
+            parser = L.Compile(query, null);
         }
         catch (Exception ex)
         {
