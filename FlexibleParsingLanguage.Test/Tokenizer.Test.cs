@@ -11,7 +11,7 @@ public class TokenizerTest
     public static IEnumerable<object[]> TokenizationData => new List<object[]>
     {
         new object[] { "{a.b}c|{d.e.f}g", @"
-¤
+{
     {
         .  ""a""
         .  ""b""
@@ -24,7 +24,7 @@ public class TokenizerTest
     .  ""g""
 " },
         new object[] { "'-\\'-'|t.aaa*bbb€€gfjhd|{ccc}\" \"", @"
-¤
+{
     '  ""-'-""
     |  ""t""
     .  ""aaa""
@@ -35,6 +35,24 @@ public class TokenizerTest
             .  ""ccc""
     ""  "" ""
 " },
+        new object[] { "k:h", @"
+{
+    .  ""k""
+    :  ""h""
+" },
+
+
+
+
+
+
+
+
+
+
+
+
+        
     };
 
 

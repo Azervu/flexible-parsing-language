@@ -44,6 +44,7 @@ internal partial class Compiler
                 new OpTokenConfig("(", OpTokenType.Group, ')'),
                 new OpTokenConfig(")", OpTokenType.Prefix),
 
+                new OpTokenConfig(":", OpTokenType.Prefix),
                 new OpTokenConfig("|", OpTokenType.Prefix),
                 new OpTokenConfig("#", OpTokenType.Prefix),
                 new OpTokenConfig("€", OpTokenType.Prefix),
