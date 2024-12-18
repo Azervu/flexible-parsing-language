@@ -11,8 +11,7 @@ internal enum ParseOperationType
 {
     Save,
     Load,
-    TransformRead,
-    TransformWrite,
+    Function,
     ReadRoot,
     Read,
     ReadInt,
@@ -52,9 +51,8 @@ internal static class ParseOperationTypeExtension
             case ParseOperationType.WriteAddRead:
             case ParseOperationType.WriteNameFromRead:
             case ParseOperationType.WriteRoot:
-            case ParseOperationType.TransformWrite:
                 return true;
-            case ParseOperationType.TransformRead:
+            case ParseOperationType.Function:
             case ParseOperationType.ReadRoot:
             case ParseOperationType.Save:
             case ParseOperationType.Load:
@@ -83,7 +81,6 @@ internal static class ParseOperationTypeExtension
             case ParseOperationType.Save:
             case ParseOperationType.Load:
             case ParseOperationType.WriteRoot:
-            case ParseOperationType.TransformWrite:
             default:
                 return false;
             case ParseOperationType.ReadRoot:
@@ -91,7 +88,7 @@ internal static class ParseOperationTypeExtension
             case ParseOperationType.ReadInt:
             case ParseOperationType.ReadFlatten:
             case ParseOperationType.ReadName:
-            case ParseOperationType.TransformRead:
+            case ParseOperationType.Function:
                 return true;
         }
     }
@@ -119,8 +116,7 @@ internal static class ParseOperationTypeExtension
             case ParseOperationType.ReadRoot:
             case ParseOperationType.Read:
             case ParseOperationType.ReadName:
-            case ParseOperationType.TransformWrite:
-            case ParseOperationType.TransformRead:
+            case ParseOperationType.Function:
             default:
                 return false;
         }

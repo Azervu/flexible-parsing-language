@@ -6,19 +6,12 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Compiler;
 
-internal class ParseContext
+internal partial class ParseContext
 {
-
     internal string Operator { get => Token.Op?.Operator; }
-    internal string? Accessor { get => Token.Acc; }
+    internal string? Param { get => Token.Acc; }
     internal bool Numeric { get => Operator == "[" || Operator == "*" || Operator == "@"; }
-
-    internal ParseContext CurrentChild { get => Accessors[Index]; }
     internal ParseContext NextChild { get => Index + 1 < Accessors.Count ? Accessors[Index + 1] : null; }
-
-
-    internal bool LastWriteOp { get => (WriteMode == WriteMode.Write || WriteMode == WriteMode.Written) && (NextChild == null || NextChild.Operator == "}"); }
-
     private List<ParseContext> _children;
     internal List<ParseContext> Accessors {
         get
@@ -33,11 +26,6 @@ internal class ParseContext
             return _children;
         }
     }
-
-    internal int ActiveId { get; set; }
-    internal WriteMode WriteMode { get; set; } = WriteMode.Read;
-
-    internal bool ProcessedEnd { get; set; }
 
     internal int Index { get; set; }
 

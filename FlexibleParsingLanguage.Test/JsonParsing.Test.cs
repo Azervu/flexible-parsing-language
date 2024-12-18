@@ -27,9 +27,9 @@ public class JsonParsingTest
 
     public static IEnumerable<object[]> JsonQueries => new List<object[]>
     {
-        new object[] { "Single Query", "{ \"k\": \"test_v\" }", "k", "[\"test_v\"]" },
         new object[] { "Single Query With Header", "{ \"k\": \"test_v\" }", "k:h", "{\"h\":\"test_v\"}" },
-        new object[] { "", "{ \"k\" : \"v\" }", "k", "[\"v\"]" },
+        new object[] { "Single Query", "{ \"k\": \"test_v\" }", "k", "[\"test_v\"]" },
+        new object[] { "Key Only", "{ \"k\" : \"v\" }", "k", "[\"v\"]" },
         new object[] { "", "{ \"k\" : \"v\" }", "k:h", "{\"h\":\"v\"}" },
         new object[] { "Read depth", "{ \"a\": { \"a\": \"value\" }}", "a.a:bb", "{\"bb\":\"value\"}" },
         new object[] { "Write depth", "{ \"aa\": \"value\" }", "aa:b.b", "{\"b\":{\"b\":\"value\"}}" },
@@ -50,6 +50,9 @@ public class JsonParsingTest
 
     public static IEnumerable<object[]> SimpleJsonQueries => new List<object[]>
     {
+
+        new object[] { "Write dept 2", "{ 'k': 'value' }", "k:h1:h2:@", "{{'h1':{'h2':'value'}}" },
+
         new object[] { "Read Root Test", "{'name':'nv', 'values':[1,2,3]}", "values*:*{$name:n}{:v}", "[{'n':'nv','v':1},{'n':'nv','v':2},{'n':'nv','v':3}]"},
         new object[] { "Write Root Test", "{'k1': {'k2': 1, 'k3': 2}}", "k1:o1{k2:o2}{k3:$o3}", "{'o1':{'o2':1},'o3':2}"},
         new object[] { "Header Branching Test A", "[[1,2,3], [4, 5], [6, 8]]", "*:h1.h2", "{'h1':{'h2':[[1,2,3],[4,5],[6,8]]}}" },
@@ -58,8 +61,8 @@ public class JsonParsingTest
         new object[] { "Header Branching Test D", "[[1,2,3], [4, 5], [6, 8]]", "*.*:h1*h2", "{'h1':[{'h2':1},{'h2':2},{'h2':3},{'h2':4},{'h2':5},{'h2':6},{'h2':8}]}" },
         new object[] { "Header Branching Test E", "[[1,2,3], [4, 5], [6, 8]]", "*:*a{*:*b}", "[{'a':[{'b':1},{'b':2},{'b':3}]},{'a':[{'b':4},{'b':5}]},{'a':[{'b':6},{'b':8}]}]" },
 
-        new object[] { "Read depth 2", "{ 'a': { 'a': { 'a': 'value' } }}", "a.a.a:bb", "{'bb':'value'}" },
-        new object[] { "Write dept 2", "{ 'aa': 'value' }", "aa:b1.b2.b3", "{'b1':{'b2':{'b3':'value'}}}" },
+        new object[] { "Read depth 3", "{ 'a': { 'a': { 'a': 'value' } }}", "a.a.a:bb", "{'bb':'value'}" },
+        new object[] { "Write dept 3", "{ 'aa': 'value' }", "aa:b1.b2.b3", "{'b1':{'b2':{'b3':'value'}}}" },
 
         new object[] { "Unbranch test", "{'a': {'f':1, 'f2': 11}, 'b': {'f':2, 'f2': 12}, 'c': {'f':3, 'f2': 13}}", "*:*{f:fh}{f2:fh2}", "[{'fh':1,'fh2':11},{'fh':2,'fh2':12},{'fh':3,'fh2':13}]" },
         new object[] { "Name operator test", "{'a': 1, 'b': 2, 'c': 3}", "*:*{~:n}{:v}", "[{'n':'a','v':1},{'n':'b','v':2},{'n':'c','v':3}]" },

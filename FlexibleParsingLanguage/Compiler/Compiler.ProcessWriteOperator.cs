@@ -3,16 +3,14 @@
 namespace FlexibleParsingLanguage.Compiler;
 internal partial class Compiler
 {
-    private ParseOperation? ProcessWriteOperator(ParserConfig config, ParseData parser, ParseContext ctx, ParseContext acc)
+    private ParseOperation? ProcessWriteOperator(ParserRootConfig config, ParseData parser, ParseContext ctx, ParseContext acc)
     {
-        ctx.WriteMode = WriteMode.Written;
-
         var nextAcc = ctx.NextReadOperator();
         var nextIsArray = nextAcc?.Numeric == true;
 
         if (acc.Numeric)
         {
-            if (!int.TryParse(acc.Accessor, out var intAcc))
+            if (!int.TryParse(acc.Param, out var intAcc))
                 throw new ArgumentException("Invalid Query | accessor not int");
 
             if (nextIsArray)
@@ -23,9 +21,9 @@ internal partial class Compiler
         else
         {
             if (nextIsArray)
-                return new ParseOperation(ParseOperationType.WriteArray, acc.Accessor);
+                return new ParseOperation(ParseOperationType.WriteArray, acc.Param);
             else
-                return new ParseOperation(ParseOperationType.Write, acc.Accessor);
+                return new ParseOperation(ParseOperationType.Write, acc.Param);
 
         }
     }

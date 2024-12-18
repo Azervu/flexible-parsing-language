@@ -40,7 +40,7 @@ public class Parsing
 
     private void TestCompleteParsingStep(string payload, string query, string expected, List<(string, string)> configData, List<List<(string, string)>> configEntries, bool singleQuotes = false)
     {
-        var rootConfig = new ParsingConfigContext();
+        var rootConfig = new ParsingMetaContext();
 
         if (configData != null)
             rootConfig.AddEntries(configData);

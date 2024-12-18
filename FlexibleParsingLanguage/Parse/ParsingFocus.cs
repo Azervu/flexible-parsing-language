@@ -2,7 +2,7 @@
 {
     internal struct ParsingFocusRead
     {
-        internal ParsingConfigContext Config;
+        internal ParsingMetaContext Config;
         internal object Key;
         internal object Read;
     }

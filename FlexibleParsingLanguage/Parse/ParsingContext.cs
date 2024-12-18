@@ -2,7 +2,7 @@
 
 internal partial class ParsingContext
 {
-    internal ParsingConfigContext ConfigRoot;
+    internal ParsingMetaContext ConfigRoot;
     internal object ReadRoot;
     internal IReadingModule ReadingModule;
     internal object WriteRoot;
@@ -17,7 +17,7 @@ internal partial class ParsingContext
         ModuleHandler modules,
         object readRoot,
         object writeRoot,
-        ParsingConfigContext parsingConfig
+        ParsingMetaContext parsingConfig
     )
     {
         _modules = modules;

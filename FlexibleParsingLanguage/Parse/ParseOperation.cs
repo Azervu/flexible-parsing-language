@@ -104,13 +104,9 @@ internal class ParseOperation
             case ParseOperationType.WriteNameFromRead:
 
                 break;
-            case ParseOperationType.TransformRead:
+            case ParseOperationType.Function:
                 var transfomer = parser._converter[StringAcc];
                 ctx.ReadTransformValue(transfomer.Convert);
-                break;
-            case ParseOperationType.TransformWrite:
-                var t2 = parser._converter[StringAcc];
-                ctx.WriteTransform(t2.Convert);
                 break;
             case ParseOperationType.LookupRead:
                 ctx.ReadTransform((f) => {

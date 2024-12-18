@@ -7,19 +7,18 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Compiler;
 
+/*
 internal partial class Compiler
 {
-    private IEnumerable<ParseOperation> ProcessLookupOperation(ParserConfig config, ParseData parser, ParseContext ctx, ParseContext acc)
+    private IEnumerable<ParseOperation> ProcessLookupOperation(ParseData parser, ParseContext ctx, ParseContext acc)
     {
         var next = ctx.NextChild;
         ctx.Index++;
 
-        foreach (var o in ProcessOperation(config, parser, ctx, next))
+        foreach (var o in ProcessOperation(parser, ctx, next))
             yield return o;
 
         yield return new ParseOperation(ParseOperationType.LookupRead);
-
-        if (ctx.LastWriteOp)
-            yield return new ParseOperation(ParseOperationType.LookupReadValue);
     }
 }
+*/

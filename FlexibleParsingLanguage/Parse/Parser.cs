@@ -3,29 +3,27 @@ using FlexibleParsingLanguage.Modules;
 
 namespace FlexibleParsingLanguage.Parse;
 
-public class ParserConfig
-{
-    public bool WriteArrayRoot { get; set; }
-}
-
 public class Parser
 {
-    private List<ParseOperation> _ops;
+    private List<ParseOperation> _operations;
     private ModuleHandler _modules;
-    private ParserConfig _parserConfig;
-    private ParsingConfigContext _rootConfigContext;
+    private ParsingMetaContext _rootMetaContext;
+    private ParserRootConfig _config;
     internal Dictionary<string, IConverter> _converter;
 
-    internal Parser(List<ParseOperation> ops, ParserConfig parserConfig, ParsingConfigContext rootConfigContext)
+    internal Parser(
+        List<ParseOperation> operations,
+        ParsingMetaContext rootMetaContext,
+        ParserRootConfig config
+    )
     {
-        _parserConfig = parserConfig;
-        _rootConfigContext = rootConfigContext;
-        _ops = ops;
+        _config = config;
+        _rootMetaContext = rootMetaContext;
+        _operations = operations;
         _modules = new ModuleHandler([
             new CollectionParsingModule(),
             new JsonParsingModule(),
             new XmlParsingModule(),
-
         ]);
 
         _converter = new Dictionary<string, IConverter>
@@ -37,27 +35,32 @@ public class Parser
 
     public object Parse(object readRoot)
     {
-        IWritingModule writer = new CollectionWritingModule();
-        var ctx = new ParsingContext(
-            writer,
-            _modules,
-            readRoot,
-            _parserConfig.WriteArrayRoot == true ? writer.BlankArray() : writer.BlankMap(),
-           _rootConfigContext
-        );
-
 
 #if DEBUG
-        var ops = _ops.Select(x => $"\n    {x.OpType} {x.StringAcc}").Concat();
+        var ops = _operations.Select(x => $"\n    {x.OpType} {x.StringAcc} {x.IntAcc}").Concat();
 
 
         var s = 456654;
 #endif
 
+        IWritingModule writer = new CollectionWritingModule();
 
+        object? writeRoot = null;
+        switch (_config.RootType)
+        {
+            case WriteType.Array:
+                writeRoot = writer.BlankArray();
+                break;
+            case WriteType.Object:
+                writeRoot = writer.BlankMap();
+                break;
+        }
 
-        foreach (var o in _ops)
+        var ctx = new ParsingContext(writer, _modules, readRoot, writeRoot, _rootMetaContext);
+
+        foreach (var o in _operations)
             o.AppyOperation(this, ctx);
-        return ctx.WriteRoot;
+
+        return writeRoot;
     }
 }

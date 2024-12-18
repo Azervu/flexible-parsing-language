@@ -106,7 +106,7 @@ internal class Lexicalizer
     internal TokenGroup Lexicalize(string raw)
     {
 
-        var stack = new List<TokenGroup> { new TokenGroup { Op = new OpTokenConfig { Operator = "¤" }, Children = new List<TokenGroup>() } };
+        var stack = new List<TokenGroup> { new TokenGroup { Op = new OpTokenConfig { Operator = "{" }, Children = new List<TokenGroup>() } };
         TokenGroup? prefixOp = null;
 
         foreach (var (op, acc) in Tokenize(raw))
