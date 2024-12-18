@@ -9,7 +9,7 @@ namespace FlexibleParsingLanguage.Test;
 [TestClass]
 public class JsonParsingTest
 {
-    private Lexicalizer L { get; } = new Lexicalizer();
+    private Compiler.Compiler L { get; } = new Compiler.Compiler();
 
     public static IEnumerable<object[]> PayloadFiles
     {

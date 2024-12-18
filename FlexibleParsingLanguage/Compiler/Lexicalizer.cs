@@ -1,409 +1,167 @@
-﻿
-using FlexibleParsingLanguage.Parse;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Compiler;
 
-internal enum WriteMode
+
+internal class TokenGroup
 {
-    Read,
-    Write,
-    Written,
+    internal OpTokenConfig? Op { get; set; }
+    internal string Acc { get; set; }
+    internal List<TokenGroup> Children { get; set; }
+    internal void AddLog(StringBuilder log, int depth)
+    {
+        log.Append($"\n{new string(' ', 4 * depth)}");
+
+
+        if (Op?.Operator != null)
+        {
+            log.Append(Op?.Operator);
+
+            if (Acc != null)
+                log.Append($"  ");
+        }
+        if (Acc != null)
+            log.Append($"\"{Acc}\"");
+
+        if (Children != null)
+        {
+            foreach (var c in Children)
+                c.AddLog(log, depth + 1);
+        }
+    }
+
+    internal string ToString2()
+    {
+        var l = new StringBuilder();
+        AddLog(l, 0);
+        l.Append("\n");
+        return l.ToString();
+    }
 }
 
-internal class ParseData
+
+internal struct OpTokenConfig
 {
-    internal List<(int, ParseOperation)> Ops { get; set; }
-    internal Dictionary<(int LastOp, ParseOperation), int> OpsMap { get; set; }
-
-    internal HashSet<int> SaveOps { get; set; } = new HashSet<int>();
-    internal HashSet<int> LoadedOps { get; set; } = new HashSet<int>();
-
-    internal int IdCounter { get; set; }
-    internal int LoadedId { get; set; }
-}
-
-internal class AccessorData
-{
-    internal char Operator { get; set; }
-    internal string? Accessor { get; set; }
-    internal ParseContext Ctx { get; set; }
-
-    internal bool Numeric { get => Operator == '[' || Operator == '*' || Operator == '@'; }
-
-    internal AccessorData(char op, string? acc, ParseContext ctx = null)
+    internal string Operator { get; set; }
+    internal char? EndOperator { get; set; }
+    internal OpTokenType Type { get; set; }
+    internal OpTokenConfig(string op, OpTokenType type, char? endOperator = null)
     {
         Operator = op;
-        Accessor = acc;
-        Ctx = ctx;
+        EndOperator = endOperator;
+        Type = type;
     }
 }
 
-
-
-
-
-
-
-
-internal partial class Lexicalizer
+internal enum OpTokenType
 {
-    public const char ROOT = '$';
+    Prefix,
+    Escape,
+    Group,
+    Singleton,
 
-    public const char BRANCH = '{';
+}
 
-    public const char UNBRANCH = '}';
+internal class Lexicalizer
+{
+    private string DefaultOp { get; set; }
+    private char UnescapeToken { get; set; }
 
-    public const char SEPARATOR = ':';
+    private Dictionary<string, OpTokenConfig?> Operators = new();
 
-    public const char ACCESS = '.';
-
-    public const char WRITE = '_';
-
-    public const int ROOT_ID = 1;
-
-    internal Tokenizer Tokenizer { get; private set; }
-
-    public Lexicalizer()
+    public Lexicalizer(
+        List<OpTokenConfig> ops,
+        string defaultOperator,
+        char unescapeToken
+    )
     {
-        Tokenizer = new Tokenizer("|#", "${}:*~@", '.', "'\"", '\\');
-    }
 
-    public Parser Lexicalize(string raw, ParsingConfigContext configContext)
-    {
-        var tokens = Tokenizer.Tokenize(raw);
-        var root = GroupContexts(tokens);
-        var (ops, config) = ProcessTokensGroup(root);
-
-
-#if DEBUG
-
-        var debug = ops.Select(x => $"{x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
-
-        var s = 345534;
-#endif
-
-
-
-        return new Parser(ops, config, configContext);
-    }
-
-
-
-    private ParseContext GroupContexts(List<(char, string?)> tokens)
-    {
-        var root = new ParseContext { Parent = null };
-        var l = new List<ParseContext> { root };
-
-        var startI = 0;
-
-        for (var i = 0; i < tokens.Count; i++)
+        foreach (var op in ops)
         {
-            var (t, a) = tokens[i];
-
-            var ctx = l.Last();
-            switch (t)
+            OpTokenConfig? cop;
+            for (var i = 0; i < op.Operator.Length - 1; i++)
             {
-                case '{':
-                    var n = new ParseContext { Parent = ctx, WriteMode = WriteMode.Read };
-                    ctx.Accessors.Add(new AccessorData(t, a, n));
-                    l.Add(n);
-                    startI = i + 1;
-                    break;
-                case '}':
-                    l.RemoveAt(l.Count - 1);
-                    break;
-                case ':':
-                    ctx.WriteMode = WriteMode.Write;
-                    ctx.Accessors.Add(new AccessorData(t, a));
-                    break;
-                default:
-                    ctx.Accessors.Add(new AccessorData(t, a));
-                    break;
+                var o = op.Operator.Substring(i, i + 1);
+                if (!Operators.TryGetValue(o, out cop))
+                    Operators[o] = null;
             }
+            Operators[op.Operator] = op;
+
+            if (Operators.TryGetValue(op.Operator, out cop))
+                Operators.Remove(op.Operator);
+            Operators[op.Operator] = op;
         }
-        return root;
+
+        DefaultOp = defaultOperator;
+        UnescapeToken = unescapeToken;
     }
 
-    private (List<ParseOperation>, ParserConfig) ProcessTokensGroup(ParseContext root)
+    internal TokenGroup Lexicalize(string raw)
     {
-        var config = new ParserConfig
+
+        var stack = new List<TokenGroup> { new TokenGroup { Op = new OpTokenConfig { Operator = "¤" }, Children = new List<TokenGroup>() } };
+        TokenGroup? prefixOp = null;
+
+        foreach (var (op, acc) in Tokenize(raw))
         {
-            WriteArrayRoot = root.FirstRead()?.Numeric ?? true
-        };
 
-        root.ActiveId = ROOT_ID;
+            var addToPrefix = prefixOp != null;
 
-        var parseData = new ParseData
-        {
-            LoadedId = ROOT_ID,
-            IdCounter = 3,
-            Ops = [],
-            OpsMap = new Dictionary<(int LastOp, ParseOperation), int> { { (-1, new ParseOperation(ParseOperationType.ReadRoot)), 1 } },
-        };
-
-        ProcessContext(config, parseData, root, null);
-
-
-        var opsMap = parseData.OpsMap.ToDictionary(x => x.Value, x => x.Key);
-
-        /*
-        foreach (var w in parseData.Ops)
-        {
-            if (!w.Item2.OpType.IsWriteOperation())
-                continue;
-
-            var operatorId = w.Item1;
-
-            while (opsMap.ContainsKey(operatorId))
+            var groupOp = stack[stack.Count - 1];
+            if (stack.Count > 1 && op.Operator == groupOp.Op.Value.EndOperator.ToString())
             {
-                var (parentId, op) = opsMap[operatorId];
-
-                if (!op.OpType.IsReadOperation())
-                {
-                    operatorId = parentId;
-                    continue;
-                }
-                config.WriteArrayRoot = op.OpType.IsNumericOperation();
-                break;
-            }
-            break;
-        }
-        */
-
-
-        var outOps = new List<ParseOperation>();
-        foreach (var o in parseData.Ops.Select(x => x.Item2))
-        {
-            if (o.OpType == ParseOperationType.Save)
-            {
-                if (!parseData.LoadedOps.Contains(o.IntAcc))
-                {
-                    continue;
-                }
-            }
-            outOps.Add(o);
-        }
-        return (outOps, config);
-    }
-
-
-
-
-
-    private void ProcessContext(ParserConfig config, ParseData parser, ParseContext ctx, ParseContext parent)
-    {
-        if (parent != null)
-        {
-            ctx.ActiveId = parent.ActiveId;
-            ctx.ActiveId = parent.ActiveId;
-        }
-
-        ctx.WriteMode = WriteMode.Read;
-        ctx.ProcessedEnd = false;
-
-        for (ctx.Index = 0; ctx.Index < ctx.Accessors.Count; ctx.Index++)
-        {
-            var accessor = ctx.Accessors[ctx.Index];
-
-            if (accessor.Ctx != null)
-            {
-                ProcessContext(config, parser, accessor.Ctx, ctx);
+                if (addToPrefix)
+                    throw new InvalidOperationException("Ungrouping is prefix param");
+                stack.RemoveAt(stack.Count - 1);
                 continue;
             }
 
-            foreach (var op in ProcessOperation(config, parser, ctx, accessor))
-                HandleOp(config, parser, ctx, op);
-        }
-
-        if (!ctx.ProcessedEnd && ctx.WriteMode == WriteMode.Read)
-        {
-            var op = ProcessContextEndingOperator(config, parser, ctx, null);
-            HandleOp(config, parser, ctx, op);
-        }
-
-    }
+            var c = new TokenGroup
+            {
+                Op = op,
+                Acc = acc
+            };
 
 
-
-    private void HandleOp(ParserConfig config, ParseData parser, ParseContext ctx, ParseOperation? op)
-    {
-        if (op == null)
-            return;
-
-        var activeId = op.OpType == ParseOperationType.ReadRoot ? -1 : ctx.ActiveId;
-        var key = (activeId, op);
-        if (parser.OpsMap.TryGetValue(key, out var readId))
-        {
-            ctx.ActiveId = readId;
-            return;
-        }
-
-        EnsureReadOpLoaded(parser, ctx);
-
-        ctx.ActiveId = ++parser.IdCounter;
-        parser.SaveOps.Add(ctx.ActiveId);
-        parser.LoadedId = ctx.ActiveId;
-
-        if (parser.OpsMap.ContainsKey(key))
-        {
-            throw new Exception($"Repeated {key.activeId} ");
-        }
-        parser.Ops.Add((ctx.ActiveId, op));
-        parser.OpsMap.Add(key, ctx.ActiveId);
-
-        parser.IdCounter++;
-        var saveOp = new ParseOperation(ParseOperationType.Save, ctx.ActiveId);
-        parser.Ops.Add((parser.IdCounter, saveOp));
-        parser.OpsMap.Add((activeId, saveOp), parser.IdCounter);
-
-
-    }
-
-
-
-    private ParseOperation? ProcessContextEndingOperator(ParserConfig config, ParseData data, ParseContext ctx, AccessorData? acc)
-    {
-
-        if (ctx.Accessors.Count != 0 && ctx.Accessors.Last().Ctx != null)
-            return null;
-
-        EnsureReadOpLoaded(data, ctx);
-        EnsureWriteOpLoaded(config, data, ctx, acc);
-
-        if (acc == null || ctx.WriteMode == WriteMode.Read)
-            return new ParseOperation(ParseOperationType.WriteAddRead);
-        else if (acc.Numeric)
-            return new ParseOperation(ParseOperationType.WriteFromRead); //Int
-        else
-            return new ParseOperation(ParseOperationType.WriteFromRead, acc.Accessor);
-    }
-
-
-    private void EnsureReadOpLoaded(ParseData data, ParseContext ctx)
-    {
-        if (ctx.ActiveId == data.LoadedId)
-            return;
-
-        if (ctx.ActiveId == ROOT_ID)
-        {
-            data.Ops.Add((ROOT_ID, new ParseOperation(ParseOperationType.ReadRoot)));
-            return;
-        }
-
-        if (data.SaveOps.Contains(ctx.ActiveId))
-        {
-            data.LoadedOps.Add(ctx.ActiveId);
-            data.Ops.Add((-1, new ParseOperation(ParseOperationType.Load, ctx.ActiveId)));
-            data.LoadedId = ctx.ActiveId;
-            return;
-        }
-
-        throw new Exception("Query parsing error | Unknown read id " + ctx.ActiveId);
-    }
-
-    private void EnsureWriteOpLoaded(ParserConfig config, ParseData data, ParseContext ctx, AccessorData? acc)
-    {
-
-        if (config.WriteArrayRoot == null)
-            config.WriteArrayRoot = acc == null || acc.Numeric || ctx.WriteMode == WriteMode.Read;
-
-
-
-        if (ctx.ActiveId == data.LoadedId)
-            return;
-
-        if (data.SaveOps.Contains(ctx.ActiveId))
-        {
-            data.LoadedOps.Add(ctx.ActiveId);
-            data.Ops.Add((-1, new ParseOperation(ParseOperationType.Load, ctx.ActiveId)));
-            ctx.ActiveId = data.LoadedId;
-            return;
-        }
-
-        if (ctx.ActiveId != ROOT_ID)
-            throw new Exception("Unknown write id " + ctx.ActiveId);
-
-        var key = (-1, new ParseOperation(ParseOperationType.ReadRoot));
-        if (data.OpsMap.ContainsKey(key))
-        {
-            data.Ops.Add((data.LoadedId, key.Item2));
-            ctx.ActiveId = data.LoadedId;
-            return;
-        }
-        data.OpsMap.Add(key, ROOT_ID);
-
-
-        ctx.ActiveId = data.LoadedId;
-    }
-
-
-
-
-
-
-
-    IEnumerable<ParseOperation> ProcessOperation(ParserConfig config, ParseData parser, ParseContext ctx, AccessorData accessor)
-    {
-        switch (accessor.Operator)
-        {
-            case '|':
-                if (ctx.WriteMode == WriteMode.Read)
-                    yield return new ParseOperation(ParseOperationType.TransformRead, accessor.Accessor);
+            if (addToPrefix)
+            {
+                if (op.Operator == DefaultOp && prefixOp.Acc == null)
+                    prefixOp.Acc = acc;
                 else
-                    yield return new ParseOperation(ParseOperationType.TransformWrite, accessor.Accessor);
-                break;
-            case '$':
-                if (ctx.WriteMode == WriteMode.Read)
-                    yield return new ParseOperation(ParseOperationType.ReadRoot);
-                else
-                    yield return new ParseOperation(ParseOperationType.WriteRoot);
-                break;
-            case ':':
-                ctx.WriteMode = WriteMode.Write;
-                break;
-            case '@':
-                foreach (var op in ProcessLookupOperation(config, parser, ctx, accessor))
-                    yield return op;
-                break;
-            case '*':
-                if (ctx.WriteMode == WriteMode.Read)
-                {
-                    yield return new ParseOperation(ParseOperationType.ReadFlatten, accessor.Accessor);
-                }
-                else
-                {
-                    var nextOp = ctx.NextReadOperator();
-                    var nextNumeric = nextOp?.Numeric ?? true;
-                    yield return new ParseOperation(nextNumeric ? ParseOperationType.WriteFlattenArray : ParseOperationType.WriteFlattenObj);
-                }
-                break;
-            case '~':
-                if (ctx.WriteMode == WriteMode.Read)
-                    yield return new ParseOperation(ParseOperationType.ReadName);
-                else
-                    yield return new ParseOperation(ParseOperationType.WriteNameFromRead);
-                break;
-            case '.':
-            case '\'':
-            case '"':
-            case '[':
-                if (ctx.WriteMode == WriteMode.Read)
-                {
-                    yield return new ParseOperation(ParseOperationType.Read, accessor.Accessor);
-                }
-                else if (ctx.LastWriteOp)
-                {
-                    ctx.ProcessedEnd = true;
-                    yield return ProcessContextEndingOperator(config, parser, ctx, accessor);
-                }
-                else
-                {
-                    yield return ProcessWriteOperator(config, parser, ctx, accessor);
-                }
-                break;
-            default:
-                break;
+                    prefixOp.Children = new List<TokenGroup> { c };
+                prefixOp = null;
+            }
+            else
+            {
+                groupOp.Children.Add(c);
+            }
+
+
+
+            switch (c.Op?.Type)
+            {
+                case OpTokenType.Group:
+                    c.Children = new List<TokenGroup>();
+                    stack.Add(c);
+                    break;
+                case OpTokenType.Prefix:
+                    if (c.Acc == null)
+                        prefixOp = c;
+                    break;
+            }
         }
+
+        if (prefixOp != null)
+            throw new InvalidOperationException("Prefix lacks param");
+
+        return stack[0];
     }
 
 
@@ -411,4 +169,65 @@ internal partial class Lexicalizer
 
 
 
+
+
+    private IEnumerable<(OpTokenConfig, string?)> Tokenize(string raw)
+    {
+        var defaultOp = Operators[DefaultOp] ?? throw new Exception("Default operator missing");
+        using (var it = new CharEnumerator(raw))
+        {
+            if (!it.MoveNext())
+                yield break;
+            while (it.Valid)
+            {
+                var cc = it.Current;
+                var active = it.Current.ToString();
+                if (!Operators.TryGetValue(active, out var op))
+                {
+                    while (it.MoveNext())
+                    {
+                        var c = it.Current.ToString();
+                        if (Operators.ContainsKey(c))
+                            break;
+                        active += c;
+                    }
+                    yield return (defaultOp, active);
+                    continue;
+                }
+
+                while (it.MoveNext())
+                {
+                    var nextActive = active + it.Current;
+                    if (!Operators.TryGetValue(nextActive, out var op2))
+                        break;
+                    active = nextActive;
+
+                    op = op2;
+                }
+
+                if (op.Value.Type == OpTokenType.Escape)
+                {
+                    active = string.Empty;
+                    while (true)
+                    {
+                        if (it.Current == op.Value.EndOperator)
+                        {
+                            it.MoveNext();
+                            break;
+                        }
+                        if (it.Current == UnescapeToken && !it.MoveNext())
+                            break;
+                        active += it.Current;
+                        if (!it.MoveNext())
+                            break;
+                    }
+                    yield return ((OpTokenConfig)op, active);
+                }
+                else if (op.Value.Operator != DefaultOp)
+                {
+                    yield return ((OpTokenConfig)op, null);
+                }
+            }
+        }
+    }
 }

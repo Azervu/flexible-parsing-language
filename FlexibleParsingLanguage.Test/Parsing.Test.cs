@@ -8,7 +8,7 @@ namespace FlexibleParsingLanguage.Test;
 [TestClass]
 public class Parsing
 {
-    private Lexicalizer L { get; } = new Lexicalizer();
+    private Compiler.Compiler L { get; } = new Compiler.Compiler();
 
     public static IEnumerable<object[]> SimpleQueries => new List<object[]>
     {

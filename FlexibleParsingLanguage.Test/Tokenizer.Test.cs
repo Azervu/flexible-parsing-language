@@ -1,28 +1,67 @@
 using FlexibleParsingLanguage.Compiler;
+using System.Text;
 
 namespace FlexibleParsingLanguage.Test;
 
 [TestClass]
 public class TokenizerTest
 {
-    private Tokenizer T { get; set; } = new Lexicalizer().Tokenizer;
+    private Lexicalizer T { get; set; } = new Compiler.Compiler().Tokenizer;
 
     public static IEnumerable<object[]> TokenizationData => new List<object[]>
     {
-        new object[] { "'-\\'-'|t.aaa*bbb|{ccc}\" \"", new List<(char, string?)> { ('\'', "-'-"), ('|', "t"), ('.', "aaa"), ('*', ""), ('.', "bbb"), ('|', ""), ('{', ""), ('.', "ccc"), ('}', ""), ('"', " ") } },
-        new object[] { "|json*id@", new List<(char, string?)> { ('|', "json"), ('*', ""), ('.', "id"), ('@', "") } },
+        new object[] { "{a.b}c|{d.e.f}g", @"
+¤
+    {
+        .  ""a""
+        .  ""b""
+    .  ""c""
+    |
+        {
+            .  ""d""
+            .  ""e""
+            .  ""f""
+    .  ""g""
+" },
+        new object[] { "'-\\'-'|t.aaa*bbb€€gfjhd|{ccc}\" \"", @"
+¤
+    '  ""-'-""
+    |  ""t""
+    .  ""aaa""
+    *  ""bbb""
+    €€  ""gfjhd""
+    |
+        {
+            .  ""ccc""
+    ""  "" ""
+" },
     };
+
+
+
 
 
     [TestMethod]
     [DynamicData(nameof(TokenizationData))]
-    public void QueryParserTest(string parserString, List<(char, string?)> excpectedResult) => TestUtil(parserString, excpectedResult);
+    public void QueryParserTest(string parserString, string excpectedResult) => TestUtil(parserString, excpectedResult);
 
 
-    public void TestUtil(string parserString, List<(char, string?)> excpectedResult)
+    public void TestUtil(string parserString, string excpectedResult)
     {
-        var parsed = T.Tokenize(parserString);
+        var parsed = T.Lexicalize(parserString);
+        var result = parsed.ToString2().Replace("\r", string.Empty);
 
+
+        var expected = excpectedResult.Replace("\r", string.Empty);
+
+
+
+        Assert.AreEqual(expected, result, "string rep mismatch");
+
+
+
+
+        /*
         Assert.AreEqual(excpectedResult.Count, parsed.Count, $"length mismatch | \n{excpectedResult.Select(x => $"{x.Item1}{x.Item2}").Join(' ')} \n{parsed.Select(x => $"{x.Item1}{x.Item2}").Join(' ')}");
 
         for (var i = 0; i < parsed.Count; i++)
@@ -40,6 +79,7 @@ public class TokenizerTest
 
             Assert.AreEqual(expected, actual, $"failed parsing {parserString}");
         }
+        */
 
     }
 }

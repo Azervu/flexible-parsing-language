@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Compiler;
 
-internal partial class Lexicalizer
+internal partial class Compiler
 {
     private IEnumerable<ParseOperation> ProcessLookupOperation(ParserConfig config, ParseData parser, ParseContext ctx, AccessorData acc)
     {

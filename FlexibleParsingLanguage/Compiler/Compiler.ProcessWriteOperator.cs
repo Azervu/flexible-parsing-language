@@ -1,7 +1,7 @@
 ﻿using FlexibleParsingLanguage.Parse;
 
 namespace FlexibleParsingLanguage.Compiler;
-internal partial class Lexicalizer
+internal partial class Compiler
 {
     private ParseOperation? ProcessWriteOperator(ParserConfig config, ParseData parser, ParseContext ctx, AccessorData acc)
     {
