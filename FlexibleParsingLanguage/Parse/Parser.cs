@@ -59,7 +59,7 @@ public class Parser
         var ctx = new ParsingContext(writer, _modules, readRoot, writeRoot, _rootMetaContext);
 
         foreach (var o in _operations)
-            o.AppyOperation(this, ctx);
+            o.Op(this, ctx, o.IntAcc, o.StringAcc);
 
         return writeRoot;
     }

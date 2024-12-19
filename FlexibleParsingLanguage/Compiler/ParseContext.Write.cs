@@ -13,7 +13,7 @@ internal partial class ParseContext
     {
         if (Accessors == null || Accessors.Count == 0)
         {
-            var opt = finalContextOp ? ParseOperationType.WriteFromRead : ParseOperationType.Write;
+            Action<Parser, ParsingContext, int, string> opt = finalContextOp ? ParseOperationType.WriteFromRead : ParseOperationType.Write;
 
 
 

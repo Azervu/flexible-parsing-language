@@ -50,9 +50,6 @@ internal partial class ParsingContext
         });
     }
 
-
-
-
     internal void WriteFromRead(Func<ParsingFocusRead, object> readFunc, Action<IWritingModule, ParsingFocusEntry, object> writeAction)
     {
         foreach (var focusEntry in Focus)
@@ -62,26 +59,6 @@ internal partial class ParsingContext
                 : readFunc(focusEntry.Reads[0]);
 
             writeAction(WritingModule, focusEntry, r);
-        }
-    }
-
-
-
-
-
-
-    internal void WriteAddRead()
-    {
-        foreach (var focusEntry in Focus)
-        {
-            //UpdateWriteModule(w);
-            if (focusEntry.MultiRead)
-            {
-                foreach (var r in focusEntry.Reads)
-                    WritingModule.Append(focusEntry.Write, TransformReadInner(r.Read));
-                continue;
-            }
-            WritingModule.Append(focusEntry.Write, focusEntry.Reads[0].Read);
         }
     }
 

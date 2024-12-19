@@ -98,7 +98,7 @@ internal partial class Compiler
 
         foreach (var o in data.Ops.Select(x => x.Item2))
         {
-            if (o.OpType == ParseOperationType.Load)
+            if (o.OpType.Op == ParseOperationType.Load)
                 loaded.Add(o.IntAcc);
         }
 
@@ -112,10 +112,10 @@ internal partial class Compiler
                 rootWriteType = o.OpType.GetWriteType();
 
 
-            if (o.OpType == ParseOperationType.Save && !loaded.Contains(o.IntAcc))
+            if (o.OpType.Op == ParseOperationType.Save && !loaded.Contains(o.IntAcc))
                 continue;
 
-            if (o.OpType == ParseOperationType.WriteFlatten)
+            if (o.OpType.Op == ParseOperationType.WriteFlatten)
                 o.IntAcc = (int)GetWriteType(opsParents[id]);
 
             outOps.Add(o);

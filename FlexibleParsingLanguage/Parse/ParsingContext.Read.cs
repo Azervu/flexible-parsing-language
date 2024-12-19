@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FlexibleParsingLanguage.Parse;
+﻿namespace FlexibleParsingLanguage.Parse;
 
 internal partial class ParsingContext
 {
-
     internal void ReadAction(Action<ParsingFocusRead> action)
     {
         foreach (var focusEntry in Focus)
@@ -16,13 +9,9 @@ internal partial class ParsingContext
             foreach (var readEntry in focusEntry.Reads)
             {
                 action(readEntry);
-
-                var sss = 4365354;
             }
         }
     }
-
-
 
     internal void ReadFunc(Func<IReadingModule, object, object> readTransform) => MapFocus((x) => ReadInner(x, readTransform));
     internal void ReadTransform(Func<ParsingFocusRead, ParsingFocusRead> readTransform) => MapFocus((focus) => new ParsingFocusEntry
@@ -32,7 +21,6 @@ internal partial class ParsingContext
         MultiRead = focus.MultiRead,
     });
 
-
     internal void ReadTransformValue(Func<object, object> readTransform) => ReadTransform((focus) => new ParsingFocusRead
     {
         Key = focus.Key,
@@ -40,7 +28,6 @@ internal partial class ParsingContext
         Read = readTransform(focus.Read),
 
     });
-
 
     internal void ReadName() => MapFocus((focus) => new ParsingFocusEntry
     {
@@ -54,9 +41,6 @@ internal partial class ParsingContext
         MultiRead = focus.MultiRead,
     });
 
-
-
-
     internal void ReadFlatten() => MapFocus(ReadFlattenInner);
 
     internal void ToRootRead()
@@ -69,7 +53,6 @@ internal partial class ParsingContext
             Write = f.Write,
         });
     }
-
 
     private ParsingFocusEntry ReadInner(ParsingFocusEntry focus, Func<IReadingModule, object, object> readTransform)
     {
@@ -115,8 +98,6 @@ internal partial class ParsingContext
             Write = focus.Write,
         };
     }
-
-
 
     private void UpdateReadModule(object obj)
     {

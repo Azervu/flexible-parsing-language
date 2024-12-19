@@ -14,7 +14,8 @@ internal partial class ParseContext
             case "{":
                 return ProcessBranch(parser);
             case "*":
-                HandleOp(parser, new ParseOperation(ParseOperationType.ReadFlatten, Token.Acc));
+                var o = new ParseOperation(ParseOperationType.ReadFlatten, Token.Acc);
+                HandleOp(parser, o);
                 break;
             case "#":
                 return ProcessLookup(parser);
@@ -41,7 +42,7 @@ internal partial class ParseContext
 
     private void HandleOps(ParseData parser, ParseOperation[] ops)
     {
-        var activeId = ops[0].OpType == ParseOperationType.ReadRoot ? -1 : parser.ActiveId;
+        var activeId = ops[0].OpType.Op == ParseOperationType.ReadRoot ? -1 : parser.ActiveId;
         var key = (activeId, ops);
         if (parser.OpsMap.TryGetValue(key, out var readId))
         {
