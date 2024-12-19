@@ -38,6 +38,14 @@ internal partial class ParsingContext
         ConfigRoot = parsingConfig;
     }
 
+
+    internal void Foreach(Action<ParsingFocusEntry> action)
+    {
+        foreach (var focusEntry in Focus)
+            action(focusEntry);
+    }
+
+
     internal void MapFocus(Func<ParsingFocusEntry, ParsingFocusEntry> transformAction)
     {
         var results = new List<ParsingFocusEntry>();

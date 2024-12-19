@@ -12,7 +12,7 @@ internal partial class ParseContext
     internal string Operator { get => Token.Op?.Operator; }
     internal string? Param { get => Token.Acc; }
     internal bool Numeric { get => Operator == "[" || Operator == "*" || Operator == "@"; }
-    internal ParseContext NextChild { get => Index + 1 < Accessors.Count ? Accessors[Index + 1] : null; }
+
     private List<ParseContext> _children;
     internal List<ParseContext> Accessors {
         get

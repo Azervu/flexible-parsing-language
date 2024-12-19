@@ -1,10 +1,4 @@
 ﻿using FlexibleParsingLanguage.Parse;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FlexibleParsingLanguage.Compiler;
 
@@ -15,32 +9,40 @@ internal partial class ParseContext
         switch (Token.Op?.Operator)
         {
             case "|":
-                HandleOp(parser, this, new ParseOperation(ParseOperationType.Function, Param));
+                HandleOp(parser, new ParseOperation(ParseOperationType.Function, Param));
                 break;
             case "{":
                 return ProcessBranch(parser);
             case "*":
-                HandleOp(parser, this, new ParseOperation(ParseOperationType.ReadFlatten, Token.Acc));
+                HandleOp(parser, new ParseOperation(ParseOperationType.ReadFlatten, Token.Acc));
                 break;
+            case "#":
+                return ProcessLookup(parser);
             case ":":
                 return ProcessWrite(parser, finalContextOp);
             case ".":
             case "\"":
             case "'":
             case "[":
-                HandleOp(parser, this, new ParseOperation(ParseOperationType.Read, Param));
+                HandleOp(parser, new ParseOperation(ParseOperationType.Read, Param));
                 break;
         }
         return null;
     }
 
-    private void HandleOp(ParseData parser, ParseContext ctx, ParseOperation? op)
+
+
+    private void HandleOp(ParseData parser, ParseOperation? op)
     {
         if (op == null)
             return;
+        HandleOps(parser, [op]);
+    }
 
-        var activeId = op.OpType == ParseOperationType.ReadRoot ? -1 : parser.ActiveId;
-        var key = (activeId, op);
+    private void HandleOps(ParseData parser, ParseOperation[] ops)
+    {
+        var activeId = ops[0].OpType == ParseOperationType.ReadRoot ? -1 : parser.ActiveId;
+        var key = (activeId, ops);
         if (parser.OpsMap.TryGetValue(key, out var readId))
         {
             parser.ActiveId = readId;
@@ -63,14 +65,16 @@ internal partial class ParseContext
         if (parser.OpsMap.ContainsKey(key))
             throw new Exception($"Repeated {key.activeId} ");
 
-        parser.Ops.Add((parser.ActiveId, op));
+        foreach (var op in ops)
+            parser.Ops.Add((parser.ActiveId, op));
+
+
         parser.OpsMap.Add(key, parser.ActiveId);
         parser.IdCounter++;
         var saveOp = new ParseOperation(ParseOperationType.Save, parser.ActiveId);
         parser.Ops.Add((parser.IdCounter, saveOp));
-        parser.OpsMap.Add((activeId, saveOp), parser.IdCounter);
+        parser.OpsMap.Add((activeId, [saveOp]), parser.IdCounter);
     }
-
 }
 
 

@@ -5,7 +5,7 @@ namespace FlexibleParsingLanguage.Compiler;
 internal class ParseData
 {
     internal List<(int, ParseOperation)> Ops { get; set; }
-    internal Dictionary<(int LastOp, ParseOperation), int> OpsMap { get; set; }
+    internal Dictionary<(int LastOp, ParseOperation[]), int> OpsMap { get; set; }
     internal HashSet<int> SaveOps { get; set; } = new HashSet<int>();
     internal int IdCounter { get; set; }
     internal int LoadedId { get; set; }
@@ -60,16 +60,17 @@ internal partial class Compiler
                 (2, new ParseOperation(ParseOperationType.Save)),
             ],
             SaveOps = [ROOT_ID],
-            OpsMap = new Dictionary<(int LastOp, ParseOperation), int> {
-                {(-1, new ParseOperation(ParseOperationType.ReadRoot)), ROOT_ID },
+            OpsMap = new Dictionary<(int LastOp, ParseOperation[]), int> {
+                {(-1, [new ParseOperation(ParseOperationType.ReadRoot)]), ROOT_ID },
             },
         };
 
         var rootContex = new ParseContext(rootToken);
         var rootType = rootContex.ProcessBranch(parseData);
-        var config = new ParserRootConfig { RootType = rootType };
 
-        var ops = FilterOps(parseData, rootContex);
+        var (ops, rootWt) = FilterOps(parseData, rootContex);
+
+        var config = new ParserRootConfig { RootType = rootType };
 
 #if DEBUG
         var token = rootToken.ToString2();
@@ -77,18 +78,22 @@ internal partial class Compiler
         var debug = ops.Select(x => $"{x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
         var s = 345534;
 #endif
+
         return new Parser(ops, configContext, config);
     }
 
 
-    private List<ParseOperation> FilterOps(ParseData data, ParseContext root)
+    private (List<ParseOperation>, WriteType) FilterOps(ParseData data, ParseContext root)
     {
         var opsMap = data.OpsMap.ToDictionary(x => x.Value, x => x.Key);
         var outOps = new List<ParseOperation>();
         var saved = new Dictionary<int, ParseOperation>();
         var loaded = new HashSet<int>();
 
-        var opsParents = data.OpsMap.GroupBy(x => x.Key.Item1).ToDictionary(x => x.Key, x => x.Select(y => y.Key.Item2.OpType).ToHashSet());
+        var opsParents = data.OpsMap.GroupBy(x => x.Key.Item1).ToDictionary(
+            x => x.Key,
+            x => x.Select(y => y.Key.Item2.Last().OpType).ToHashSet()
+        );
 
 
         foreach (var o in data.Ops.Select(x => x.Item2))
@@ -97,32 +102,42 @@ internal partial class Compiler
                 loaded.Add(o.IntAcc);
         }
 
+
+        var rootWriteType = WriteType.None;
+
+
         foreach (var (id, o) in data.Ops)
         {
+            if (rootWriteType != WriteType.None)
+                rootWriteType = o.OpType.GetWriteType();
+
+
             if (o.OpType == ParseOperationType.Save && !loaded.Contains(o.IntAcc))
                 continue;
 
-
-
-
-
-
             if (o.OpType == ParseOperationType.WriteFlatten)
-            {
-                var ii = -1;
-                foreach (var childOp in opsParents[id])
-                {
-                    var i = childOp.GetAccessStyleIndex();
-                    if (i > -1)
-                        ii = i;
-                }
-  
-                o.IntAcc = ii;
-            }
-
+                o.IntAcc = (int)GetWriteType(opsParents[id]);
 
             outOps.Add(o);
         }
-        return outOps;
+
+        if (rootWriteType == WriteType.None)
+            rootWriteType = WriteType.Array;
+
+
+        return (outOps, rootWriteType);
+    }
+
+    private WriteType GetWriteType(HashSet<ParseOperationType> opsTypes)
+    {
+        var ii = WriteType.None;
+        foreach (var childOp in opsTypes)
+        {
+            var wt = childOp.GetWriteType();
+            if (wt > WriteType.None)
+                ii = wt;
+        }
+
+        return ii;
     }
 }

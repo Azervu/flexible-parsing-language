@@ -1,10 +1,11 @@
 ﻿namespace FlexibleParsingLanguage.Parse
 {
-    internal struct ParsingFocusRead
+    internal class ParsingFocusRead
     {
         internal ParsingMetaContext Config;
         internal object Key;
         internal object Read;
+        internal object Param;
     }
 
     internal struct ParsingFocusEntry

@@ -8,7 +8,23 @@ namespace FlexibleParsingLanguage.Parse;
 
 internal partial class ParsingContext
 {
-    internal void ReadAction(Func<IReadingModule, object, object> readTransform) => MapFocus((x) => ReadInner(x, readTransform));
+
+    internal void ReadAction(Action<ParsingFocusRead> action)
+    {
+        foreach (var focusEntry in Focus)
+        {
+            foreach (var readEntry in focusEntry.Reads)
+            {
+                action(readEntry);
+
+                var sss = 4365354;
+            }
+        }
+    }
+
+
+
+    internal void ReadFunc(Func<IReadingModule, object, object> readTransform) => MapFocus((x) => ReadInner(x, readTransform));
     internal void ReadTransform(Func<ParsingFocusRead, ParsingFocusRead> readTransform) => MapFocus((focus) => new ParsingFocusEntry
     {
         Reads = focus.Reads.Select(readTransform).ToList(),
@@ -24,9 +40,6 @@ internal partial class ParsingContext
         Read = readTransform(focus.Read),
 
     });
-
-
-
 
 
     internal void ReadName() => MapFocus((focus) => new ParsingFocusEntry
@@ -122,7 +135,7 @@ internal partial class ParsingContext
         Config = raw.Config,
     };
 
-    private object TransformReadInner(object raw)
+    internal object TransformReadInner(object raw)
     {
         UpdateReadModule(raw);
         if (ReadingModule == null)

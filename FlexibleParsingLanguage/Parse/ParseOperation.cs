@@ -10,6 +10,9 @@ namespace FlexibleParsingLanguage.Parse;
 internal class ParseOperation
 {
     internal ParseOperationType OpType { get; set; }
+
+    internal Action<Parser, ParsingContext, int, string> Op;
+
     internal string StringAcc { get; set; }
     internal int IntAcc { get; set; }
 
@@ -29,6 +32,16 @@ internal class ParseOperation
 
     internal void AppyOperation(Parser parser, ParsingContext ctx)
     {
+
+        if (Op != null)
+        {
+            Op(parser, ctx, IntAcc, StringAcc);
+            return;
+        }
+
+
+
+
         switch (OpType)
         {
             case ParseOperationType.ReadRoot:
@@ -44,10 +57,10 @@ internal class ParseOperation
                 ctx.Focus = ctx.Store[IntAcc];
                 break;
             case ParseOperationType.Read:
-                ctx.ReadAction((m, readSrc) => m.Parse(readSrc, StringAcc));
+                ctx.ReadFunc((m, readSrc) => m.Parse(readSrc, StringAcc));
                 break;
             case ParseOperationType.ReadInt:
-                ctx.ReadAction((m, readSrc) => m.Parse(readSrc, IntAcc));
+                ctx.ReadFunc((m, readSrc) => m.Parse(readSrc, IntAcc));
                 break;
             case ParseOperationType.ReadFlatten:
                 ctx.ReadFlatten();
@@ -113,7 +126,48 @@ internal class ParseOperation
                 var transfomer = parser._converter[StringAcc];
                 ctx.ReadTransformValue(transfomer.Convert);
                 break;
+
+
+
+            case ParseOperationType.ParamLiteral:
+                ctx.ReadAction((r) =>
+                {
+                    r.Param = StringAcc;
+                });
+                break;
+            case ParseOperationType.ParamToRead:
+                ctx.ReadTransform((r) => new ParsingFocusRead
+                {
+                    Config = r.Config,
+                    Key = r.Key,
+                    Read = r.Param,
+                });
+                break;
+            case ParseOperationType.ParamFromRead:
+                ctx.ReadAction((r) => { r.Param = r.Read; });
+                break;
+
+
+            case ParseOperationType.Lookup:
+                ctx.ReadAction((r) =>
+                {
+                    r.Param = r.Config[r.Param?.ToString()].Value;
+                });
+                break;
+            case ParseOperationType.ChangeLookup:
+                ctx.ReadAction((r) =>
+                {
+                    r.Config = r.Config[r.Param?.ToString()];
+                });
+                break;
+
+
+
+
             case ParseOperationType.LookupRead:
+
+
+
                 ctx.ReadTransform((f) => {
                     var c = f.Config[f.Read.ToString()];
                     return new ParsingFocusRead

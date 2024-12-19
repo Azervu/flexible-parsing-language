@@ -14,6 +14,7 @@ internal class ParserRootConfig
 
 internal enum WriteType
 {
-    Array,
-    Object
+    None = 0,
+    Object = 1,
+    Array = 2,
 }

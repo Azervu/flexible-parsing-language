@@ -17,7 +17,7 @@ internal partial class ParseContext
 
 
 
-            HandleOp(parser, this, new ParseOperation(opt, Param));
+            HandleOp(parser, new ParseOperation(opt, Param));
             return WriteType.Object;
         }
 
@@ -26,7 +26,7 @@ internal partial class ParseContext
         switch (op)
         {
             case "*":
-                HandleOp(parser, this, new ParseOperation(ParseOperationType.WriteFlatten));
+                HandleOp(parser, new ParseOperation(ParseOperationType.WriteFlatten));
                 break;
             default:
                 throw new Exception($"Unsupported param operator | op = {op}");
