@@ -59,7 +59,16 @@ public class Parser
         var ctx = new ParsingContext(writer, _modules, readRoot, writeRoot, _rootMetaContext);
 
         foreach (var o in _operations)
-            o.Op(this, ctx, o.IntAcc, o.StringAcc);
+        {
+            try
+            {
+                o.Op(this, ctx, o.IntAcc, o.StringAcc);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Operation failed {o.OpType.GetMetaData().Name}", ex);
+            }
+        }
 
         return writeRoot;
     }

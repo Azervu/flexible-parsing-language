@@ -11,7 +11,7 @@ internal partial class ParseContext
 {
     internal WriteType ProcessWrite(ParseData parser, bool finalContextOp)
     {
-        if (Accessors == null || Accessors.Count == 0)
+        if (ChildOperator == null || ChildOperator.Count == 0)
         {
             Action<Parser, ParsingContext, int, string> opt = finalContextOp ? ParseOperationType.WriteFromRead : ParseOperationType.Write;
 
@@ -21,7 +21,7 @@ internal partial class ParseContext
             return WriteType.Object;
         }
 
-        var op = Accessors[0].Operator;
+        var op = ChildOperator[0].Operator;
 
         switch (op)
         {

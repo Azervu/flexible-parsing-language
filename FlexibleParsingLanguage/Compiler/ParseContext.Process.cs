@@ -19,6 +19,8 @@ internal partial class ParseContext
                 break;
             case "#":
                 return ProcessLookup(parser);
+            case "##":
+                return ProcessContextLookup(parser);
             case ":":
                 return ProcessWrite(parser, finalContextOp);
             case ".":

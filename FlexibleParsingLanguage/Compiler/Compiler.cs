@@ -36,9 +36,11 @@ internal partial class Compiler
 
                 new OpTokenConfig(":", OpTokenType.Prefix),
                 new OpTokenConfig("|", OpTokenType.Prefix),
+                new OpTokenConfig("@", OpTokenType.Prefix),
                 new OpTokenConfig("#", OpTokenType.Prefix),
-                new OpTokenConfig("€", OpTokenType.Prefix),
-                new OpTokenConfig("€€", OpTokenType.Prefix),
+                new OpTokenConfig("##", OpTokenType.Prefix),
+                //new OpTokenConfig("€", OpTokenType.Prefix),
+                //new OpTokenConfig("€€", OpTokenType.Prefix),
 
                 new OpTokenConfig("\"", OpTokenType.Escape, '"'),
                 new OpTokenConfig("'", OpTokenType.Escape, '\''),

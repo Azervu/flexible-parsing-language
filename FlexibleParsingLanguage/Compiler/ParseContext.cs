@@ -14,7 +14,7 @@ internal partial class ParseContext
     internal bool Numeric { get => Operator == "[" || Operator == "*" || Operator == "@"; }
 
     private List<ParseContext> _children;
-    internal List<ParseContext> Accessors {
+    internal List<ParseContext> ChildOperator {
         get
         {
             if (_children == null)
@@ -39,9 +39,9 @@ internal partial class ParseContext
 
     internal ParseContext NextReadOperator()
     {
-        for (var j = Index + 1; j < Accessors.Count; j++)
+        for (var j = Index + 1; j < ChildOperator.Count; j++)
         {
-            var op = Accessors[j];
+            var op = ChildOperator[j];
             if (op != null)
                 return op.FirstRead();
 
@@ -54,10 +54,10 @@ internal partial class ParseContext
     {
         var writes = false;
 
-        if (Accessors == null)
+        if (ChildOperator == null)
             return this;
 
-        foreach (var op in Accessors)
+        foreach (var op in ChildOperator)
         {
             if (op != null)
                 return op.FirstRead();

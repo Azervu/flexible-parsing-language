@@ -12,7 +12,7 @@ internal partial class ParseContext
     internal WriteType ProcessBranch(ParseData parser)
     {
         var startActiveId = parser.ActiveId;
-        if (Accessors == null)
+        if (ChildOperator == null)
             throw new Exception("Context branch missing accessors");
 
         WriteType? writeType = null;
@@ -20,11 +20,11 @@ internal partial class ParseContext
         var addHandled = false;
 
 
-        for (var i = 0; i < Accessors.Count; i++)
+        for (var i = 0; i < ChildOperator.Count; i++)
         {
-            var accessor = Accessors[i];
+            var accessor = ChildOperator[i];
 
-            var lastOp = i == Accessors.Count - 1;
+            var lastOp = i == ChildOperator.Count - 1;
 
 
             var wt = accessor.Process(parser, lastOp);

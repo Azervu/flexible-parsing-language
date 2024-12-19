@@ -17,31 +17,32 @@ internal struct ParseOperationType
 
     internal static Dictionary<Action<Parser, ParsingContext, int, string>, OperationMetaData> Ops = new Dictionary<Action<Parser, ParsingContext, int, string>, OperationMetaData>
     {
-        { Read, new OperationMetaData(WriteType.Object) },
-        { Write, new OperationMetaData(WriteType.Object) },
 
-        { ReadInt, new OperationMetaData(WriteType.Array) },
-        { ReadFlatten, new OperationMetaData(WriteType.Array) },
-        { WriteArray, new OperationMetaData(WriteType.Array) },
-        { WriteArrayInt, new OperationMetaData(WriteType.Array) },
+        { Read, new OperationMetaData(WriteType.Object, nameof(Read)) },
+        { Write, new OperationMetaData(WriteType.Object, nameof(Write)) },
 
-        { WriteAddRead, new OperationMetaData(WriteType.None) },
-        { ReadRoot, new OperationMetaData(WriteType.None) },
-        { WriteRoot, new OperationMetaData(WriteType.None) },
-        { Save, new OperationMetaData(WriteType.None) },
-        { Load, new OperationMetaData(WriteType.None) },
-        { ReadName, new OperationMetaData(WriteType.None) },
-        { WriteInt, new OperationMetaData(WriteType.None) },
-        { WriteFromRead, new OperationMetaData(WriteType.None) },
-        { WriteFlatten, new OperationMetaData(WriteType.None) },
-        { Function, new OperationMetaData(WriteType.None) },
-        { ParamLiteral, new OperationMetaData(WriteType.None) },
-        { ParamToRead, new OperationMetaData(WriteType.None) },
-        { ParamFromRead, new OperationMetaData(WriteType.None) },
-        { Lookup, new OperationMetaData(WriteType.None) },
-        { ChangeLookup, new OperationMetaData(WriteType.None) },
-        { LookupRead, new OperationMetaData(WriteType.None) },
-        { LookupReadValue, new OperationMetaData(WriteType.None) },
+        { ReadInt, new OperationMetaData(WriteType.Array, nameof(ReadInt)) },
+        { ReadFlatten, new OperationMetaData(WriteType.Array, nameof(ReadFlatten)) },
+        { WriteArray, new OperationMetaData(WriteType.Array, nameof(WriteArray)) },
+        { WriteArrayInt, new OperationMetaData(WriteType.Array, nameof(WriteArrayInt)) },
+
+        { WriteAddRead, new OperationMetaData(WriteType.None, nameof(WriteAddRead)) },
+        { ReadRoot, new OperationMetaData(WriteType.None, nameof(ReadRoot)) },
+        { WriteRoot, new OperationMetaData(WriteType.None, nameof(WriteRoot)) },
+        { Save, new OperationMetaData(WriteType.None, nameof(Save)) },
+        { Load, new OperationMetaData(WriteType.None, nameof(Load)) },
+        { ReadName, new OperationMetaData(WriteType.None, nameof(ReadName)) },
+        { WriteInt, new OperationMetaData(WriteType.None, nameof(WriteInt)) },
+        { WriteFromRead, new OperationMetaData(WriteType.None, nameof(WriteFromRead)) },
+        { WriteFlatten, new OperationMetaData(WriteType.None, nameof(WriteFlatten)) },
+        { Function, new OperationMetaData(WriteType.None, nameof(Function)) },
+        { ParamLiteral, new OperationMetaData(WriteType.None, nameof(ParamLiteral)) },
+        { ParamToRead, new OperationMetaData(WriteType.None, nameof(ParamToRead)) },
+        { ParamFromRead, new OperationMetaData(WriteType.None, nameof(ParamFromRead)) },
+        { Lookup, new OperationMetaData(WriteType.None, nameof(Lookup)) },
+        { ChangeLookup, new OperationMetaData(WriteType.None, nameof(ChangeLookup)) },
+        { LookupRead, new OperationMetaData(WriteType.None, nameof(LookupRead)) },
+        { LookupReadValue, new OperationMetaData(WriteType.None, nameof(LookupReadValue)) },
     };
 
     internal static void WriteAddRead(Parser parser, ParsingContext context, int intAcc, string acc)
@@ -151,8 +152,10 @@ internal struct ParseOperationType
 internal struct OperationMetaData
 {
     internal WriteType WriteType;
-    internal OperationMetaData(WriteType wt)
+    internal string Name { get; private set; }
+    internal OperationMetaData(WriteType wt, string name)
     {
         WriteType = wt;
+        Name = name;
     }
 }
