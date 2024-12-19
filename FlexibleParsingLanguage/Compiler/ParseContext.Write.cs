@@ -11,7 +11,7 @@ internal partial class ParseContext
 {
     internal WriteType ProcessWrite(ParseData parser, bool finalContextOp)
     {
-        if (Accessors == null)
+        if (Accessors == null || Accessors.Count == 0)
         {
             var opt = finalContextOp ? ParseOperationType.WriteFromRead : ParseOperationType.Write;
 
@@ -21,18 +21,12 @@ internal partial class ParseContext
             return WriteType.Object;
         }
 
-
-
-        //var nextOp = parent.NextReadOperator();
-        //var nextNumeric = nextOp?.Numeric ?? true;
-        // yield return new ParseOperation(nextNumeric ? ParseOperationType.WriteFlattenArray : ParseOperationType.WriteFlattenObj);
-
         var op = Accessors[0].Operator;
 
         switch (op)
         {
             case "*":
-                HandleOp(parser, this, new ParseOperation(ParseOperationType.WriteFlattenArray));
+                HandleOp(parser, this, new ParseOperation(ParseOperationType.WriteFlatten));
                 break;
             default:
                 throw new Exception($"Unsupported param operator | op = {op}");

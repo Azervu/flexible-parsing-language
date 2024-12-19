@@ -22,8 +22,7 @@ internal enum ParseOperationType
     WriteInt,
     WriteArray,
     WriteArrayInt,
-    WriteFlattenObj,
-    WriteFlattenArray,
+    WriteFlatten,
     WriteFromRead,
     WriteAddRead,
     WriteNameFromRead,
@@ -37,6 +36,40 @@ internal enum ParseOperationType
 
 internal static class ParseOperationTypeExtension
 {
+
+
+
+    internal static int GetAccessStyleIndex(this ParseOperationType op)
+    {
+        switch (op)
+        {
+            case ParseOperationType.Read:
+                return 1;
+            case ParseOperationType.ReadInt:
+            case ParseOperationType.ReadFlatten:
+                return 2;
+
+            case ParseOperationType.Write:
+            case ParseOperationType.WriteInt:
+            case ParseOperationType.WriteArray:
+            case ParseOperationType.WriteArrayInt:
+            case ParseOperationType.WriteFlatten:
+            case ParseOperationType.WriteFromRead:
+            case ParseOperationType.WriteAddRead:
+            case ParseOperationType.WriteNameFromRead:
+            case ParseOperationType.WriteRoot:
+            case ParseOperationType.Function:
+            case ParseOperationType.ReadRoot:
+            case ParseOperationType.Save:
+            case ParseOperationType.Load:
+            case ParseOperationType.ReadName:
+            default:
+                return -1;
+        }
+    }
+
+
+
     internal static bool IsWriteOperation(this ParseOperationType op)
     {
         switch (op)
@@ -45,8 +78,7 @@ internal static class ParseOperationTypeExtension
             case ParseOperationType.WriteInt:
             case ParseOperationType.WriteArray:
             case ParseOperationType.WriteArrayInt:
-            case ParseOperationType.WriteFlattenObj:
-            case ParseOperationType.WriteFlattenArray:
+            case ParseOperationType.WriteFlatten:
             case ParseOperationType.WriteFromRead:
             case ParseOperationType.WriteAddRead:
             case ParseOperationType.WriteNameFromRead:
@@ -73,8 +105,7 @@ internal static class ParseOperationTypeExtension
             case ParseOperationType.WriteInt:
             case ParseOperationType.WriteArray:
             case ParseOperationType.WriteArrayInt:
-            case ParseOperationType.WriteFlattenObj:
-            case ParseOperationType.WriteFlattenArray:
+            case ParseOperationType.WriteFlatten:
             case ParseOperationType.WriteFromRead:
             case ParseOperationType.WriteAddRead:
             case ParseOperationType.WriteNameFromRead:
@@ -106,8 +137,7 @@ internal static class ParseOperationTypeExtension
             case ParseOperationType.Write:
             case ParseOperationType.WriteRoot:
             case ParseOperationType.WriteArray:
-            case ParseOperationType.WriteFlattenObj:
-            case ParseOperationType.WriteFlattenArray:
+            case ParseOperationType.WriteFlatten:
             case ParseOperationType.WriteFromRead:
             case ParseOperationType.WriteAddRead:
             case ParseOperationType.WriteNameFromRead:

@@ -21,7 +21,7 @@ internal partial class ParseContext
                 return ProcessBranch(parser);
             case "*":
                 HandleOp(parser, this, new ParseOperation(ParseOperationType.ReadFlatten, Token.Acc));
-                return WriteType.Array;
+                break;
             case ":":
                 return ProcessWrite(parser, finalContextOp);
             case ".":

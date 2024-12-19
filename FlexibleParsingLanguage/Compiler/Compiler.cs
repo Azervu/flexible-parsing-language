@@ -26,6 +26,7 @@ internal partial class Compiler
                 new OpTokenConfig(".", OpTokenType.Singleton),
                 new OpTokenConfig("$", OpTokenType.Singleton),
                 new OpTokenConfig("~", OpTokenType.Singleton),
+                new OpTokenConfig("*", OpTokenType.Singleton),
 
                 new OpTokenConfig("{", OpTokenType.Group, '}'),
                 new OpTokenConfig("}", OpTokenType.Prefix),
@@ -38,7 +39,6 @@ internal partial class Compiler
                 new OpTokenConfig("#", OpTokenType.Prefix),
                 new OpTokenConfig("€", OpTokenType.Prefix),
                 new OpTokenConfig("€€", OpTokenType.Prefix),
-                new OpTokenConfig("*", OpTokenType.Prefix),
 
                 new OpTokenConfig("\"", OpTokenType.Escape, '"'),
                 new OpTokenConfig("'", OpTokenType.Escape, '\''),
@@ -88,16 +88,39 @@ internal partial class Compiler
         var saved = new Dictionary<int, ParseOperation>();
         var loaded = new HashSet<int>();
 
+        var opsParents = data.OpsMap.GroupBy(x => x.Key.Item1).ToDictionary(x => x.Key, x => x.Select(y => y.Key.Item2.OpType).ToHashSet());
+
+
         foreach (var o in data.Ops.Select(x => x.Item2))
         {
             if (o.OpType == ParseOperationType.Load)
                 loaded.Add(o.IntAcc);
         }
 
-        foreach (var o in data.Ops.Select(x => x.Item2))
+        foreach (var (id, o) in data.Ops)
         {
             if (o.OpType == ParseOperationType.Save && !loaded.Contains(o.IntAcc))
                 continue;
+
+
+
+
+
+
+            if (o.OpType == ParseOperationType.WriteFlatten)
+            {
+                var ii = -1;
+                foreach (var childOp in opsParents[id])
+                {
+                    var i = childOp.GetAccessStyleIndex();
+                    if (i > -1)
+                        ii = i;
+                }
+  
+                o.IntAcc = ii;
+            }
+
+
             outOps.Add(o);
         }
         return outOps;

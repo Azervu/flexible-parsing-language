@@ -95,11 +95,16 @@ internal class ParseOperation
             case ParseOperationType.WriteFromRead:
                 ctx.WriteStringFromRead(StringAcc);
                 break;
-            case ParseOperationType.WriteFlattenArray:
-                ctx.WriteFlattenArray();
-                break;
-            case ParseOperationType.WriteFlattenObj:
-                ctx.WriteFlatten();
+            case ParseOperationType.WriteFlatten:
+                switch (IntAcc)
+                {
+                    case 1:
+                        ctx.WriteFlatten();
+                        break;
+                    case 2:
+                        ctx.WriteFlattenArray();
+                        break;
+                }
                 break;
             case ParseOperationType.WriteNameFromRead:
 

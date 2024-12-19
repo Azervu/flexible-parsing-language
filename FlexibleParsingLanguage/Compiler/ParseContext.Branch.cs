@@ -34,8 +34,6 @@ internal partial class ParseContext
 
             if (writeType == null)
                 writeType = wt;
-            else if (writeType != wt)
-                throw new Exception("Branch-A");
 
             if (lastOp)
                 addHandled = true;

@@ -28,7 +28,8 @@ public class TokenizerTest
     '  ""-'-""
     |  ""t""
     .  ""aaa""
-    *  ""bbb""
+    *
+    .  ""bbb""
     €€  ""gfjhd""
     |
         {
@@ -40,19 +41,6 @@ public class TokenizerTest
     .  ""k""
     :  ""h""
 " },
-
-
-
-
-
-
-
-
-
-
-
-
-        
     };
 
 
@@ -72,6 +60,16 @@ public class TokenizerTest
 
         var expected = excpectedResult.Replace("\r", string.Empty);
 
+        /*
+        var e = expected.Split('\n');
+        var r = result.Split('\n');
+        for (var i = 0; i < e.Length; i++)
+        {
+            var ee = e[i];
+            var rr = r[i];
+            Assert.AreEqual(rr, ee, $"failed parsing {parserString}");
+        }
+        */
 
 
         Assert.AreEqual(expected, result, "string rep mismatch");
@@ -82,21 +80,6 @@ public class TokenizerTest
         /*
         Assert.AreEqual(excpectedResult.Count, parsed.Count, $"length mismatch | \n{excpectedResult.Select(x => $"{x.Item1}{x.Item2}").Join(' ')} \n{parsed.Select(x => $"{x.Item1}{x.Item2}").Join(' ')}");
 
-        for (var i = 0; i < parsed.Count; i++)
-        {
-            var expected = excpectedResult[i];
-            var actual = parsed[i];
-
-
-            if (actual != expected)
-            {
-
-
-                var s = 345354;
-            }
-
-            Assert.AreEqual(expected, actual, $"failed parsing {parserString}");
-        }
         */
 
     }
