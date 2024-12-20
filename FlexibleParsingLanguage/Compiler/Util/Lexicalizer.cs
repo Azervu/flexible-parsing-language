@@ -7,14 +7,16 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FlexibleParsingLanguage.Compiler;
-
+namespace FlexibleParsingLanguage.Compiler.Util;
 
 internal class TokenGroup
 {
-    internal OpTokenConfig? Op { get; set; }
-    internal string Acc { get; set; }
-    internal List<TokenGroup> Children { get; set; }
+    internal OpConfig? Op { get; set; }
+    internal string? Accessor { get; set; }
+
+    internal uint Order { get; set; }
+
+    internal List<TokenGroup>? Children { get; set; }
     internal void AddLog(StringBuilder log, int depth)
     {
         log.Append($"\n{new string(' ', 4 * depth)}");
@@ -24,11 +26,11 @@ internal class TokenGroup
         {
             log.Append(Op?.Operator);
 
-            if (Acc != null)
+            if (Accessor != null)
                 log.Append($"  ");
         }
-        if (Acc != null)
-            log.Append($"\"{Acc}\"");
+        if (Accessor != null)
+            log.Append($"\"{Accessor}\"");
 
         if (Children != null)
         {
@@ -41,32 +43,8 @@ internal class TokenGroup
     {
         var l = new StringBuilder();
         AddLog(l, 0);
-        l.Append("\n");
         return l.ToString();
     }
-}
-
-
-internal struct OpTokenConfig
-{
-    internal string Operator { get; set; }
-    internal char? EndOperator { get; set; }
-    internal OpTokenType Type { get; set; }
-    internal OpTokenConfig(string op, OpTokenType type, char? endOperator = null)
-    {
-        Operator = op;
-        EndOperator = endOperator;
-        Type = type;
-    }
-}
-
-internal enum OpTokenType
-{
-    Prefix,
-    Escape,
-    Group,
-    Singleton,
-
 }
 
 internal class Lexicalizer
@@ -74,10 +52,10 @@ internal class Lexicalizer
     private string DefaultOp { get; set; }
     private char UnescapeToken { get; set; }
 
-    private Dictionary<string, OpTokenConfig?> Operators = new();
+    private Dictionary<string, OpConfig?> Operators = new();
 
     public Lexicalizer(
-        List<OpTokenConfig> ops,
+        List<OpConfig> ops,
         string defaultOperator,
         char unescapeToken
     )
@@ -85,7 +63,7 @@ internal class Lexicalizer
 
         foreach (var op in ops)
         {
-            OpTokenConfig? cop;
+            OpConfig? cop;
             for (var i = 0; i < op.Operator.Length - 1; i++)
             {
                 var o = op.Operator.Substring(i, i + 1);
@@ -103,14 +81,26 @@ internal class Lexicalizer
         UnescapeToken = unescapeToken;
     }
 
-    internal TokenGroup Lexicalize(string raw)
+    internal List<TokenGroup> Lexicalize(string raw)
     {
 
-        var stack = new List<TokenGroup> { new TokenGroup { Op = new OpTokenConfig { Operator = "{" }, Children = new List<TokenGroup>() } };
+        var stack = new List<TokenGroup> { new TokenGroup { Op = new OpConfig { Operator = null }, Children = [] } };
         TokenGroup? prefixOp = null;
 
-        foreach (var (op, acc) in Tokenize(raw))
+
+
+
+
+        var tokens = Tokenize(raw).ToList();
+
+
+
+
+
+
+        for (var i = 0; i < tokens.Count(); i++)
         {
+            var (op, acc) = tokens[i];
 
             var addToPrefix = prefixOp != null;
 
@@ -126,14 +116,14 @@ internal class Lexicalizer
             var c = new TokenGroup
             {
                 Op = op,
-                Acc = acc
+                Accessor = acc,
+                Order = (uint)i,
             };
-
 
             if (addToPrefix)
             {
-                if (op.Operator == DefaultOp && prefixOp.Acc == null)
-                    prefixOp.Acc = acc;
+                if (op.Operator == DefaultOp && prefixOp.Accessor == null)
+                    prefixOp.Accessor = acc;
                 else
                     prefixOp.Children = new List<TokenGroup> { c };
                 prefixOp = null;
@@ -143,8 +133,6 @@ internal class Lexicalizer
                 groupOp.Children.Add(c);
             }
 
-
-
             switch (c.Op?.Type)
             {
                 case OpTokenType.Group:
@@ -152,7 +140,7 @@ internal class Lexicalizer
                     stack.Add(c);
                     break;
                 case OpTokenType.Prefix:
-                    if (c.Acc == null)
+                    if (c.Accessor == null)
                         prefixOp = c;
                     break;
             }
@@ -161,7 +149,7 @@ internal class Lexicalizer
         if (prefixOp != null)
             throw new InvalidOperationException("Prefix lacks param");
 
-        return stack[0];
+        return stack[0].Children;
     }
 
 
@@ -171,7 +159,7 @@ internal class Lexicalizer
 
 
 
-    private IEnumerable<(OpTokenConfig, string?)> Tokenize(string raw)
+    private IEnumerable<(OpConfig, string?)> Tokenize(string raw)
     {
         var defaultOp = Operators[DefaultOp] ?? throw new Exception("Default operator missing");
         using (var it = new CharEnumerator(raw))
@@ -221,11 +209,11 @@ internal class Lexicalizer
                         if (!it.MoveNext())
                             break;
                     }
-                    yield return ((OpTokenConfig)op, active);
+                    yield return ((OpConfig)op, active);
                 }
                 else if (op.Value.Operator != DefaultOp)
                 {
-                    yield return ((OpTokenConfig)op, null);
+                    yield return ((OpConfig)op, null);
                 }
             }
         }

@@ -32,7 +32,7 @@ internal partial class ParseContext
         switch (Token.Op?.Operator)
         {
             case "|":
-                HandleOp(parser, new ParseOperation(ParsesOperationType.Function, Token.Acc));
+                HandleOp(parser, new ParseOperation(ParsesOperationType.Function, Token.Accessor));
                 break;
             case "~":
                 HandleOp(parser, new ParseOperation(ParsesOperationType.ReadName));
@@ -40,7 +40,7 @@ internal partial class ParseContext
             case "{":
                 return ProcessBranch(parser);
             case "*":
-                var o = new ParseOperation(ParsesOperationType.ReadFlatten, Token.Acc);
+                var o = new ParseOperation(ParsesOperationType.ReadFlatten, Token.Accessor);
                 HandleOp(parser, o);
                 break;
             case "#":
@@ -58,7 +58,7 @@ internal partial class ParseContext
             case "\"":
             case "'":
             case "[":
-                HandleOp(parser, new ParseOperation(ParsesOperationType.Read, Token.Acc));
+                HandleOp(parser, new ParseOperation(ParsesOperationType.Read, Token.Accessor));
                 break;
         }
         return null;

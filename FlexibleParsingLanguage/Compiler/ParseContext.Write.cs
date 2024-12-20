@@ -17,7 +17,7 @@ internal partial class ParseContext
 
 
 
-            HandleOp(parser, new ParseOperation(opt, Token.Acc));
+            HandleOp(parser, new ParseOperation(opt, Token.Accessor));
             return WriteType.Object;
         }
 
@@ -50,7 +50,7 @@ internal partial class Compiler
 
         if (acc.Numeric)
         {
-            if (!int.TryParse(acc.Token.Acc, out var intAcc))
+            if (!int.TryParse(acc.Token.Accessor, out var intAcc))
                 throw new ArgumentException("Invalid Query | accessor not int");
 
             if (nextIsArray)
@@ -61,9 +61,9 @@ internal partial class Compiler
         else
         {
             if (nextIsArray)
-                return new ParseOperation(ParsesOperationType.WriteArray, acc.Token.Acc);
+                return new ParseOperation(ParsesOperationType.WriteArray, acc.Token.Accessor);
             else
-                return new ParseOperation(ParsesOperationType.Write, acc.Token.Acc);
+                return new ParseOperation(ParsesOperationType.Write, acc.Token.Accessor);
 
         }
     }

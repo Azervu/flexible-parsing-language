@@ -1,4 +1,4 @@
-using FlexibleParsingLanguage.Compiler;
+using FlexibleParsingLanguage.Compiler.Util;
 using System.Text;
 
 namespace FlexibleParsingLanguage.Test;
@@ -6,41 +6,35 @@ namespace FlexibleParsingLanguage.Test;
 [TestClass]
 public class TokenizerTest
 {
-    private Lexicalizer T { get; set; } = new Compiler.Compiler().Tokenizer;
+    private Lexicalizer T { get; set; } = new Compiler.Compiler().Lexicalizer;
 
     public static IEnumerable<object[]> TokenizationData => new List<object[]>
     {
         new object[] { "{a.b}c|{d.e.f}g", @"
 {
+    .  ""a""
+    .  ""b""
+.  ""c""
+|
     {
-        .  ""a""
-        .  ""b""
-    .  ""c""
-    |
-        {
-            .  ""d""
-            .  ""e""
-            .  ""f""
-    .  ""g""
-" },
+        .  ""d""
+        .  ""e""
+        .  ""f""
+.  ""g""" },
         new object[] { "'-\\'-'|t.aaa*bbb##gfjhd|{ccc}\" \"", @"
-{
-    '  ""-'-""
-    |  ""t""
-    .  ""aaa""
-    *
-    .  ""bbb""
-    ##  ""gfjhd""
-    |
-        {
-            .  ""ccc""
-    ""  "" ""
-" },
+'  ""-'-""
+|  ""t""
+.  ""aaa""
+*
+.  ""bbb""
+##  ""gfjhd""
+|
+    {
+        .  ""ccc""
+""  "" """ },
         new object[] { "k:h", @"
-{
-    .  ""k""
-    :  ""h""
-" },
+.  ""k""
+:  ""h""" },
     };
 
 
@@ -55,7 +49,7 @@ public class TokenizerTest
     public void TestUtil(string parserString, string excpectedResult)
     {
         var parsed = T.Lexicalize(parserString);
-        var result = parsed.ToString2().Replace("\r", string.Empty);
+        var result = parsed.Select(x => x.ToString2()).Concat().Replace("\r", string.Empty);
 
 
         var expected = excpectedResult.Replace("\r", string.Empty);

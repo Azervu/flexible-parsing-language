@@ -1,4 +1,5 @@
-﻿using FlexibleParsingLanguage.Parse;
+﻿using FlexibleParsingLanguage.Compiler.Util;
+using FlexibleParsingLanguage.Parse;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace FlexibleParsingLanguage.Compiler;
 
@@ -17,33 +18,33 @@ internal partial class Compiler
 
     public const int ROOT_ID = 1;
 
-    internal Lexicalizer Tokenizer { get; private set; }
+    internal Lexicalizer Lexicalizer { get; private set; }
 
     public Compiler()
     {
-        Tokenizer = new Lexicalizer(
+        Lexicalizer = new Lexicalizer(
             [
-                new OpTokenConfig(".", OpTokenType.Singleton),
-                new OpTokenConfig("$", OpTokenType.Singleton),
-                new OpTokenConfig("~", OpTokenType.Singleton),
-                new OpTokenConfig("*", OpTokenType.Singleton),
+                new OpConfig(".", OpTokenType.Singleton),
+                new OpConfig("$", OpTokenType.Singleton),
+                new OpConfig("~", OpTokenType.Singleton),
+                new OpConfig("*", OpTokenType.Singleton),
 
-                new OpTokenConfig("{", OpTokenType.Group, '}'),
-                new OpTokenConfig("}", OpTokenType.Prefix),
+                new OpConfig("{", OpTokenType.Group, '}'),
+                new OpConfig("}", OpTokenType.Prefix),
 
-                new OpTokenConfig("(", OpTokenType.Group, ')'),
-                new OpTokenConfig(")", OpTokenType.Prefix),
+                new OpConfig("(", OpTokenType.Group, ')'),
+                new OpConfig(")", OpTokenType.Prefix),
 
-                new OpTokenConfig(":", OpTokenType.Prefix),
-                new OpTokenConfig("|", OpTokenType.Prefix),
-                new OpTokenConfig("@", OpTokenType.Prefix),
-                new OpTokenConfig("#", OpTokenType.Prefix),
-                new OpTokenConfig("##", OpTokenType.Prefix),
+                new OpConfig(":", OpTokenType.Prefix),
+                new OpConfig("|", OpTokenType.Prefix),
+                new OpConfig("@", OpTokenType.Prefix),
+                new OpConfig("#", OpTokenType.Prefix),
+                new OpConfig("##", OpTokenType.Prefix),
                 //new OpTokenConfig("€", OpTokenType.Prefix),
                 //new OpTokenConfig("€€", OpTokenType.Prefix),
 
-                new OpTokenConfig("\"", OpTokenType.Escape, '"'),
-                new OpTokenConfig("'", OpTokenType.Escape, '\''),
+                new OpConfig("\"", OpTokenType.Escape, '"'),
+                new OpConfig("'", OpTokenType.Escape, '\''),
             ],
             ".", '\\'
             );
@@ -51,7 +52,9 @@ internal partial class Compiler
 
     public Parser Compile(string raw, ParsingMetaContext configContext)
     {
-        var rootToken = Tokenizer.Lexicalize(raw);
+        var rootToken = new TokenGroup { Op = new OpConfig { Operator = "{" }, Children = Lexicalizer.Lexicalize(raw) };
+
+
         var parseData = new ParseData
         {
             ActiveId = ROOT_ID,
@@ -67,10 +70,17 @@ internal partial class Compiler
             },
         };
 
+
+
+
         var rootContex = new ParseContext(rootToken);
+
+
+
+
         var rootType = rootContex.ProcessBranch(parseData);
 
-        var (ops, rootWt) = ProcessOps(parseData, rootContex);
+        var (ops, rootWt) = ParsesOperationType.CompileOperations(parseData, rootContex);
 
         var config = new ParserRootConfig { RootType = rootType };
 
