@@ -9,18 +9,50 @@ namespace FlexibleParsingLanguage.Compiler.Util;
 internal class OpConfig
 {
     internal string Operator { get; set; }
-    internal char? EndOperator { get; set; }
-    internal OpTokenType Type { get; set; }
-    internal OpConfig(string op, OpTokenType type, char? endOperator = null)
+    internal char? GroupOperator { get; set; }
+    internal bool Branching { get; set; }
+
+
+    internal OpCategory Category { get; set; }
+    internal int Rank { get; set; }
+    internal OpConfig(string op, OpCategory type, int rank = -1, char? endOperator = null)
     {
         Operator = op;
-        EndOperator = endOperator;
-        Type = type;
+        Category = type;
+        Rank = rank;
+        GroupOperator = endOperator;
     }
+
+    internal int PrefixRank()
+    {
+        switch (Category)
+        {
+            case OpCategory.Prefix:
+            case OpCategory.Infix:
+                return Rank;
+        }
+        return int.MinValue;
+    }
+
+    internal int PostfixRank()
+    {
+        switch (Category)
+        {
+            case OpCategory.Prefix:
+            case OpCategory.Infix:
+                return Rank;
+        }
+        return int.MinValue;
+    }
+
 }
 
-internal enum OpTokenType
+internal enum OpCategory
 {
+    Any,
+
+
+
     Temp,
     Unknown,
 
@@ -28,7 +60,6 @@ internal enum OpTokenType
     PostFix,
     Infix,
     Literal,
-    Group,
     Singleton,
 
 }

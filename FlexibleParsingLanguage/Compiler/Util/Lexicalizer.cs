@@ -62,14 +62,13 @@ internal class Lexicalizer
     private string DefaultOp { get; set; }
     private char UnescapeToken { get; set; }
 
-    private OpConfig UnknownOp { get; set; } = new OpConfig(null, OpTokenType.Unknown);
+    private OpConfig UnknownOp { get; set; } = new OpConfig(null, OpCategory.Unknown);
 
     private Dictionary<string, OpConfig?> Operators = new();
 
     public Lexicalizer(
         List<OpConfig> ops,
         string defaultOperator,
-
         char unescapeToken
     )
     {
@@ -77,11 +76,14 @@ internal class Lexicalizer
         foreach (var op in ops)
         {
             HandleConfigEntry(op.Operator, op);
-            if (op.EndOperator != null && op.Type == OpTokenType.Group)
+
+            if (op.GroupOperator != null)
             {
-                var op2 = op.EndOperator.ToString();
-                HandleConfigEntry(op2, new OpConfig(op2, OpTokenType.Temp));
+                var op2 = op.GroupOperator.ToString();
+                HandleConfigEntry(op2, new OpConfig(op2, OpCategory.Temp));
             }
+
+
         }
         DefaultOp = defaultOperator;
         UnescapeToken = unescapeToken;
@@ -105,8 +107,36 @@ internal class Lexicalizer
 
 
         var defaultOp = Operators[DefaultOp] ?? throw new Exception("Default operator missing");
+
+        tokens = tokens.Select(x => {
+
+            if (x.Item1 != UnknownOp)
+                return x;
+            return (defaultOp, x.Item2);
+        }).ToList();
+
+
+        var ops = new List<TokenGroup>(tokens.Count);
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var (op, acc) = tokens[i];
+            ops.Add(new TokenGroup
+            {
+                Type = op,
+                Accessor = acc,
+                Order = (uint)i,
+            });
+        }
+
+        ops = GroupOps(ops);
+        SequenceOps(ref ops);
+
+
+
+
+
         var t2 = tokens.Select(x => {
-        
+
             if (x.Item1 != UnknownOp)
                 return x;
             return (defaultOp, x.Item2);
@@ -150,12 +180,12 @@ internal class Lexicalizer
                     op = op2;
                 }
 
-                if (op.Type == OpTokenType.Literal)
+                if (op.Category == OpCategory.Literal)
                 {
                     active = string.Empty;
                     while (true)
                     {
-                        if (it.Current == op.EndOperator)
+                        if (it.Current == op.GroupOperator)
                         {
                             it.MoveNext();
                             break;
@@ -176,9 +206,231 @@ internal class Lexicalizer
         }
     }
 
+
+
+
+
+    private List<TokenGroup> GroupOps(List<TokenGroup> ops)
+    {
+        var stack = new List<TokenGroup> { new() { Type = new OpConfig(null, OpCategory.Temp), Children = [] } };
+        TokenGroup? prefixOp = null;
+
+        foreach (var op in ops)
+        {
+            var groupOp = stack[stack.Count - 1];
+            if (stack.Count > 1 && op.Type.Operator == groupOp.Type.GroupOperator.ToString())
+            {
+                stack.RemoveAt(stack.Count - 1);
+                continue;
+            }
+            groupOp.Children.Add(op);
+
+            if (op.Type?.GroupOperator != null)
+            {
+                op.Children = new List<TokenGroup>();
+                stack.Add(op);
+            }
+
+        }
+
+        if (prefixOp != null)
+            throw new InvalidOperationException("Prefix lacks param");
+        return stack[0].Children;
+    }
+
+
+
+
+
+    internal void SequenceOps(ref List<TokenGroup> ops)
+    {
+        var proccessedOps = new HashSet<TokenGroup>();
+
+        var left = new Dictionary<int, int>();
+        var right = new Dictionary<int, int>();
+
+        var ranks = new List<(int Rank, int Index)>(ops.Count);
+
+
+
+
+
+
+
+        for (var i = 0; i < ops.Count; i++)
+        {
+            if (!left.TryGetValue(i, out var l))
+                l = i - 1;
+            if (!right.TryGetValue(i, out var r))
+                r = i > ops.Count - 2 ? -1 : i + 1;
+        }
+
+
+
+
+
+        ranks.OrderByDescending(x => x.Rank).ThenBy(x => x.Index);
+
+
+        foreach (var (rank, i) in ranks)
+        {
+            var op = ops[i];
+
+            if (!left.TryGetValue(i, out var l))
+                l = i - 1;
+
+            if (!right.TryGetValue(i, out var r))
+                r = i > ops.Count - 2 ? -1 : i + 1;
+
+
+
+
+            switch (op.Type.Category)
+            {
+                case OpCategory.Prefix:
+                case OpCategory.Infix:
+
+                    TokenGroup param = null;
+                    if (l >= 0)
+                    {
+                        param = ops[l];
+
+                        //if (left.ContainsKey())
+
+                        left[l] = -1;
+                    }
+                    op.Input.Add(param);
+                    break;
+            }
+        }
+
+
+        for (var i = 0; i < ops.Count; i++)
+        {
+
+
+        }
+
+
+
+
+        while (true) {
+        
+            var minRank = int.MaxValue;
+
+            foreach (var op in ops)
+            {
+                if (proccessedOps.Contains(op))
+                    continue;
+
+                minRank = Math.Min(minRank, op.Type.Rank);
+            }
+
+            if (minRank == int.MaxValue)
+                break;
+
+            for (var i = 0; i < ops.Count(); i++)
+            {
+                var op = ops[i];
+
+                if (op.Type.Rank > minRank)
+                    continue;
+
+
+
+
+
+
+
+
+
+
+
+                var postfixRank = op.Type.PostfixRank();
+                var prefixRank = op.Type.PrefixRank();
+
+                if (i > 0)
+                {
+                    var last = ops[i - 1];
+                    var lastRank = last.Type.PostfixRank();
+                    if (prefixRank != int.MinValue || lastRank != int.MinValue)
+                    {
+                        if (prefixRank > lastRank)
+                        {
+
+                        }
+                        else
+                        {
+
+                        }
+                    }
+
+
+
+                }
+
+
+
+
+                proccessedOps.Add(op);
+
+                switch (op.Type.Category)
+                {
+                    case OpCategory.Prefix:
+                    case OpCategory.Infix:
+
+                        TokenGroup param = null;
+                        if (i > 0)
+                        {
+                            param = ops[i - 1];
+                            ops.RemoveAt(i - 1);
+                            i--;
+                        }
+                        op.Input.Add(param);
+                    break;
+                }
+                switch (op.Type.Category)
+                {
+                    case OpCategory.PostFix:
+                    case OpCategory.Infix:
+
+                        TokenGroup param = null;
+                        if (i < ops.Count()-1)
+                        {
+                            param = ops[i + 1];
+                            ops.RemoveAt(i + 1);
+                            i--;
+                        }
+                        op.Input.Add(param);
+                        break;
+                }
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     private List<TokenGroup> GroupTokens(List<(OpConfig, string?)> tokens)
     {
-        var stack = new List<TokenGroup> { new() { Type = new OpConfig(null, OpTokenType.Temp), Children = [] } };
+        var stack = new List<TokenGroup> { new() { Type = new OpConfig(null, OpCategory.Temp), Children = [] } };
         TokenGroup? prefixOp = null;
 
         for (var i = 0; i < tokens.Count(); i++)
@@ -188,7 +440,7 @@ internal class Lexicalizer
             var addToPrefix = prefixOp != null;
 
             var groupOp = stack[stack.Count - 1];
-            if (stack.Count > 1 && op.Operator == groupOp.Type.EndOperator.ToString())
+            if (stack.Count > 1 && op.Operator == groupOp.Type.GroupOperator.ToString())
             {
                 if (addToPrefix)
                     throw new InvalidOperationException("Ungrouping is prefix param");
@@ -216,13 +468,16 @@ internal class Lexicalizer
                 groupOp.Children.Add(c);
             }
 
-            switch (c.Type?.Type)
+
+            if (c.Type.GroupOperator != null)
             {
-                case OpTokenType.Group:
-                    c.Children = new List<TokenGroup>();
-                    stack.Add(c);
-                    break;
-                case OpTokenType.Prefix:
+                c.Children = new List<TokenGroup>();
+                stack.Add(c);
+            }
+
+            switch (c.Type?.Category)
+            {
+                case OpCategory.Prefix:
                     if (c.Accessor == null)
                         prefixOp = c;
                     break;
@@ -232,69 +487,6 @@ internal class Lexicalizer
         if (prefixOp != null)
             throw new InvalidOperationException("Prefix lacks param");
         return stack[0].Children;
-    }
-
-
-
-    internal void HandlePostPreFix(List<(OpConfig, string?)> tokens)
-    {
-
-    }
-
-
-    internal void SequenceTokens(List<(OpConfig, string?)> tokens)
-    {
-
-
-
-
-        var tokenGroups = new List<TokenGroup>();
-
-
-        var rootToken = new TokenGroup();
-
-
-        for (var i = 0; i < tokens.Count(); i++)
-        {
-            var (op, acc) = tokens[i];
-
-            var input = new List<(OpConfig, string?)>();
-            var output = new List<(OpConfig, string?)>();
-
-
-            switch (op.Type)
-            {
-                case OpTokenType.Prefix:
-                case OpTokenType.Infix:
-
-
-
-                    break;
-            }
-
-
-
-            switch (op.Type)
-            {
-                case OpTokenType.Prefix:
-                    break;
-                case OpTokenType.PostFix:
-                    break;
-                case OpTokenType.Infix:
-                    break;
-                case OpTokenType.Literal:
-                    break;
-                case OpTokenType.Group:
-                    break;
-                case OpTokenType.Singleton:
-                    break;
-                case OpTokenType.Temp:
-                    break;
-            }
-
-
-        }
-
     }
 
 }

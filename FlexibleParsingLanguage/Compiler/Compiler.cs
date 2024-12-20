@@ -20,29 +20,31 @@ internal partial class Compiler
 
     internal Lexicalizer Lexicalizer { get; private set; }
 
-    private OpConfig _root = new OpConfig("{", OpTokenType.Group, '}');
+    private OpConfig _root = new OpConfig("{", OpCategory.Any, -1, '}')
+    {
+        Branching = true,
+    };
 
     public Compiler()
     {
         Lexicalizer = new Lexicalizer(
             [
-
                 _root,
-                new OpConfig("(", OpTokenType.Group, ')'),
+                new OpConfig("(", OpCategory.Any, -1, ')'),
 
-                new OpConfig(".", OpTokenType.Singleton),
-                new OpConfig("$", OpTokenType.Singleton),
-                new OpConfig("~", OpTokenType.Singleton),
-                new OpConfig("*", OpTokenType.Singleton),
+                new OpConfig(".", OpCategory.Singleton),
+                new OpConfig("$", OpCategory.Singleton),
+                new OpConfig("~", OpCategory.Singleton),
+                new OpConfig("*", OpCategory.Singleton),
 
-                new OpConfig(":", OpTokenType.Prefix),
-                new OpConfig("|", OpTokenType.Prefix),
-                new OpConfig("@", OpTokenType.Prefix),
-                new OpConfig("#", OpTokenType.Prefix),
-                new OpConfig("##", OpTokenType.Prefix),
+                new OpConfig(":", OpCategory.Prefix),
+                new OpConfig("|", OpCategory.Prefix),
+                new OpConfig("@", OpCategory.Prefix),
+                new OpConfig("#", OpCategory.Prefix),
+                new OpConfig("##", OpCategory.Prefix),
 
-                new OpConfig("\"", OpTokenType.Literal, '"'),
-                new OpConfig("'", OpTokenType.Literal, '\''),
+                new OpConfig("\"", OpCategory.Literal, '"'),
+                new OpConfig("'", OpCategory.Literal, '\''),
             ],
             ".", '\\'
             );
