@@ -12,8 +12,8 @@ internal partial class ParseContext
     internal WriteType? ProcessLookup(ParseData parser)
     {
         var ops = ProcessParam();
-        ops.Add(new ParseOperation(ParseOperationType.Lookup));
-        ops.Add(new ParseOperation(ParseOperationType.ParamToRead));
+        ops.Add(new ParseOperation(ParsesOperationType.Lookup));
+        ops.Add(new ParseOperation(ParsesOperationType.ParamToRead));
         HandleOps(parser, ops.ToArray());
         return null;
     }
@@ -21,7 +21,7 @@ internal partial class ParseContext
     internal WriteType? ProcessContextLookup(ParseData parser)
     {
         var ops = ProcessParam();
-        ops.Add(new ParseOperation(ParseOperationType.ChangeLookup));
+        ops.Add(new ParseOperation(ParsesOperationType.ChangeLookup));
         HandleOps(parser, ops.ToArray());
         return null;
     }

@@ -4,30 +4,61 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class ParseContext
 {
+
+
+
+
+    /*
+
+
+                        case "~":
+                        if (parent.WriteMode == WriteMode.Read)
+                            yield return new ParseOperation(ParseOperationType.ReadName);
+                        else
+                            yield return new ParseOperation(ParseOperationType.WriteNameFromRead);
+                        break;
+
+    */
+
+
+
+
+
+
+
+
     internal WriteType? Process(ParseData parser, bool finalContextOp)
     {
         switch (Token.Op?.Operator)
         {
             case "|":
-                HandleOp(parser, new ParseOperation(ParseOperationType.Function, Param));
+                HandleOp(parser, new ParseOperation(ParsesOperationType.Function, Token.Acc));
+                break;
+            case "~":
+                HandleOp(parser, new ParseOperation(ParsesOperationType.ReadName));
                 break;
             case "{":
                 return ProcessBranch(parser);
             case "*":
-                var o = new ParseOperation(ParseOperationType.ReadFlatten, Token.Acc);
+                var o = new ParseOperation(ParsesOperationType.ReadFlatten, Token.Acc);
                 HandleOp(parser, o);
                 break;
             case "#":
                 return ProcessLookup(parser);
             case "##":
                 return ProcessContextLookup(parser);
+
+            case "$":
+                HandleOp(parser, new ParseOperation(ParsesOperationType.ReadRoot));
+                break;
+
             case ":":
                 return ProcessWrite(parser, finalContextOp);
             case ".":
             case "\"":
             case "'":
             case "[":
-                HandleOp(parser, new ParseOperation(ParseOperationType.Read, Param));
+                HandleOp(parser, new ParseOperation(ParsesOperationType.Read, Token.Acc));
                 break;
         }
         return null;
@@ -44,7 +75,7 @@ internal partial class ParseContext
 
     private void HandleOps(ParseData parser, ParseOperation[] ops)
     {
-        var activeId = ops[0].OpType.Op == ParseOperationType.ReadRoot ? -1 : parser.ActiveId;
+        var activeId = ops[0].OpType.Op == ParsesOperationType.ReadRoot ? -1 : parser.ActiveId;
         var key = (activeId, ops);
         if (parser.OpsMap.TryGetValue(key, out var readId))
         {
@@ -56,7 +87,7 @@ internal partial class ParseContext
         {
             if (!parser.SaveOps.Contains(parser.ActiveId))
                 throw new Exception("Query parsing error | Unknown read id " + parser.ActiveId);
-            parser.Ops.Add((-1, new ParseOperation(ParseOperationType.Load, parser.ActiveId)));
+            parser.Ops.Add((-1, new ParseOperation(ParsesOperationType.Load, parser.ActiveId)));
             parser.LoadedId = parser.ActiveId;
         }
 
@@ -74,7 +105,7 @@ internal partial class ParseContext
 
         parser.OpsMap.Add(key, parser.ActiveId);
         parser.IdCounter++;
-        var saveOp = new ParseOperation(ParseOperationType.Save, parser.ActiveId);
+        var saveOp = new ParseOperation(ParsesOperationType.Save, parser.ActiveId);
         parser.Ops.Add((parser.IdCounter, saveOp));
         parser.OpsMap.Add((activeId, [saveOp]), parser.IdCounter);
     }

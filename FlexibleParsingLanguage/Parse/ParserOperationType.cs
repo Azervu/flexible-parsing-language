@@ -1,10 +1,10 @@
 ﻿namespace FlexibleParsingLanguage.Parse;
 
-internal struct ParseOperationType
+internal partial struct ParsesOperationType
 {
     internal Action<Parser, ParsingContext, int, string> Op { get; private set; }
 
-    internal ParseOperationType(Action<Parser, ParsingContext, int, string> op)
+    internal ParsesOperationType(Action<Parser, ParsingContext, int, string> op)
     {
         if (op == null)
             throw new ArgumentNullException(nameof(op));
@@ -20,6 +20,7 @@ internal struct ParseOperationType
 
         { Read, new OperationMetaData(WriteType.Object, nameof(Read)) },
         { Write, new OperationMetaData(WriteType.Object, nameof(Write)) },
+        { WriteFromRead, new OperationMetaData(WriteType.Object, nameof(WriteFromRead)) },
 
         { ReadInt, new OperationMetaData(WriteType.Array, nameof(ReadInt)) },
         { ReadFlatten, new OperationMetaData(WriteType.Array, nameof(ReadFlatten)) },
@@ -33,7 +34,7 @@ internal struct ParseOperationType
         { Load, new OperationMetaData(WriteType.None, nameof(Load)) },
         { ReadName, new OperationMetaData(WriteType.None, nameof(ReadName)) },
         { WriteInt, new OperationMetaData(WriteType.None, nameof(WriteInt)) },
-        { WriteFromRead, new OperationMetaData(WriteType.None, nameof(WriteFromRead)) },
+
         { WriteFlatten, new OperationMetaData(WriteType.None, nameof(WriteFlatten)) },
         { Function, new OperationMetaData(WriteType.None, nameof(Function)) },
         { ParamLiteral, new OperationMetaData(WriteType.None, nameof(ParamLiteral)) },

@@ -37,7 +37,7 @@ public class Parser
     {
 
 #if DEBUG
-        var ops = _operations.Select(x => $"\n    {x.OpType} {x.StringAcc} {x.IntAcc}").Concat();
+        var ops = _operations.Select(x => $"\n    {x.OpType.GetMetaData().Name} {x.StringAcc} {x.IntAcc}").Concat();
 
 
         var s = 456654;
@@ -66,7 +66,7 @@ public class Parser
             }
             catch (Exception ex)
             {
-                throw new Exception($"Operation failed {o.OpType.GetMetaData().Name}", ex);
+                throw new Exception($"Operation failed {o.OpType.GetMetaData().Name} | {ex.Message}", ex);
             }
         }
 

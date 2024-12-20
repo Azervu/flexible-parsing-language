@@ -23,14 +23,14 @@ public class TokenizerTest
             .  ""f""
     .  ""g""
 " },
-        new object[] { "'-\\'-'|t.aaa*bbb€€gfjhd|{ccc}\" \"", @"
+        new object[] { "'-\\'-'|t.aaa*bbb##gfjhd|{ccc}\" \"", @"
 {
     '  ""-'-""
     |  ""t""
     .  ""aaa""
     *
     .  ""bbb""
-    €€  ""gfjhd""
+    ##  ""gfjhd""
     |
         {
             .  ""ccc""

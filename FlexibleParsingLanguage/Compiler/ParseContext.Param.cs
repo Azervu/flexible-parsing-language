@@ -7,15 +7,15 @@ internal partial class ParseContext
     internal List<ParseOperation> ProcessParam()
     {
         if (ChildOperator == null)
-            return [new ParseOperation(ParseOperationType.ParamLiteral, Token.Acc),];
+            return [new ParseOperation(ParsesOperationType.ParamLiteral, Token.Acc),];
 
         foreach (var accessor in ChildOperator) {
             switch (accessor.Operator)
             {
                 case "@":
                     return [
-                        new ParseOperation(ParseOperationType.Read, accessor.Token.Acc),
-                        new ParseOperation(ParseOperationType.ParamFromRead),
+                        new ParseOperation(ParsesOperationType.Read, accessor.Token.Acc),
+                        new ParseOperation(ParsesOperationType.ParamFromRead),
                     ];
             }
         }

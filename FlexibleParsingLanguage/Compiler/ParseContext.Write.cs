@@ -13,11 +13,11 @@ internal partial class ParseContext
     {
         if (ChildOperator == null || ChildOperator.Count == 0)
         {
-            Action<Parser, ParsingContext, int, string> opt = finalContextOp ? ParseOperationType.WriteFromRead : ParseOperationType.Write;
+            Action<Parser, ParsingContext, int, string> opt = finalContextOp ? ParsesOperationType.WriteFromRead : ParsesOperationType.Write;
 
 
 
-            HandleOp(parser, new ParseOperation(opt, Param));
+            HandleOp(parser, new ParseOperation(opt, Token.Acc));
             return WriteType.Object;
         }
 
@@ -26,7 +26,10 @@ internal partial class ParseContext
         switch (op)
         {
             case "*":
-                HandleOp(parser, new ParseOperation(ParseOperationType.WriteFlatten));
+                HandleOp(parser, new ParseOperation(ParsesOperationType.WriteFlatten));
+                break;
+            case "$":
+                HandleOp(parser, new ParseOperation(ParsesOperationType.WriteRoot));
                 break;
             default:
                 throw new Exception($"Unsupported param operator | op = {op}");
@@ -47,20 +50,20 @@ internal partial class Compiler
 
         if (acc.Numeric)
         {
-            if (!int.TryParse(acc.Param, out var intAcc))
+            if (!int.TryParse(acc.Token.Acc, out var intAcc))
                 throw new ArgumentException("Invalid Query | accessor not int");
 
             if (nextIsArray)
-                return new ParseOperation(ParseOperationType.WriteArrayInt, intAcc);
+                return new ParseOperation(ParsesOperationType.WriteArrayInt, intAcc);
             else
-                return new ParseOperation(ParseOperationType.WriteInt, intAcc);
+                return new ParseOperation(ParsesOperationType.WriteInt, intAcc);
         }
         else
         {
             if (nextIsArray)
-                return new ParseOperation(ParseOperationType.WriteArray, acc.Param);
+                return new ParseOperation(ParsesOperationType.WriteArray, acc.Token.Acc);
             else
-                return new ParseOperation(ParseOperationType.Write, acc.Param);
+                return new ParseOperation(ParsesOperationType.Write, acc.Token.Acc);
 
         }
     }

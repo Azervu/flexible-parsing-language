@@ -58,26 +58,26 @@ internal partial class Compiler
             LoadedId = ROOT_ID,
             IdCounter = 3,
             Ops = [
-                (ROOT_ID, new ParseOperation(ParseOperationType.ReadRoot)),
-                (2, new ParseOperation(ParseOperationType.Save)),
+                (ROOT_ID, new ParseOperation(ParsesOperationType.ReadRoot)),
+                (2, new ParseOperation(ParsesOperationType.Save)),
             ],
             SaveOps = [ROOT_ID],
             OpsMap = new Dictionary<(int LastOp, ParseOperation[]), int> {
-                {(-1, [new ParseOperation(ParseOperationType.ReadRoot)]), ROOT_ID },
+                {(-1, [new ParseOperation(ParsesOperationType.ReadRoot)]), ROOT_ID },
             },
         };
 
         var rootContex = new ParseContext(rootToken);
         var rootType = rootContex.ProcessBranch(parseData);
 
-        var (ops, rootWt) = FilterOps(parseData, rootContex);
+        var (ops, rootWt) = ProcessOps(parseData, rootContex);
 
         var config = new ParserRootConfig { RootType = rootType };
 
 #if DEBUG
         var token = rootToken.ToString2();
 
-        var debug = ops.Select(x => $"{x.OpType} {x.IntAcc} {x.StringAcc} ").Join("\n");
+        var debug = ops.Select(x => $"{x.OpType.GetMetaData().Name} {x.IntAcc} {x.StringAcc} ").Join("\n");
         var s = 345534;
 #endif
 
@@ -85,61 +85,4 @@ internal partial class Compiler
     }
 
 
-    private (List<ParseOperation>, WriteType) FilterOps(ParseData data, ParseContext root)
-    {
-        var opsMap = data.OpsMap.ToDictionary(x => x.Value, x => x.Key);
-        var outOps = new List<ParseOperation>();
-        var saved = new Dictionary<int, ParseOperation>();
-        var loaded = new HashSet<int>();
-
-        var opsParents = data.OpsMap.GroupBy(x => x.Key.Item1).ToDictionary(
-            x => x.Key,
-            x => x.Select(y => y.Key.Item2.Last().OpType).ToHashSet()
-        );
-
-
-        foreach (var o in data.Ops.Select(x => x.Item2))
-        {
-            if (o.OpType.Op == ParseOperationType.Load)
-                loaded.Add(o.IntAcc);
-        }
-
-
-        var rootWriteType = WriteType.None;
-
-
-        foreach (var (id, o) in data.Ops)
-        {
-            if (rootWriteType != WriteType.None)
-                rootWriteType = o.OpType.GetWriteType();
-
-
-            if (o.OpType.Op == ParseOperationType.Save && !loaded.Contains(o.IntAcc))
-                continue;
-
-            if (o.OpType.Op == ParseOperationType.WriteFlatten)
-                o.IntAcc = (int)GetWriteType(opsParents[id]);
-
-            outOps.Add(o);
-        }
-
-        if (rootWriteType == WriteType.None)
-            rootWriteType = WriteType.Array;
-
-
-        return (outOps, rootWriteType);
-    }
-
-    private WriteType GetWriteType(HashSet<ParseOperationType> opsTypes)
-    {
-        var ii = WriteType.None;
-        foreach (var childOp in opsTypes)
-        {
-            var wt = childOp.GetWriteType();
-            if (wt > WriteType.None)
-                ii = wt;
-        }
-
-        return ii;
-    }
 }
