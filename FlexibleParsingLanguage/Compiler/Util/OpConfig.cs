@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Compiler.Util;
 
-internal struct OpConfig
+internal class OpConfig
 {
     internal string Operator { get; set; }
     internal char? EndOperator { get; set; }
@@ -21,9 +21,14 @@ internal struct OpConfig
 
 internal enum OpTokenType
 {
+    Temp,
+    Unknown,
+
     Prefix,
-    Escape,
+    PostFix,
+    Infix,
+    Literal,
     Group,
     Singleton,
-    Temp,
+
 }

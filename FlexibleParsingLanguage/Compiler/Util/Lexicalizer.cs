@@ -11,20 +11,30 @@ namespace FlexibleParsingLanguage.Compiler.Util;
 
 internal class TokenGroup
 {
-    internal OpConfig? Op { get; set; }
+    internal OpConfig? Type { get; set; }
     internal string? Accessor { get; set; }
+
+    internal List<TokenGroup> Input { get; set; } = new List<TokenGroup>();
+    internal List<TokenGroup> Output { get; set; } = new List<TokenGroup>();
+
+
+
 
     internal uint Order { get; set; }
 
+
+
     internal List<TokenGroup>? Children { get; set; }
+
+
     internal void AddLog(StringBuilder log, int depth)
     {
         log.Append($"\n{new string(' ', 4 * depth)}");
 
 
-        if (Op?.Operator != null)
+        if (Type?.Operator != null)
         {
-            log.Append(Op?.Operator);
+            log.Append(Type?.Operator);
 
             if (Accessor != null)
                 log.Append($"  ");
@@ -52,11 +62,14 @@ internal class Lexicalizer
     private string DefaultOp { get; set; }
     private char UnescapeToken { get; set; }
 
+    private OpConfig UnknownOp { get; set; } = new OpConfig(null, OpTokenType.Unknown);
+
     private Dictionary<string, OpConfig?> Operators = new();
 
     public Lexicalizer(
         List<OpConfig> ops,
         string defaultOperator,
+
         char unescapeToken
     )
     {
@@ -89,14 +102,23 @@ internal class Lexicalizer
     internal List<TokenGroup> Lexicalize(string raw)
     {
         var tokens = Tokenize(raw).ToList();
-        var groupedTokens = GroupTokens(tokens);
+
+
+        var defaultOp = Operators[DefaultOp] ?? throw new Exception("Default operator missing");
+        var t2 = tokens.Select(x => {
+        
+            if (x.Item1 != UnknownOp)
+                return x;
+            return (defaultOp, x.Item2);
+        }).ToList();
+
+
+        var groupedTokens = GroupTokens(t2);
         return groupedTokens;
     }
 
-
     private IEnumerable<(OpConfig, string?)> Tokenize(string raw)
     {
-        var defaultOp = Operators[DefaultOp] ?? throw new Exception("Default operator missing");
         using (var it = new CharEnumerator(raw))
         {
             if (!it.MoveNext())
@@ -114,7 +136,7 @@ internal class Lexicalizer
                             break;
                         active += c;
                     }
-                    yield return (defaultOp, active);
+                    yield return (UnknownOp, active);
                     continue;
                 }
 
@@ -128,12 +150,12 @@ internal class Lexicalizer
                     op = op2;
                 }
 
-                if (op.Value.Type == OpTokenType.Escape)
+                if (op.Type == OpTokenType.Literal)
                 {
                     active = string.Empty;
                     while (true)
                     {
-                        if (it.Current == op.Value.EndOperator)
+                        if (it.Current == op.EndOperator)
                         {
                             it.MoveNext();
                             break;
@@ -144,11 +166,11 @@ internal class Lexicalizer
                         if (!it.MoveNext())
                             break;
                     }
-                    yield return ((OpConfig)op, active);
+                    yield return (op, active);
                 }
-                else if (op.Value.Operator != DefaultOp)
+                else if (op.Operator != DefaultOp)
                 {
-                    yield return ((OpConfig)op, null);
+                    yield return (op, null);
                 }
             }
         }
@@ -156,7 +178,7 @@ internal class Lexicalizer
 
     private List<TokenGroup> GroupTokens(List<(OpConfig, string?)> tokens)
     {
-        var stack = new List<TokenGroup> { new TokenGroup { Op = new OpConfig { Operator = null }, Children = [] } };
+        var stack = new List<TokenGroup> { new() { Type = new OpConfig(null, OpTokenType.Temp), Children = [] } };
         TokenGroup? prefixOp = null;
 
         for (var i = 0; i < tokens.Count(); i++)
@@ -166,7 +188,7 @@ internal class Lexicalizer
             var addToPrefix = prefixOp != null;
 
             var groupOp = stack[stack.Count - 1];
-            if (stack.Count > 1 && op.Operator == groupOp.Op.Value.EndOperator.ToString())
+            if (stack.Count > 1 && op.Operator == groupOp.Type.EndOperator.ToString())
             {
                 if (addToPrefix)
                     throw new InvalidOperationException("Ungrouping is prefix param");
@@ -176,7 +198,7 @@ internal class Lexicalizer
 
             var c = new TokenGroup
             {
-                Op = op,
+                Type = op,
                 Accessor = acc,
                 Order = (uint)i,
             };
@@ -194,7 +216,7 @@ internal class Lexicalizer
                 groupOp.Children.Add(c);
             }
 
-            switch (c.Op?.Type)
+            switch (c.Type?.Type)
             {
                 case OpTokenType.Group:
                     c.Children = new List<TokenGroup>();
@@ -209,8 +231,70 @@ internal class Lexicalizer
 
         if (prefixOp != null)
             throw new InvalidOperationException("Prefix lacks param");
-
         return stack[0].Children;
+    }
+
+
+
+    internal void HandlePostPreFix(List<(OpConfig, string?)> tokens)
+    {
+
+    }
+
+
+    internal void SequenceTokens(List<(OpConfig, string?)> tokens)
+    {
+
+
+
+
+        var tokenGroups = new List<TokenGroup>();
+
+
+        var rootToken = new TokenGroup();
+
+
+        for (var i = 0; i < tokens.Count(); i++)
+        {
+            var (op, acc) = tokens[i];
+
+            var input = new List<(OpConfig, string?)>();
+            var output = new List<(OpConfig, string?)>();
+
+
+            switch (op.Type)
+            {
+                case OpTokenType.Prefix:
+                case OpTokenType.Infix:
+
+
+
+                    break;
+            }
+
+
+
+            switch (op.Type)
+            {
+                case OpTokenType.Prefix:
+                    break;
+                case OpTokenType.PostFix:
+                    break;
+                case OpTokenType.Infix:
+                    break;
+                case OpTokenType.Literal:
+                    break;
+                case OpTokenType.Group:
+                    break;
+                case OpTokenType.Singleton:
+                    break;
+                case OpTokenType.Temp:
+                    break;
+            }
+
+
+        }
+
     }
 
 }

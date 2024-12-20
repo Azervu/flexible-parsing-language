@@ -29,7 +29,7 @@ internal partial class ParseContext
 
     internal WriteType? Process(ParseData parser, bool finalContextOp)
     {
-        switch (Token.Op?.Operator)
+        switch (Token.Type?.Operator)
         {
             case "|":
                 HandleOp(parser, new ParseOperation(ParsesOperationType.Function, Token.Accessor));

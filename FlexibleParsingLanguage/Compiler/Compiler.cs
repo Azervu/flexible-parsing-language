@@ -20,28 +20,29 @@ internal partial class Compiler
 
     internal Lexicalizer Lexicalizer { get; private set; }
 
+    private OpConfig _root = new OpConfig("{", OpTokenType.Group, '}');
+
     public Compiler()
     {
         Lexicalizer = new Lexicalizer(
             [
+
+                _root,
+                new OpConfig("(", OpTokenType.Group, ')'),
+
                 new OpConfig(".", OpTokenType.Singleton),
                 new OpConfig("$", OpTokenType.Singleton),
                 new OpConfig("~", OpTokenType.Singleton),
                 new OpConfig("*", OpTokenType.Singleton),
-
-                new OpConfig("{", OpTokenType.Group, '}'),
-                new OpConfig("(", OpTokenType.Group, ')'),
 
                 new OpConfig(":", OpTokenType.Prefix),
                 new OpConfig("|", OpTokenType.Prefix),
                 new OpConfig("@", OpTokenType.Prefix),
                 new OpConfig("#", OpTokenType.Prefix),
                 new OpConfig("##", OpTokenType.Prefix),
-                //new OpTokenConfig("€", OpTokenType.Prefix),
-                //new OpTokenConfig("€€", OpTokenType.Prefix),
 
-                new OpConfig("\"", OpTokenType.Escape, '"'),
-                new OpConfig("'", OpTokenType.Escape, '\''),
+                new OpConfig("\"", OpTokenType.Literal, '"'),
+                new OpConfig("'", OpTokenType.Literal, '\''),
             ],
             ".", '\\'
             );
@@ -51,7 +52,7 @@ internal partial class Compiler
     {
 
         var rootToken = new TokenGroup {
-            Op = new OpConfig { Operator = "{" },
+            Type = _root,
             Children = Lexicalizer.Lexicalize(raw)
         };
 

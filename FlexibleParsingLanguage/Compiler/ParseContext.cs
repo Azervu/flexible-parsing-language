@@ -10,7 +10,7 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class ParseContext
 {
-    internal string Operator { get => Token.Op?.Operator; }
+    internal string Operator { get => Token.Type?.Operator; }
     internal bool Numeric { get => Operator == "[" || Operator == "*" || Operator == "@"; }
 
     private List<ParseContext> _children;
