@@ -9,23 +9,23 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Compiler.Util;
 
-internal class TokenGroup
+internal class RawOp
 {
     internal OpConfig? Type { get; set; }
     internal string? Accessor { get; set; }
 
-    internal List<TokenGroup> Input { get; set; } = new List<TokenGroup>();
-    internal List<TokenGroup> Output { get; set; } = new List<TokenGroup>();
+    internal List<RawOp> Input { get; set; } = new List<RawOp>();
+    internal List<RawOp> Output { get; set; } = new List<RawOp>();
 
     internal uint Order { get; set; }
-    internal List<TokenGroup>? Children { get; set; }
+
+
+    internal List<RawOp>? Children { get; set; }
 
 
     internal void AddLog(StringBuilder log, int depth)
     {
         log.Append($"\n{new string(' ', 4 * depth)}");
-
-
         if (Type?.Operator != null)
         {
             log.Append(Type?.Operator);
@@ -51,7 +51,7 @@ internal class TokenGroup
     }
 }
 
-internal class Lexicalizer
+internal partial class Lexicalizer
 {
     private string DefaultOp { get; set; }
     private char UnescapeToken { get; set; }
@@ -74,7 +74,7 @@ internal class Lexicalizer
             if (op.GroupOperator != null)
             {
                 var op2 = op.GroupOperator.ToString();
-                HandleConfigEntry(op2, new OpConfig(op2, OpCategory.Temp));
+                HandleConfigEntry(op2, new OpConfig(op2, OpCategory.UnBranch));
             }
 
 
@@ -95,7 +95,7 @@ internal class Lexicalizer
             Operators[op] = config;
     }
 
-    internal List<TokenGroup> Lexicalize(string raw)
+    internal (List<RawOp>, List<RawOp>) Lexicalize(string raw)
     {
         var tokens = Tokenize(raw).ToList();
 
@@ -110,11 +110,12 @@ internal class Lexicalizer
         }).ToList();
 
 
-        var ops = new List<TokenGroup>(tokens.Count);
+
+        var ops = new List<RawOp>(tokens.Count);
         for (var i = 0; i < tokens.Count; i++)
         {
             var (op, acc) = tokens[i];
-            ops.Add(new TokenGroup
+            ops.Add(new RawOp
             {
                 Type = op,
                 Accessor = acc,
@@ -122,23 +123,13 @@ internal class Lexicalizer
             });
         }
 
-        ops = GroupOps(ops);
-        SequenceOps(ops);
+
+
+        Sequencer.Sequence(ops);
 
 
 
-
-
-        var t2 = tokens.Select(x => {
-
-            if (x.Item1 != UnknownOp)
-                return x;
-            return (defaultOp, x.Item2);
-        }).ToList();
-
-
-        var groupedTokens = GroupTokens(t2);
-        return groupedTokens;
+        return (GroupTokens(tokens), ops);
     }
 
     private IEnumerable<(OpConfig, string?)> Tokenize(string raw)
@@ -200,162 +191,10 @@ internal class Lexicalizer
         }
     }
 
-    private List<TokenGroup> GroupOps(List<TokenGroup> ops)
+    private List<RawOp> GroupTokens(List<(OpConfig, string?)> tokens)
     {
-        var stack = new List<TokenGroup> { new() { Type = new OpConfig(null, OpCategory.Temp), Children = [] } };
-        TokenGroup? prefixOp = null;
-
-        foreach (var op in ops)
-        {
-            var groupOp = stack[stack.Count - 1];
-            if (stack.Count > 1 && op.Type.Operator == groupOp.Type.GroupOperator.ToString())
-            {
-                stack.RemoveAt(stack.Count - 1);
-                continue;
-            }
-            groupOp.Children.Add(op);
-
-            if (op.Type?.GroupOperator != null)
-            {
-                op.Children = new List<TokenGroup>();
-                stack.Add(op);
-            }
-
-        }
-
-        if (prefixOp != null)
-            throw new InvalidOperationException("Prefix lacks param");
-        return stack[0].Children;
-    }
-
-
-    private class SequenceTemp
-    {
-        internal int LeftIndex { get; set; }
-        internal int RightIndex { get; set; }
-        internal int Index { get; set; }
-        internal List<SequenceTemp> Input { get; set; } = new List<SequenceTemp>();
-        internal TokenGroup Op { get; set; }
-        internal void AddInput(SequenceTemp seq, List<SequenceTemp> opsTemp)
-        {
-            if (seq.LeftIndex >= 0 && seq.LeftIndex != Index)
-                opsTemp[seq.LeftIndex].RightIndex = Index;
-
-            if (seq.RightIndex >= 0 && seq.RightIndex != Index)
-                opsTemp[seq.RightIndex].LeftIndex = Index;
-
-            seq.LeftIndex = -1;
-            seq.RightIndex = -1;
-            if (Input.Count > 0 && Input[Input.Count - 1] != null)
-                seq.LeftIndex = Input[Input.Count - 1].Index;
-            Input.Add(seq);
-        }
-    };
-
-    internal void SequenceOps(List<TokenGroup> ops)
-    {
-        var opsTemp = new List<SequenceTemp>(ops.Count);
-        var leftIndex = -2;
-        var awaitingRight = new List<SequenceTemp>();
-
-        for (var i = 0; i < ops.Count; i++)
-        {
-            var op = ops[i];
-            var seq = new SequenceTemp
-            {
-                Op = op,
-                LeftIndex = leftIndex,
-                RightIndex = -2,
-                Index = i,
-            };
-            opsTemp.Add(seq);
-
-            if (op.Type.Category.Has(OpCategory.Branch))
-            {
-                awaitingRight.Add(seq);
-            }
-            else
-            {
-                foreach (var ar in awaitingRight)
-                    ar.RightIndex = i;
-                leftIndex = i;
-                awaitingRight = [seq];
-            }
-        }
-
-
-        var ordered = opsTemp.Select(x => x).ToList();
-        ordered.OrderByDescending(x => x.Op.Type.Rank).ThenBy(x => x.Index);
-        foreach (var op in ordered)
-        {
-            if (op.Op.Type.Category.Has(OpCategory.Prefix))
-            {
-                if (op.LeftIndex >= 0)
-                    op.AddInput(opsTemp[op.LeftIndex], opsTemp);
-                else if (op.LeftIndex == -2)
-                    op.Input.Add(null);
-            }
-            if (op.Op.Type.Category.Has(OpCategory.Postfix))
-            {
-                if (op.RightIndex >= 0)
-                    op.AddInput(opsTemp[op.RightIndex], opsTemp);
-                else if (op.RightIndex == -2)
-                    op.Input.Add(null);
-            }
-        }
-
-
-        foreach (var op in opsTemp)
-        {
-            op.Op.Input = op.Input.Select(x => x?.Op).ToList();
-            foreach (var input in op.Input)
-            {
-                if (input == null)
-                    continue;
-
-                input.Op.Output.Add(op.Op);
-            }
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    private List<TokenGroup> GroupTokens(List<(OpConfig, string?)> tokens)
-    {
-        var stack = new List<TokenGroup> { new() { Type = new OpConfig(null, OpCategory.Temp), Children = [] } };
-        TokenGroup? prefixOp = null;
+        var stack = new List<RawOp> { new() { Type = new OpConfig(null, OpCategory.Temp), Children = [] } };
+        RawOp? prefixOp = null;
 
         for (var i = 0; i < tokens.Count(); i++)
         {
@@ -372,7 +211,7 @@ internal class Lexicalizer
                 continue;
             }
 
-            var c = new TokenGroup
+            var c = new RawOp
             {
                 Type = op,
                 Accessor = acc,
@@ -384,7 +223,7 @@ internal class Lexicalizer
                 if (op.Operator == DefaultOp && prefixOp.Accessor == null)
                     prefixOp.Accessor = acc;
                 else
-                    prefixOp.Children = new List<TokenGroup> { c };
+                    prefixOp.Children = new List<RawOp> { c };
                 prefixOp = null;
             }
             else
@@ -395,7 +234,7 @@ internal class Lexicalizer
 
             if (c.Type.GroupOperator != null)
             {
-                c.Children = new List<TokenGroup>();
+                c.Children = new List<RawOp>();
                 stack.Add(c);
             }
 
@@ -410,5 +249,23 @@ internal class Lexicalizer
             throw new InvalidOperationException("Prefix lacks param");
         return stack[0].Children;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }

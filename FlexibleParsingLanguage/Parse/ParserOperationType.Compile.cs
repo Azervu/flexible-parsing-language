@@ -10,11 +10,7 @@ namespace FlexibleParsingLanguage.Parse;
 internal partial struct ParsesOperationType
 {
 
-    internal class ParserOperationCompileData
-    {
-
-    }
-
+    internal class ParserOperationCompileData { }
 
     internal static (List<ParseOperation>, WriteType) CompileOperations(ParseData data, ParseContext root)
     {
@@ -22,10 +18,7 @@ internal partial struct ParsesOperationType
 
         var saved = new Dictionary<int, ParseOperation>();
 
-
         var loaded = new HashSet<int>();
-
-
 
         var outOps = new List<ParseOperation>(data.Ops.Count);
         for (var i = data.Ops.Count - 1; i >= 0; i--)
@@ -34,32 +27,16 @@ internal partial struct ParsesOperationType
 
             var meta = op.OpType.GetMetaData();
 
-
-
-
-            switch (op.OpType.Op)
-            {
-
-            }
-
             if (op.OpType.Op == ParsesOperationType.Load)
                 loaded.Add(op.IntAcc);
-
         }
         outOps.Reverse();
-
 
         foreach (var o in data.Ops.Select(x => x.Item2))
         {
             if (o.OpType.Op == ParsesOperationType.Load)
                 loaded.Add(o.IntAcc);
         }
-
-
-
-
-
-
 
         var opsParents = data.OpsMap.GroupBy(x => x.Key.Item1).ToDictionary(
             x => x.Key,
@@ -71,17 +48,13 @@ internal partial struct ParsesOperationType
             x => x.Select(y => y.Key.Item2.Last().OpType).ToHashSet()
         );
 
-
-
         foreach (var o in data.Ops.Select(x => x.Item2))
         {
             if (o.OpType.Op == ParsesOperationType.Load)
                 loaded.Add(o.IntAcc);
         }
 
-
         var rootWriteType = WriteType.None;
-
 
         foreach (var (id, o) in data.Ops)
         {

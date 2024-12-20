@@ -30,9 +30,9 @@ internal partial class ParseContext
 
     internal int Index { get; set; }
 
-    internal TokenGroup Token { get; set; }
+    internal RawOp Token { get; set; }
 
-    internal ParseContext(TokenGroup token)
+    internal ParseContext(RawOp token)
     {
         Token = token;
     }

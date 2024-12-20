@@ -48,7 +48,7 @@ public class TokenizerTest
 
     public void TestUtil(string parserString, string excpectedResult)
     {
-        var parsed = T.Lexicalize(parserString);
+        var (parsed, parsed2) = T.Lexicalize(parserString);
         var result = parsed.Select(x => x.ToString2()).Concat().Replace("\r", string.Empty);
 
 

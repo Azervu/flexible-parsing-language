@@ -47,10 +47,12 @@ internal partial class Compiler
 
     public Parser Compile(string raw, ParsingMetaContext configContext)
     {
+        var (oldOps, newOps) = Lexicalizer.Lexicalize(raw);
 
-        var rootToken = new TokenGroup {
+
+        var rootToken = new RawOp {
             Type = _root,
-            Children = Lexicalizer.Lexicalize(raw)
+            Children = oldOps
         };
 
         var parseData = new ParseData
