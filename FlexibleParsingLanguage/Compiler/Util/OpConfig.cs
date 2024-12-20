@@ -25,5 +25,5 @@ internal enum OpTokenType
     Escape,
     Group,
     Singleton,
-
+    Temp,
 }

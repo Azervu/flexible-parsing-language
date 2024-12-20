@@ -63,100 +63,35 @@ internal class Lexicalizer
 
         foreach (var op in ops)
         {
-            OpConfig? cop;
-            for (var i = 0; i < op.Operator.Length - 1; i++)
+            HandleConfigEntry(op.Operator, op);
+            if (op.EndOperator != null && op.Type == OpTokenType.Group)
             {
-                var o = op.Operator.Substring(i, i + 1);
-                if (!Operators.TryGetValue(o, out cop))
-                    Operators[o] = null;
+                var op2 = op.EndOperator.ToString();
+                HandleConfigEntry(op2, new OpConfig(op2, OpTokenType.Temp));
             }
-            Operators[op.Operator] = op;
-
-            if (Operators.TryGetValue(op.Operator, out cop))
-                Operators.Remove(op.Operator);
-            Operators[op.Operator] = op;
         }
-
         DefaultOp = defaultOperator;
         UnescapeToken = unescapeToken;
     }
 
-    internal List<TokenGroup> Lexicalize(string raw)
+    private void HandleConfigEntry(string op, OpConfig? config)
     {
-
-        var stack = new List<TokenGroup> { new TokenGroup { Op = new OpConfig { Operator = null }, Children = [] } };
-        TokenGroup? prefixOp = null;
-
-
-
-
-
-        var tokens = Tokenize(raw).ToList();
-
-
-
-
-
-
-        for (var i = 0; i < tokens.Count(); i++)
+        for (var i = 0; i < op.Length - 1; i++)
         {
-            var (op, acc) = tokens[i];
-
-            var addToPrefix = prefixOp != null;
-
-            var groupOp = stack[stack.Count - 1];
-            if (stack.Count > 1 && op.Operator == groupOp.Op.Value.EndOperator.ToString())
-            {
-                if (addToPrefix)
-                    throw new InvalidOperationException("Ungrouping is prefix param");
-                stack.RemoveAt(stack.Count - 1);
-                continue;
-            }
-
-            var c = new TokenGroup
-            {
-                Op = op,
-                Accessor = acc,
-                Order = (uint)i,
-            };
-
-            if (addToPrefix)
-            {
-                if (op.Operator == DefaultOp && prefixOp.Accessor == null)
-                    prefixOp.Accessor = acc;
-                else
-                    prefixOp.Children = new List<TokenGroup> { c };
-                prefixOp = null;
-            }
-            else
-            {
-                groupOp.Children.Add(c);
-            }
-
-            switch (c.Op?.Type)
-            {
-                case OpTokenType.Group:
-                    c.Children = new List<TokenGroup>();
-                    stack.Add(c);
-                    break;
-                case OpTokenType.Prefix:
-                    if (c.Accessor == null)
-                        prefixOp = c;
-                    break;
-            }
+            var o = op.Substring(i, i + 1);
+            if (!Operators.ContainsKey(o))
+                Operators[o] = null;
         }
-
-        if (prefixOp != null)
-            throw new InvalidOperationException("Prefix lacks param");
-
-        return stack[0].Children;
+        if (!Operators.TryGetValue(op, out var v) || v == null)
+            Operators[op] = config;
     }
 
-
-
-
-
-
+    internal List<TokenGroup> Lexicalize(string raw)
+    {
+        var tokens = Tokenize(raw).ToList();
+        var groupedTokens = GroupTokens(tokens);
+        return groupedTokens;
+    }
 
 
     private IEnumerable<(OpConfig, string?)> Tokenize(string raw)
@@ -218,4 +153,64 @@ internal class Lexicalizer
             }
         }
     }
+
+    private List<TokenGroup> GroupTokens(List<(OpConfig, string?)> tokens)
+    {
+        var stack = new List<TokenGroup> { new TokenGroup { Op = new OpConfig { Operator = null }, Children = [] } };
+        TokenGroup? prefixOp = null;
+
+        for (var i = 0; i < tokens.Count(); i++)
+        {
+            var (op, acc) = tokens[i];
+
+            var addToPrefix = prefixOp != null;
+
+            var groupOp = stack[stack.Count - 1];
+            if (stack.Count > 1 && op.Operator == groupOp.Op.Value.EndOperator.ToString())
+            {
+                if (addToPrefix)
+                    throw new InvalidOperationException("Ungrouping is prefix param");
+                stack.RemoveAt(stack.Count - 1);
+                continue;
+            }
+
+            var c = new TokenGroup
+            {
+                Op = op,
+                Accessor = acc,
+                Order = (uint)i,
+            };
+
+            if (addToPrefix)
+            {
+                if (op.Operator == DefaultOp && prefixOp.Accessor == null)
+                    prefixOp.Accessor = acc;
+                else
+                    prefixOp.Children = new List<TokenGroup> { c };
+                prefixOp = null;
+            }
+            else
+            {
+                groupOp.Children.Add(c);
+            }
+
+            switch (c.Op?.Type)
+            {
+                case OpTokenType.Group:
+                    c.Children = new List<TokenGroup>();
+                    stack.Add(c);
+                    break;
+                case OpTokenType.Prefix:
+                    if (c.Accessor == null)
+                        prefixOp = c;
+                    break;
+            }
+        }
+
+        if (prefixOp != null)
+            throw new InvalidOperationException("Prefix lacks param");
+
+        return stack[0].Children;
+    }
+
 }

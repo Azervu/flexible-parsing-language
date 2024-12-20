@@ -30,10 +30,7 @@ internal partial class Compiler
                 new OpConfig("*", OpTokenType.Singleton),
 
                 new OpConfig("{", OpTokenType.Group, '}'),
-                new OpConfig("}", OpTokenType.Prefix),
-
                 new OpConfig("(", OpTokenType.Group, ')'),
-                new OpConfig(")", OpTokenType.Prefix),
 
                 new OpConfig(":", OpTokenType.Prefix),
                 new OpConfig("|", OpTokenType.Prefix),
@@ -52,8 +49,11 @@ internal partial class Compiler
 
     public Parser Compile(string raw, ParsingMetaContext configContext)
     {
-        var rootToken = new TokenGroup { Op = new OpConfig { Operator = "{" }, Children = Lexicalizer.Lexicalize(raw) };
 
+        var rootToken = new TokenGroup {
+            Op = new OpConfig { Operator = "{" },
+            Children = Lexicalizer.Lexicalize(raw)
+        };
 
         var parseData = new ParseData
         {
