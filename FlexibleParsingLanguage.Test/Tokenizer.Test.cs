@@ -31,7 +31,7 @@ public class TokenizerTest
 |
     {
         .  ""ccc""
-""  "" """ },
+"" """ },
         new object[] { "k:h", @"
 .  ""k""
 :  ""h""" },

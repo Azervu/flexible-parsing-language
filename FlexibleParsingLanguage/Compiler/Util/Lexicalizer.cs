@@ -17,13 +17,7 @@ internal class TokenGroup
     internal List<TokenGroup> Input { get; set; } = new List<TokenGroup>();
     internal List<TokenGroup> Output { get; set; } = new List<TokenGroup>();
 
-
-
-
     internal uint Order { get; set; }
-
-
-
     internal List<TokenGroup>? Children { get; set; }
 
 
@@ -129,7 +123,7 @@ internal class Lexicalizer
         }
 
         ops = GroupOps(ops);
-        SequenceOps(ref ops);
+        SequenceOps(ops);
 
 
 
@@ -180,7 +174,7 @@ internal class Lexicalizer
                     op = op2;
                 }
 
-                if (op.Category == OpCategory.Literal)
+                if (op.Category.Has(OpCategory.Literal))
                 {
                     active = string.Empty;
                     while (true)
@@ -205,10 +199,6 @@ internal class Lexicalizer
             }
         }
     }
-
-
-
-
 
     private List<TokenGroup> GroupOps(List<TokenGroup> ops)
     {
@@ -239,174 +229,108 @@ internal class Lexicalizer
     }
 
 
-
-
-
-    internal void SequenceOps(ref List<TokenGroup> ops)
+    private class SequenceTemp
     {
-        var proccessedOps = new HashSet<TokenGroup>();
+        internal int LeftIndex { get; set; }
+        internal int RightIndex { get; set; }
+        internal int Index { get; set; }
+        internal List<SequenceTemp> Input { get; set; } = new List<SequenceTemp>();
+        internal TokenGroup Op { get; set; }
+        internal void AddInput(SequenceTemp seq, List<SequenceTemp> opsTemp)
+        {
+            if (seq.LeftIndex >= 0 && seq.LeftIndex != Index)
+                opsTemp[seq.LeftIndex].RightIndex = Index;
 
-        var left = new Dictionary<int, int>();
-        var right = new Dictionary<int, int>();
+            if (seq.RightIndex >= 0 && seq.RightIndex != Index)
+                opsTemp[seq.RightIndex].LeftIndex = Index;
 
-        var ranks = new List<(int Rank, int Index)>(ops.Count);
+            seq.LeftIndex = -1;
+            seq.RightIndex = -1;
+            if (Input.Count > 0 && Input[Input.Count - 1] != null)
+                seq.LeftIndex = Input[Input.Count - 1].Index;
+            Input.Add(seq);
+        }
+    };
 
-
-
-
-
-
+    internal void SequenceOps(List<TokenGroup> ops)
+    {
+        var opsTemp = new List<SequenceTemp>(ops.Count);
+        var leftIndex = -2;
+        var awaitingRight = new List<SequenceTemp>();
 
         for (var i = 0; i < ops.Count; i++)
-        {
-            if (!left.TryGetValue(i, out var l))
-                l = i - 1;
-            if (!right.TryGetValue(i, out var r))
-                r = i > ops.Count - 2 ? -1 : i + 1;
-        }
-
-
-
-
-
-        ranks.OrderByDescending(x => x.Rank).ThenBy(x => x.Index);
-
-
-        foreach (var (rank, i) in ranks)
         {
             var op = ops[i];
-
-            if (!left.TryGetValue(i, out var l))
-                l = i - 1;
-
-            if (!right.TryGetValue(i, out var r))
-                r = i > ops.Count - 2 ? -1 : i + 1;
-
-
-
-
-            switch (op.Type.Category)
+            var seq = new SequenceTemp
             {
-                case OpCategory.Prefix:
-                case OpCategory.Infix:
+                Op = op,
+                LeftIndex = leftIndex,
+                RightIndex = -2,
+                Index = i,
+            };
+            opsTemp.Add(seq);
 
-                    TokenGroup param = null;
-                    if (l >= 0)
-                    {
-                        param = ops[l];
-
-                        //if (left.ContainsKey())
-
-                        left[l] = -1;
-                    }
-                    op.Input.Add(param);
-                    break;
+            if (op.Type.Category.Has(OpCategory.Branch))
+            {
+                awaitingRight.Add(seq);
+            }
+            else
+            {
+                foreach (var ar in awaitingRight)
+                    ar.RightIndex = i;
+                leftIndex = i;
+                awaitingRight = [seq];
             }
         }
 
 
-        for (var i = 0; i < ops.Count; i++)
+        var ordered = opsTemp.Select(x => x).ToList();
+        ordered.OrderByDescending(x => x.Op.Type.Rank).ThenBy(x => x.Index);
+        foreach (var op in ordered)
         {
-
-
+            if (op.Op.Type.Category.Has(OpCategory.Prefix))
+            {
+                if (op.LeftIndex >= 0)
+                    op.AddInput(opsTemp[op.LeftIndex], opsTemp);
+                else if (op.LeftIndex == -2)
+                    op.Input.Add(null);
+            }
+            if (op.Op.Type.Category.Has(OpCategory.Postfix))
+            {
+                if (op.RightIndex >= 0)
+                    op.AddInput(opsTemp[op.RightIndex], opsTemp);
+                else if (op.RightIndex == -2)
+                    op.Input.Add(null);
+            }
         }
 
 
-
-
-        while (true) {
-        
-            var minRank = int.MaxValue;
-
-            foreach (var op in ops)
+        foreach (var op in opsTemp)
+        {
+            op.Op.Input = op.Input.Select(x => x?.Op).ToList();
+            foreach (var input in op.Input)
             {
-                if (proccessedOps.Contains(op))
+                if (input == null)
                     continue;
 
-                minRank = Math.Min(minRank, op.Type.Rank);
-            }
-
-            if (minRank == int.MaxValue)
-                break;
-
-            for (var i = 0; i < ops.Count(); i++)
-            {
-                var op = ops[i];
-
-                if (op.Type.Rank > minRank)
-                    continue;
-
-
-
-
-
-
-
-
-
-
-
-                var postfixRank = op.Type.PostfixRank();
-                var prefixRank = op.Type.PrefixRank();
-
-                if (i > 0)
-                {
-                    var last = ops[i - 1];
-                    var lastRank = last.Type.PostfixRank();
-                    if (prefixRank != int.MinValue || lastRank != int.MinValue)
-                    {
-                        if (prefixRank > lastRank)
-                        {
-
-                        }
-                        else
-                        {
-
-                        }
-                    }
-
-
-
-                }
-
-
-
-
-                proccessedOps.Add(op);
-
-                switch (op.Type.Category)
-                {
-                    case OpCategory.Prefix:
-                    case OpCategory.Infix:
-
-                        TokenGroup param = null;
-                        if (i > 0)
-                        {
-                            param = ops[i - 1];
-                            ops.RemoveAt(i - 1);
-                            i--;
-                        }
-                        op.Input.Add(param);
-                    break;
-                }
-                switch (op.Type.Category)
-                {
-                    case OpCategory.PostFix:
-                    case OpCategory.Infix:
-
-                        TokenGroup param = null;
-                        if (i < ops.Count()-1)
-                        {
-                            param = ops[i + 1];
-                            ops.RemoveAt(i + 1);
-                            i--;
-                        }
-                        op.Input.Add(param);
-                        break;
-                }
+                input.Op.Output.Add(op.Op);
             }
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -475,12 +399,10 @@ internal class Lexicalizer
                 stack.Add(c);
             }
 
-            switch (c.Type?.Category)
+            if (c.Type?.Category.Has(OpCategory.Prefix) == true)
             {
-                case OpCategory.Prefix:
-                    if (c.Accessor == null)
-                        prefixOp = c;
-                    break;
+                if (c.Accessor == null)
+                    prefixOp = c;
             }
         }
 
