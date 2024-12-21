@@ -11,13 +11,29 @@ namespace FlexibleParsingLanguage.Compiler.Util;
 
 internal class RawOp
 {
+
+
     internal OpConfig? Type { get; set; }
     internal string? Accessor { get; set; }
 
     internal List<RawOp> Input { get; set; } = new List<RawOp>();
     internal List<RawOp> Output { get; set; } = new List<RawOp>();
 
-    internal uint Order { get; set; }
+    internal bool Prefixed { get; set; }
+    internal bool PostFixed { get; set; }
+
+
+
+
+
+    internal int CharIndex { get; set; }
+
+    internal int Id { get; set; }
+
+
+
+
+
 
 
     internal List<RawOp>? Children { get; set; }
@@ -53,20 +69,20 @@ internal class RawOp
 
 internal partial class Lexicalizer
 {
-    private string DefaultOp { get; set; }
+    internal List<OpConfig> Ops { get; private set; }
+
+    private OpConfig DefaultOp { get; set; }
+    private OpConfig AccessorOp { get; set; } = new OpConfig(null, OpCategory.Accessor, 99);
+
+
     private char UnescapeToken { get; set; }
 
-    private OpConfig UnknownOp { get; set; } = new OpConfig(null, OpCategory.Unknown);
 
     private Dictionary<string, OpConfig?> Operators = new();
 
-    public Lexicalizer(
-        List<OpConfig> ops,
-        string defaultOperator,
-        char unescapeToken
-    )
+    public Lexicalizer(List<OpConfig> ops)
     {
-
+        Ops = ops;
         foreach (var op in ops)
         {
             HandleConfigEntry(op.Operator, op);
@@ -74,13 +90,19 @@ internal partial class Lexicalizer
             if (op.GroupOperator != null)
             {
                 var op2 = op.GroupOperator.ToString();
-                HandleConfigEntry(op2, new OpConfig(op2, OpCategory.UnBranch));
+                HandleConfigEntry(op2, new OpConfig(op2, OpCategory.UnGroup, -100));
             }
 
 
+            if (op.Category.Has(OpCategory.Default))
+                DefaultOp = op;
+
+            if (op.Category.Has(OpCategory.Unescape))
+                UnescapeToken = op.Operator[0];
         }
-        DefaultOp = defaultOperator;
-        UnescapeToken = unescapeToken;
+        if (DefaultOp == null)
+            throw new Exception("Default operator missing");
+
     }
 
     private void HandleConfigEntry(string op, OpConfig? config)
@@ -97,108 +119,186 @@ internal partial class Lexicalizer
 
     internal (List<RawOp>, List<RawOp>) Lexicalize(string raw)
     {
+
         var tokens = Tokenize(raw).ToList();
 
-
-        var defaultOp = Operators[DefaultOp] ?? throw new Exception("Default operator missing");
-
-        tokens = tokens.Select(x => {
-
-            if (x.Item1 != UnknownOp)
-                return x;
-            return (defaultOp, x.Item2);
-        }).ToList();
-
-
-
         var ops = new List<RawOp>(tokens.Count);
-        for (var i = 0; i < tokens.Count; i++)
+        var idCounter = 1;
+
+        foreach (var (op, acc, charIndex) in tokens)
         {
-            var (op, acc) = tokens[i];
-            ops.Add(new RawOp
+            if (op == DefaultOp && string.IsNullOrEmpty(acc))
+                continue;
+
+            var rawOp = new RawOp
             {
+                Id = idCounter++,
+                CharIndex = charIndex,
                 Type = op,
-                Accessor = acc,
-                Order = (uint)i,
-            });
+            };
+
+
+            ops.Add(rawOp);
+            if (!string.IsNullOrEmpty(acc))
+            {
+                if (op.Category.Has(OpCategory.Prefix))
+                {
+                    var accessOp = new RawOp
+                    {
+                        Id = idCounter++,
+                        CharIndex = charIndex,
+                        Type = AccessorOp,
+                        Accessor = acc,
+                    };
+                    rawOp.Prefixed = true;
+                    rawOp.Input.Add(accessOp);
+                }
+                else
+                {
+                    var defaultOp = new RawOp
+                    {
+                        Id = idCounter++,
+                        CharIndex = charIndex,
+                        Type = DefaultOp,
+                        Accessor = acc,
+                    };
+                    ops.Add(defaultOp);
+           
+                }
+            }
+     
         }
 
 
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var (op, acc, charIndex) = tokens[i];
 
-        Sequencer.Sequence(ops);
 
+
+
+        }
+        for (var i = 0; i < ops.Count; i++)
+        {
+            var op = ops[i];
+        }
+
+
+        Sequence(ref ops);
+
+
+
+
+
+
+
+        tokens = tokens.Select(x => {
+
+            if (x.Item1 != AccessorOp)
+                return x;
+            return (DefaultOp, x.Item2, x.Item3);
+        }).ToList();
 
 
         return (GroupTokens(tokens), ops);
     }
 
-    private IEnumerable<(OpConfig, string?)> Tokenize(string raw)
+
+    private IEnumerable<(OpConfig, string?, int)> Tokenize(string raw)
     {
-        using (var it = new CharEnumerator(raw))
+
+        OpConfig? op = null;
+        string accessor = string.Empty;
+
+        OpConfig? opCandidate = null;
+        string candidateString = string.Empty;
+
+        OpConfig? opEscape = null;
+        string opEscapeString = string.Empty;
+
+        int startIndex = -1;
+
+        for (var i = 0; i < raw.Length; i++)
         {
-            if (!it.MoveNext())
-                yield break;
-            while (it.Valid)
+            var c = raw[i];
+            if (opEscape != null)
             {
-                var cc = it.Current;
-                var active = it.Current.ToString();
-                if (!Operators.TryGetValue(active, out var op))
-                {
-                    while (it.MoveNext())
-                    {
-                        var c = it.Current.ToString();
-                        if (Operators.ContainsKey(c))
-                            break;
-                        active += c;
-                    }
-                    yield return (UnknownOp, active);
+                if (opEscapeString.EndsWith(UnescapeToken))
                     continue;
+
+                opEscapeString += c;
+                if (opEscapeString.EndsWith(opEscape.GroupOperator))
+                {
+                    opEscapeString = opEscapeString.Substring(0, opEscapeString.Length - opEscape.GroupOperator.Length);
+                    yield return (op ?? DefaultOp, accessor, startIndex);
+                    opEscape = null;
+                    accessor = string.Empty;
+                    op = null;
+                    startIndex = i + 1;
+                }
+                continue;
+            }
+
+            candidateString += c;
+
+            //var nextCandidate = candidateString + c;
+            if (!Operators.TryGetValue(candidateString, out var op2))
+            {
+                if (opCandidate != null)
+                {
+                    op = opCandidate;
+                }
+                accessor += c;
+                candidateString = string.Empty;
+            }
+            else if (op2 != null)
+            {
+                if (accessor != string.Empty)
+                {
+                    yield return (op ?? DefaultOp, accessor, startIndex);
+                    startIndex = i;
+                    op = null;
+                    accessor = string.Empty;
                 }
 
-                while (it.MoveNext())
+                if (op2.Category.Has(OpCategory.Literal))
                 {
-                    var nextActive = active + it.Current;
-                    if (!Operators.TryGetValue(nextActive, out var op2))
-                        break;
-                    active = nextActive;
+                    if (op == null)
+                        startIndex = i;
 
-                    op = op2;
+                    opEscape = op2;
                 }
-
-                if (op.Category.Has(OpCategory.Literal))
+                else
                 {
-                    active = string.Empty;
-                    while (true)
+                    if (op != null)
                     {
-                        if (it.Current == op.GroupOperator)
-                        {
-                            it.MoveNext();
-                            break;
-                        }
-                        if (it.Current == UnescapeToken && !it.MoveNext())
-                            break;
-                        active += it.Current;
-                        if (!it.MoveNext())
-                            break;
+                        yield return (op, accessor, startIndex);
+                        startIndex = i;
+                        op = null;
+                        accessor = string.Empty;
                     }
-                    yield return (op, active);
-                }
-                else if (op.Operator != DefaultOp)
-                {
-                    yield return (op, null);
+                    opCandidate = op2;
                 }
             }
         }
+
+
+
+
+
+
+
+
     }
 
-    private List<RawOp> GroupTokens(List<(OpConfig, string?)> tokens)
+    private List<RawOp> GroupTokens(List<(OpConfig, string?, int)> tokens)
     {
         var stack = new List<RawOp> { new() { Type = new OpConfig(null, OpCategory.Temp), Children = [] } };
         RawOp? prefixOp = null;
 
         for (var i = 0; i < tokens.Count(); i++)
         {
-            var (op, acc) = tokens[i];
+            var (op, acc, charIndex) = tokens[i];
 
             var addToPrefix = prefixOp != null;
 
@@ -215,12 +315,11 @@ internal partial class Lexicalizer
             {
                 Type = op,
                 Accessor = acc,
-                Order = (uint)i,
             };
 
             if (addToPrefix)
             {
-                if (op.Operator == DefaultOp && prefixOp.Accessor == null)
+                if (op.Operator == DefaultOp.Operator && prefixOp.Accessor == null)
                     prefixOp.Accessor = acc;
                 else
                     prefixOp.Children = new List<RawOp> { c };
@@ -249,23 +348,4 @@ internal partial class Lexicalizer
             throw new InvalidOperationException("Prefix lacks param");
         return stack[0].Children;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace FlexibleParsingLanguage;
@@ -193,7 +194,7 @@ public static class Util
 public sealed class CharEnumerator : IEnumerator, IEnumerator<char>, IDisposable, ICloneable
 {
     private string _str; // null after disposal
-    private int _index = -1;
+    public int Index { get; private set; } = -1;
 
     internal CharEnumerator(string str) => _str = str;
 
@@ -201,16 +202,16 @@ public sealed class CharEnumerator : IEnumerator, IEnumerator<char>, IDisposable
 
     public bool MoveNext()
     {
-        int index = _index + 1;
+        int index = Index + 1;
         int length = _str.Length;
 
         if (index < length)
         {
-            _index = index;
+            Index = index;
             return true;
         }
 
-        _index = length;
+        Index = length;
         return false;
     }
 
@@ -224,11 +225,61 @@ public sealed class CharEnumerator : IEnumerator, IEnumerator<char>, IDisposable
         {
             if (!Valid)
                 throw new InvalidOperationException("Enumeration already finished");
-            return _str[_index];
+            return _str[Index];
         }
     }
 
-    public void Reset() => _index = -1;
+    public void Reset() => Index = -1;
 
-    public bool Valid { get => _index < _str.Length; }
+    public bool Valid { get => Index < _str.Length; }
+}
+
+
+public class MultiMap<K, V>
+{
+    private Dictionary<K, HashSet<V>> _dict = new();
+    private Dictionary<V, HashSet<K>> _inverse = new();
+
+    public int Count => _dict.Count;
+
+    public void Add(K key, V value)
+    {
+        Add(_dict, key, value);
+        Add(_inverse, value, key);
+    }
+
+    private static void Add<K, V>(Dictionary<K, HashSet<V>> dict, K k, V v)
+    {
+        if (dict.TryGetValue(k, out var set))
+        {
+            set.Add(v);
+            return;
+        }
+        set = new HashSet<V> { v };
+        dict.Add(k, set);
+    }
+
+    public void Remove(K key)
+    {
+        if (!_dict.TryGetValue(key, out var values))
+            return;
+
+        _dict.Remove(key);
+        foreach (var v in values)
+            _inverse.Remove(v);
+    }
+
+    public void RemoveInv(V key)
+    {
+        if (!_inverse.TryGetValue(key, out var values))
+            return;
+        _inverse.Remove(key);
+        foreach (var v in values)
+            _dict.Remove(v);
+    }
+
+    public bool TryGet(K key, out HashSet<V> value) => _dict.TryGetValue(key, out value);
+
+    public bool TryGetInv(V key, out HashSet<K> value) => _inverse.TryGetValue(key, out value);
+
 }

@@ -20,29 +20,25 @@ internal partial class Compiler
 
     internal Lexicalizer Lexicalizer { get; private set; }
 
-    private OpConfig _root = new OpConfig("{", OpCategory.Group | OpCategory.Branch | OpCategory.Postfix, -1, '}');
-
     public Compiler()
     {
-        Lexicalizer = new Lexicalizer(
-            [
-                _root,
-                new OpConfig("(", OpCategory.Group, -1, ')'),
-                new OpConfig(".", OpCategory.Prefix | OpCategory.Postfix),
-                new OpConfig("$", OpCategory.None),
-                new OpConfig("~", OpCategory.Postfix),
-                new OpConfig("*", OpCategory.Postfix),
-                new OpConfig(":", OpCategory.Prefix | OpCategory.Postfix),
-                new OpConfig("|", OpCategory.Prefix | OpCategory.Postfix),
-                new OpConfig("@", OpCategory.Prefix | OpCategory.Postfix),
-                new OpConfig("#", OpCategory.Prefix | OpCategory.Postfix),
-                new OpConfig("##", OpCategory.Prefix | OpCategory.Postfix),
-
-                new OpConfig("\"", OpCategory.Literal, -1, '"'),
-                new OpConfig("'", OpCategory.Literal, -1, '\''),
-            ],
-            ".", '\\'
-            );
+        Lexicalizer = new Lexicalizer([
+            new OpConfig("{", OpCategory.Group | OpCategory.Branching | OpCategory.Postfix, 100, "}"),
+            new OpConfig(".", OpCategory.Prefix | OpCategory.Default),
+            new OpConfig("\\", OpCategory.Unescape, -1),
+            new OpConfig("(", OpCategory.Group, 99, ")"),
+            new OpConfig("$", OpCategory.None),
+            new OpConfig("~", OpCategory.Postfix),
+            new OpConfig("*", OpCategory.Postfix),
+            new OpConfig(":", OpCategory.Prefix | OpCategory.Postfix),
+            new OpConfig("|", OpCategory.Prefix | OpCategory.Postfix),
+            new OpConfig("@", OpCategory.Prefix | OpCategory.Postfix),
+            new OpConfig("#", OpCategory.Prefix | OpCategory.Postfix),
+            new OpConfig("##", OpCategory.Prefix | OpCategory.Postfix),
+            new OpConfig("\"", OpCategory.Literal, -1, "\""),
+            new OpConfig("'", OpCategory.Literal, -1, "\'"),
+            new OpConfig("\\", OpCategory.Unescape, -1)
+        ]);
     }
 
     public Parser Compile(string raw, ParsingMetaContext configContext)
@@ -50,8 +46,9 @@ internal partial class Compiler
         var (oldOps, newOps) = Lexicalizer.Lexicalize(raw);
 
 
-        var rootToken = new RawOp {
-            Type = _root,
+        var rootToken = new RawOp
+        {
+            Type = Lexicalizer.Ops[0],
             Children = oldOps
         };
 

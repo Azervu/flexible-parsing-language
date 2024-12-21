@@ -9,11 +9,11 @@ namespace FlexibleParsingLanguage.Compiler.Util;
 internal class OpConfig
 {
     internal string Operator { get; set; }
-    internal char? GroupOperator { get; set; }
+    internal string GroupOperator { get; set; }
 
     internal OpCategory Category { get; set; }
     internal int Rank { get; set; }
-    internal OpConfig(string op, OpCategory type, int rank = -1, char? op2 = null)
+    internal OpConfig(string op, OpCategory type, int rank = -1, string op2 = null)
     {
         Operator = op;
         Category = type;
@@ -41,19 +41,26 @@ internal class OpConfig
 [Flags]
 internal enum OpCategory
 {
-    None     = 0b_0000_0000_0000_0000,
-    Prefix   = 0b_0000_0000_0000_0001,
-    Postfix  = 0b_0000_0000_0000_0010,
+    None       = 0b_0000_0000_0000_0000,
+    Default    = 0b_0000_0001_0000_0000,
+    Unescape   = 0b_0000_0010_0000_0000,
 
-    Group    = 0b_0000_0000_0000_0100,
-    Escape   = 0b_0000_0000_0000_1000,
 
-    Branch   = 0b_0000_0000_0001_0000,
-    Literal  = 0b_0000_0000_0010_0000,
 
-    UnBranch = 0b_1000_0000_0000_0000,
-    Temp     = 0b_0100_0000_0000_0000,
-    Unknown  = 0b_0010_0000_0000_0000,
+    Prefix     = 0b_0000_0000_0000_0001,
+    Postfix    = 0b_0000_0000_0000_0010,
+    Branching  = 0b_0000_0000_0000_0100, //Prefix and Postfix passes through
+
+
+    Group      = 0b_0000_0000_0001_0000,
+    Virtual    = 0b_0000_0000_0010_0000,
+    Literal    = 0b_0000_0000_0100_0000,
+
+
+
+    UnGroup    = 0b_1000_0000_0000_0000,
+    Temp       = 0b_0100_0000_0000_0000,
+    Accessor   = 0b_0010_0000_0000_0000,
 
 
 
