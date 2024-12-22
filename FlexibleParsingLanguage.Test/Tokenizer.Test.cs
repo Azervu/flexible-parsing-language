@@ -10,11 +10,13 @@ public class TokenizerTest
 
     public static IEnumerable<object[]> ValidQueries => new List<object[]>
     {
-        new object[] {"Simple", "b#c",  "1{  3'b'  2.[1,3]  5'c'  4#[2,5]"},
-        new object[] {"Redundant Separator", "b.#c",  "1{  3'b'  2.[1,3]  5'c'  4#[2,5]"},
-
-        new object[] {"Simple B", "a.b#c.d", "1{  3'a'  2.[1,3]  5'b'  4.[2,5]  7'c'  6#[4,7]  9'd'  8.[6,9]"},
+        new object[] {"Simple", "a.b#cc2.d", "1{  3'a'  2.[1,3]  5'b'  4.[2,5]  7'cc2'  6#[4,7]  9'd'  8.[6,9]"},
+        new object[] {"Redundant separator", "b.#c",  "1{  3'b'  2.[1,3]  5'c'  4#[2,5]"},
+        new object[] {"Non redundant version", "b#c",  "1{  3'b'  2.[1,3]  5'c'  4#[2,5]"},
         new object[] {"Escape", "a.b'ee\\'e'c.d", "1{  3'a'  2.[1,3]  5'b'  4.[2,5]  7'ee'e'  6.[4,7]  9'c'  8.[6,9]  11'd'  10.[8,11]"},
+
+        new object[] {"Branch", "a.b{c:h2}'ee\\'e'c.d:h1", "1{  3'a'  2.[1,3]  5'b'  4.[2,5]  7'ee'e'  6.[4,7]  9'c'  8.[6,9]  11'd'  10.[8,11]"},
+
     };
 
     public static IEnumerable<object[]> InvalidQueries => new List<object[]>

@@ -14,7 +14,36 @@ namespace FlexibleParsingLanguage.Compiler.Util;
 internal partial class Lexicalizer
 {
 
-    internal class SequenceProccessData
+    internal void Sequence(ref List<RawOp> rawOps)
+    {
+        var data = new SequenceProccessData();
+        var entries = new List<int>();
+
+
+        foreach (var op in rawOps)
+        {
+            data.Ops.Add(op.Id, op);
+            entries.Add(op.Id);
+        }
+
+        GroupOps(data, entries);
+
+
+        var ordered = entries.Select(x => data.Ops[x]).ToList();
+        ordered.OrderByDescending(x => x.Type.Rank).ThenBy(x => x.Id);
+        foreach (var op in ordered)
+        {
+            if (op.Id == RootOpId)
+                continue;
+            data.SequenceAffixes(op);
+        }
+
+        UnwrapGroups(data, entries);
+        //HandleAccessors(data);
+        //SequenceInner(data);
+    }
+
+    private class SequenceProccessData
     {
         internal Dictionary<int, RawOp> Ops { get; private set; } = new Dictionary<int, RawOp>();
         internal Dictionary<int, List<int>> Groups { get; set; } = new Dictionary<int, List<int>>();
@@ -30,6 +59,7 @@ internal partial class Lexicalizer
             }
             throw new QueryCompileException(op, $"Index not found in {parentId} [{group.Select(x => x.ToString()).Join(", ")}]");
         }
+
 
         internal void SequenceAffixes(RawOp op)
         {
@@ -138,7 +168,7 @@ internal partial class Lexicalizer
                 target.PostFixed = true;
                 target.Input.Insert(0, op);
             }
-            
+
 
 
 
@@ -164,35 +194,6 @@ internal partial class Lexicalizer
         }
     }
 
-
-    internal void Sequence(ref List<RawOp> rawOps)
-    {
-        var data = new SequenceProccessData();
-        var entries = new List<int>();
-
-
-        foreach (var op in rawOps)
-        {
-            data.Ops.Add(op.Id, op);
-            entries.Add(op.Id);
-        }
-
-        GroupOps(data, entries);
-
-
-        var ordered = entries.Select(x => data.Ops[x]).ToList();
-        ordered.OrderByDescending(x => x.Type.Rank).ThenBy(x => x.Id);
-        foreach (var op in ordered)
-        {
-            if (op.Id == RootOpId)
-                continue;
-            data.SequenceAffixes(op);
-        }
-
-        UnwrapGroups(data, entries);
-        //HandleAccessors(data);
-        //SequenceInner(data);
-    }
 
     private void GroupOps(SequenceProccessData data, List<int> entries)
     {
