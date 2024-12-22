@@ -43,13 +43,13 @@ internal partial class Compiler
 
     public Parser Compile(string raw, ParsingMetaContext configContext)
     {
-        var (oldOps, newOps) = Lexicalizer.Lexicalize(raw);
+        var rawOps = Lexicalizer.Lexicalize(raw);
 
 
         var rootToken = new RawOp
         {
             Type = Lexicalizer.Ops[0],
-            Children = oldOps
+            Children = rawOps
         };
 
         var parseData = new ParseData
@@ -84,7 +84,7 @@ internal partial class Compiler
 #if DEBUG
         var token = rootToken.ToString2();
 
-        var debug = ops.Select(x => $"{x.OpType.GetMetaData().Name} {x.IntAcc} {x.StringAcc} ").Join("\n");
+        //var debug = rawOps.Select(x => $"{x.GetMetaData().Name} {x.IntAcc} {x.StringAcc} ").Join("\n");
         var s = 345534;
 #endif
 

@@ -22,7 +22,7 @@ namespace FlexibleParsingLanguage.Compiler.Util
                 ? "\n" + new string(' ', Op.CharIndex) + '↓'
                 : "" ;
 
-            return $"{Op.Id} {Op.Type.Operator} {Op.CharIndex} {Message}{indicator}\n{query}";
+            return $"{Op.Type.Operator}({Op.Id}) | message = {Message}{indicator}\n{query}";
         }
 
     }

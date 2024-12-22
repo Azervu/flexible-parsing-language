@@ -21,7 +21,7 @@ internal partial class Lexicalizer
 
     private OpConfig AccessorOp { get; set; } = new OpConfig(null, OpCategory.Accessor, 99);
 
-    private char UnescapeToken { get; set; }
+    private string UnescapeToken { get; set; }
 
 
     private Dictionary<string, OpConfig?> Operators = new();
@@ -47,7 +47,7 @@ internal partial class Lexicalizer
                 RootOp = op;
 
             if (op.Category.Has(OpCategory.Unescape))
-                UnescapeToken = op.Operator[0];
+                UnescapeToken = op.Operator;
         }
         if (DefaultOp == null)
             throw new Exception("Default operator missing");
@@ -69,10 +69,16 @@ internal partial class Lexicalizer
             Operators[op] = config;
     }
 
-    internal (List<RawOp>, List<RawOp>) Lexicalize(string raw)
+    internal List<RawOp> Lexicalize(string raw)
     {
         var tokens = Tokenize(raw).ToList();
         var ops = ProcessTokens(tokens);
+
+
+        var tt = tokens.Select(x => $"{x.Op?.Operator ?? ($"'{x.Accessor}'")}").Join("\n");
+        var t = ops.Select(x => $"({x.Id}){x.Type.Operator} '{x.Accessor}'").Join("\n");
+
+
         Sequence(ref ops);
 
         foreach (var op in ops)
@@ -81,15 +87,7 @@ internal partial class Lexicalizer
                 throw new InvalidOperationException("Accessor on non-accessor operation");
         }
 
-        tokens = tokens.Select(x => {
-
-            if (x.Item1 != AccessorOp)
-                return x;
-            return (DefaultOp, x.Item2, x.Item3, x.Item4);
-        }).ToList();
-
-
-        return (GroupTokens(tokens), ops);
+        return ops;
     }
 
     private List<RawOp> ProcessTokens(List<Token> tokens)
@@ -103,77 +101,61 @@ internal partial class Lexicalizer
         };
         var idCounter = 2;
 
+        RawOp? op = null;
+
+
         foreach (var t in tokens)
         {
-            if (t.Op == DefaultOp && string.IsNullOrEmpty(t.Accessor))
-                continue;
+            var hadOp = false;
 
-            var op = new RawOp
+            if (op != null)
             {
-                CharIndex = t.OpIndex,
-                Type = t.Op,
-            };
-            ops.Add(op);
-            if (string.IsNullOrEmpty(t.Accessor))
-            {
-                op.Id = idCounter++;
-                continue;
+                if (op.Type != DefaultOp) {
+                    hadOp = true;
+                    op.Id = idCounter++;
+                    ops.Add(op);
+                }
+                op = null;
             }
 
-            if (t.Op.Category.Has(OpCategory.Prefix))
+            if (t.Op != null)
             {
-                op.Prefixed = true;
-                op.Input.Add(new RawOp
+                op = new RawOp
                 {
-                    Id = idCounter++,
-                    CharIndex = t.AccessorIndex,
-                    Type = AccessorOp,
-                    Accessor = t.Accessor,
-                });
-                op.Id = idCounter++;
+                    CharIndex = t.Index,
+                    Type = t.Op,
+                };
             }
             else
             {
-                op.Id = idCounter++;
-                var defaultOp = new RawOp
+                if (!hadOp)
+                {
+                    ops.Add(new RawOp
+                    {
+                        Id = idCounter++,
+                        CharIndex = t.Index,
+                        Type = DefaultOp,
+                    });
+                }
+
+                ops.Add(new RawOp
                 {
                     Id = idCounter++,
-                    CharIndex = t.AccessorIndex,
-                    Type = DefaultOp,
-                    Prefixed = true
-                };
-                defaultOp.Input.Add(new RawOp
-                {
-                    Id = idCounter++,
-                    CharIndex = t.AccessorIndex,
+                    CharIndex = t.Index,
                     Type = AccessorOp,
                     Accessor = t.Accessor,
                 });
-                ops.Add(defaultOp);
             }
         }
 
-
-
+        if (op != null && op.Type != DefaultOp)
+        {
+            op.Id = idCounter++;
+            ops.Add(op);
+        }
 
         return ops;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

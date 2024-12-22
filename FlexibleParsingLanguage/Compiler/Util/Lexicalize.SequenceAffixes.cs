@@ -28,7 +28,7 @@ internal partial class Lexicalizer
                 if (group[i] == op.Id)
                     return i;
             }
-            throw new Exception($"Index not found ({op.Id}) [{group.Select(x => x.ToString()).Join(", ")}]");
+            throw new QueryCompileException(op, $"Index not found in {parentId} [{group.Select(x => x.ToString()).Join(", ")}]");
         }
 
         internal void SequenceAffixes(RawOp op)
@@ -42,10 +42,25 @@ internal partial class Lexicalizer
             var parentId = Parents[op.Id];
             var parent = Ops[parentId];
             var group = Groups[parentId];
-            var index = GetIndex(op);
+
+
+
+
+
+            var sss = "";
+            foreach (var x in Ops)
+            {
+                var o = x.Value;
+                sss += $"\n{(o.Accessor == null ? o.Type.Operator : $"'{o.Accessor}'"),5} | pre {o.Prefixed,5} | post {o.PostFixed,5} | {o.Id} <- [{o.Input.Select(y => y.Id.ToString()).Join(",")}]";
+            }
+
+
+
+
 
             if (post)
             {
+                var index = GetIndex(op);
                 if (index > 0)
                 {
                     Move(parentId, index - 1, op, false);
@@ -62,8 +77,12 @@ internal partial class Lexicalizer
                 }
             }
 
+
+
+
             if (pre)
             {
+                var index = GetIndex(op);
                 if (index > group.Count - 2)
                     throw new QueryCompileException(op, $"Sequence cannot end with prefix operators");
                 Move(parentId, index + 1, op, true);
@@ -91,6 +110,8 @@ internal partial class Lexicalizer
         {
             var g = Groups[sourceParentId];
             var id = g[index];
+            Parents[id] = target.Id;
+
             g.RemoveAt(index);
 
             if (!Groups.TryGetValue(target.Id, out var tg))
@@ -100,6 +121,10 @@ internal partial class Lexicalizer
             }
 
             var op = Ops[id];
+
+
+
+
 
             if (prefix)
             {

@@ -10,9 +10,10 @@ public class TokenizerTest
 
     public static IEnumerable<object[]> ValidQueries => new List<object[]>
     {
-        new object[] {"Simple", "a.b#c.d", "1{  2'a'  3.[1,2]  4'b'  5.[3,4]  6'c'  7#[5,6]  8'd'  9.[7,8]"},
+
+        new object[] {"Simple", "a.b#c.d", "1{  3'a'  2.[1,3]  5'b'  4.[2,5]  7'c'  6#[4,7]"},
         new object[] {"Redundant Separator", "b.#c",  "1{  2'a'  3.[1,2]  4'b'  5.[3,4]  6'c'  7#[5,6]  8'd'  9.[7,8]"},
-        new object[] {"Escape", "a.b'ee\\'e'c.d", "1{  2'a'  3.[1,2]  4'b'  5.[3,4]  6'ee\'e'  7.[5,6]  8'c'  9.[7,8]  10'd'  11.[9,10]"},
+        new object[] {"Escape", "a.b'ee\\'e'c.d", "1{  3'a'  2.[1,3]  5'b'  4.[2,5]  7'''  6.[4,7]  9'c'  8.[6,9]"},
     };
 
     public static IEnumerable<object[]> InvalidQueries => new List<object[]>
@@ -27,10 +28,10 @@ public class TokenizerTest
     public void TestUtil2(string parserString, string excpectedResult)
     {
 
-        List<RawOp> parsed2 = new List<RawOp>();
+        List<RawOp> parsed = new List<RawOp>();
         try
         {
-            parsed2 = T.Lexicalize(parserString).Item2;
+            parsed = T.Lexicalize(parserString);
         }
         catch (QueryCompileException ex)
         {
@@ -41,7 +42,7 @@ public class TokenizerTest
 
         var proccessed = new HashSet<int>();
 
-        foreach (var t in parsed2)
+        foreach (var t in parsed)
             LogEntry(proccessed, log, t);
 
         var result = log.ToString().Replace("\r", string.Empty);
@@ -114,91 +115,5 @@ public class TokenizerTest
             log.Append($"'{t.Accessor}'");
 
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    public static IEnumerable<object[]> OldTokenizationData => new List<object[]>
-    {
-        new object[] { "{a.b}c|{d.e.f}g", @"
-{
-    .  ""a""
-    .  ""b""
-.  ""c""
-|
-    {
-        .  ""d""
-        .  ""e""
-        .  ""f""
-.  ""g""" },
-        new object[] { "'-\\'-'|t.aaa*bbb##gfjhd|{ccc}\" \"", @"
-'  ""-'-""
-|  ""t""
-.  ""aaa""
-*
-.  ""bbb""
-##  ""gfjhd""
-|
-    {
-        .  ""ccc""
-"" """ },
-        new object[] { "k:h", @"
-.  ""k""
-:  ""h""" },
-    };
-
-
-
-
-
-    [TestMethod]
-    [DynamicData(nameof(OldTokenizationData))]
-    public void QueryParserTest(string parserString, string excpectedResult) => TestUtil(parserString, excpectedResult);
-
-
-    public void TestUtil(string parserString, string excpectedResult)
-    {
-        var (parsed, parsed2) = T.Lexicalize(parserString);
-        var result = parsed.Select(x => x.ToString2()).Concat().Replace("\r", string.Empty);
-
-
-
-
-        var expected = excpectedResult.Replace("\r", string.Empty);
-
-        /*
-        var e = expected.Split('\n');
-        var r = result.Split('\n');
-        for (var i = 0; i < e.Length; i++)
-        {
-            var ee = e[i];
-            var rr = r[i];
-            Assert.AreEqual(rr, ee, $"failed parsing {parserString}");
-        }
-        */
-
-
-        Assert.AreEqual(expected, result, "string rep mismatch");
-
-
-
-
-        /*
-        Assert.AreEqual(excpectedResult.Count, parsed.Count, $"length mismatch | \n{excpectedResult.Select(x => $"{x.Item1}{x.Item2}").Join(' ')} \n{parsed.Select(x => $"{x.Item1}{x.Item2}").Join(' ')}");
-
-        */
-
-    }
-
 
 }
