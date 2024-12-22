@@ -6,74 +6,20 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using static FlexibleParsingLanguage.Compiler.Util.Lexicalizer;
 
 namespace FlexibleParsingLanguage.Compiler.Util;
-
-internal class RawOp
-{
-
-
-    internal OpConfig? Type { get; set; }
-    internal string? Accessor { get; set; }
-
-    internal List<RawOp> Input { get; set; } = new List<RawOp>();
-    internal List<RawOp> Output { get; set; } = new List<RawOp>();
-
-    internal bool Prefixed { get; set; }
-    internal bool PostFixed { get; set; }
-
-
-
-
-
-    internal int CharIndex { get; set; }
-
-    internal int Id { get; set; }
-
-
-
-
-
-
-
-    internal List<RawOp>? Children { get; set; }
-
-
-    internal void AddLog(StringBuilder log, int depth)
-    {
-        log.Append($"\n{new string(' ', 4 * depth)}");
-        if (Type?.Operator != null)
-        {
-            log.Append(Type?.Operator);
-
-            if (Accessor != null)
-                log.Append($"  ");
-        }
-        if (Accessor != null)
-            log.Append($"\"{Accessor}\"");
-
-        if (Children != null)
-        {
-            foreach (var c in Children)
-                c.AddLog(log, depth + 1);
-        }
-    }
-
-    internal string ToString2()
-    {
-        var l = new StringBuilder();
-        AddLog(l, 0);
-        return l.ToString();
-    }
-}
 
 internal partial class Lexicalizer
 {
     internal List<OpConfig> Ops { get; private set; }
 
     private OpConfig DefaultOp { get; set; }
-    private OpConfig AccessorOp { get; set; } = new OpConfig(null, OpCategory.Accessor, 99);
+    private OpConfig RootOp { get; set; }
+    internal const int RootOpId = 1;
 
+
+    private OpConfig AccessorOp { get; set; } = new OpConfig(null, OpCategory.Accessor, 99);
 
     private char UnescapeToken { get; set; }
 
@@ -97,11 +43,17 @@ internal partial class Lexicalizer
             if (op.Category.Has(OpCategory.Default))
                 DefaultOp = op;
 
+            if (op.Category.Has(OpCategory.Root))
+                RootOp = op;
+
             if (op.Category.Has(OpCategory.Unescape))
                 UnescapeToken = op.Operator[0];
         }
         if (DefaultOp == null)
             throw new Exception("Default operator missing");
+
+        if (RootOp == null)
+            throw new Exception("Root operator missing");
 
     }
 
@@ -119,186 +71,128 @@ internal partial class Lexicalizer
 
     internal (List<RawOp>, List<RawOp>) Lexicalize(string raw)
     {
-
         var tokens = Tokenize(raw).ToList();
-
-        var ops = new List<RawOp>(tokens.Count);
-        var idCounter = 1;
-
-        foreach (var (op, acc, charIndex) in tokens)
-        {
-            if (op == DefaultOp && string.IsNullOrEmpty(acc))
-                continue;
-
-            var rawOp = new RawOp
-            {
-                Id = idCounter++,
-                CharIndex = charIndex,
-                Type = op,
-            };
-
-
-            ops.Add(rawOp);
-            if (!string.IsNullOrEmpty(acc))
-            {
-                if (op.Category.Has(OpCategory.Prefix))
-                {
-                    var accessOp = new RawOp
-                    {
-                        Id = idCounter++,
-                        CharIndex = charIndex,
-                        Type = AccessorOp,
-                        Accessor = acc,
-                    };
-                    rawOp.Prefixed = true;
-                    rawOp.Input.Add(accessOp);
-                }
-                else
-                {
-                    var defaultOp = new RawOp
-                    {
-                        Id = idCounter++,
-                        CharIndex = charIndex,
-                        Type = DefaultOp,
-                        Accessor = acc,
-                    };
-                    ops.Add(defaultOp);
-           
-                }
-            }
-     
-        }
-
-
-        for (var i = 0; i < tokens.Count; i++)
-        {
-            var (op, acc, charIndex) = tokens[i];
-
-
-
-
-        }
-        for (var i = 0; i < ops.Count; i++)
-        {
-            var op = ops[i];
-        }
-
-
+        var ops = ProcessTokens(tokens);
         Sequence(ref ops);
 
-
-
-
-
-
+        foreach (var op in ops)
+        {
+            if (op.Type != AccessorOp && op.Accessor != null)
+                throw new InvalidOperationException("Accessor on non-accessor operation");
+        }
 
         tokens = tokens.Select(x => {
 
             if (x.Item1 != AccessorOp)
                 return x;
-            return (DefaultOp, x.Item2, x.Item3);
+            return (DefaultOp, x.Item2, x.Item3, x.Item4);
         }).ToList();
 
 
         return (GroupTokens(tokens), ops);
     }
 
-
-    private IEnumerable<(OpConfig, string?, int)> Tokenize(string raw)
+    private List<RawOp> ProcessTokens(List<Token> tokens)
     {
+        var ops = new List<RawOp>(tokens.Count) {
+            new RawOp {
+                Id = 1,
+                CharIndex = -1,
+                Type = RootOp,
+            }
+        };
+        var idCounter = 2;
 
-        OpConfig? op = null;
-        string accessor = string.Empty;
-
-        OpConfig? opCandidate = null;
-        string candidateString = string.Empty;
-
-        OpConfig? opEscape = null;
-        string opEscapeString = string.Empty;
-
-        int startIndex = -1;
-
-        for (var i = 0; i < raw.Length; i++)
+        foreach (var t in tokens)
         {
-            var c = raw[i];
-            if (opEscape != null)
-            {
-                if (opEscapeString.EndsWith(UnescapeToken))
-                    continue;
+            if (t.Op == DefaultOp && string.IsNullOrEmpty(t.Accessor))
+                continue;
 
-                opEscapeString += c;
-                if (opEscapeString.EndsWith(opEscape.GroupOperator))
-                {
-                    opEscapeString = opEscapeString.Substring(0, opEscapeString.Length - opEscape.GroupOperator.Length);
-                    yield return (op ?? DefaultOp, accessor, startIndex);
-                    opEscape = null;
-                    accessor = string.Empty;
-                    op = null;
-                    startIndex = i + 1;
-                }
+            var op = new RawOp
+            {
+                CharIndex = t.OpIndex,
+                Type = t.Op,
+            };
+            ops.Add(op);
+            if (string.IsNullOrEmpty(t.Accessor))
+            {
+                op.Id = idCounter++;
                 continue;
             }
 
-            candidateString += c;
-
-            //var nextCandidate = candidateString + c;
-            if (!Operators.TryGetValue(candidateString, out var op2))
+            if (t.Op.Category.Has(OpCategory.Prefix))
             {
-                if (opCandidate != null)
+                op.Prefixed = true;
+                op.Input.Add(new RawOp
                 {
-                    op = opCandidate;
-                }
-                accessor += c;
-                candidateString = string.Empty;
+                    Id = idCounter++,
+                    CharIndex = t.AccessorIndex,
+                    Type = AccessorOp,
+                    Accessor = t.Accessor,
+                });
+                op.Id = idCounter++;
             }
-            else if (op2 != null)
+            else
             {
-                if (accessor != string.Empty)
+                op.Id = idCounter++;
+                var defaultOp = new RawOp
                 {
-                    yield return (op ?? DefaultOp, accessor, startIndex);
-                    startIndex = i;
-                    op = null;
-                    accessor = string.Empty;
-                }
-
-                if (op2.Category.Has(OpCategory.Literal))
+                    Id = idCounter++,
+                    CharIndex = t.AccessorIndex,
+                    Type = DefaultOp,
+                    Prefixed = true
+                };
+                defaultOp.Input.Add(new RawOp
                 {
-                    if (op == null)
-                        startIndex = i;
-
-                    opEscape = op2;
-                }
-                else
-                {
-                    if (op != null)
-                    {
-                        yield return (op, accessor, startIndex);
-                        startIndex = i;
-                        op = null;
-                        accessor = string.Empty;
-                    }
-                    opCandidate = op2;
-                }
+                    Id = idCounter++,
+                    CharIndex = t.AccessorIndex,
+                    Type = AccessorOp,
+                    Accessor = t.Accessor,
+                });
+                ops.Add(defaultOp);
             }
         }
 
 
 
 
-
-
-
-
+        return ops;
     }
 
-    private List<RawOp> GroupTokens(List<(OpConfig, string?, int)> tokens)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private List<RawOp> GroupTokens(List<(OpConfig, int, string?, int)> tokens)
     {
         var stack = new List<RawOp> { new() { Type = new OpConfig(null, OpCategory.Temp), Children = [] } };
         RawOp? prefixOp = null;
 
         for (var i = 0; i < tokens.Count(); i++)
         {
-            var (op, acc, charIndex) = tokens[i];
+            var (op, opIndex, acc, charIndex) = tokens[i];
 
             var addToPrefix = prefixOp != null;
 

@@ -2,115 +2,26 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FlexibleParsingLanguage.Compiler.Util;
 
 internal partial class Lexicalizer
 {
 
-    internal class SequenceWrapper
-    {
-        internal int Id { get; set; }
-        internal int ParentId { get; set; }
-
-
-        internal int LeftIndex { get; set; }
-        internal int RightIndex { get; set; }
-
-
-        internal SequenceWrapper? Parent { get; set; }
-        internal List<SequenceWrapper> Children { get; private set; } = new List<SequenceWrapper>();
-        internal List<SequenceWrapper> Input { get; set; } = new List<SequenceWrapper>();
-        internal List<SequenceWrapper> Output { get; set; } = new List<SequenceWrapper>();
-        internal RawOp Op { get; set; }
-
-        internal bool PrefixProccessed
-        {
-            get; private set;
-        }
-
-        internal bool PostfixProccessed
-        {
-            get; private set;
-        }
-
-
-
-        internal bool TryAddPrefix(SequenceWrapper sequence)
-        {
-            if (!Op.Type.Category.Has(OpCategory.Prefix) || PrefixProccessed)
-                return false;
-            PrefixProccessed = true;
-            Input.Add(sequence);
-            return true;
-        }
-
-        internal bool TryAddPostfix(SequenceWrapper sequence)
-        {
-            if (!Op.Type.Category.Has(OpCategory.Prefix) || PrefixProccessed)
-                return false;
-            PrefixProccessed = true;
-            Input.Insert(0, sequence);
-            return true;
-        }
-
-
-        internal bool IsBranch() => Op.Type.Category.Has(OpCategory.Branching);
-
-        internal bool IsPrefix()
-        {
-            if (Op.Type.Category.Has(OpCategory.Prefix) && !PrefixProccessed)
-                return true;
-
-            return false;
-        }
-
-        internal bool IsPostfix()
-        {
-            if (Op.Type.Category.Has(OpCategory.Postfix) && !PostfixProccessed)
-                return true;
-
-            return false;
-        }
-
-        internal int PrefixRank()
-        {
-            if (IsPrefix())
-                return Op.Type.Rank;
-            return int.MinValue;
-        }
-
-        internal int PostfixRank()
-        {
-            if (IsPostfix())
-                return Op.Type.Rank;
-            return int.MinValue;
-        }
-
-        internal int Rank { get => Op.Type.Rank; }
-
-
-    };
-
-
-
-
-
-
-
-
     internal class SequenceProccessData
     {
-        internal Dictionary<int, SequenceWrapper> Ops { get; private set; } = new Dictionary<int, SequenceWrapper>();
+        internal Dictionary<int, RawOp> Ops { get; private set; } = new Dictionary<int, RawOp>();
         internal Dictionary<int, List<int>> Groups { get; set; } = new Dictionary<int, List<int>>();
-
-        internal int GetIndex(SequenceWrapper op)
+        internal Dictionary<int, int> Parents { get; set; } = new Dictionary<int, int>();
+        internal int GetIndex(RawOp op)
         {
-            var parentId = Ops[op.Id].ParentId;
+            var parentId = Parents[op.Id];
             var group = Groups[parentId];
             for (var i = 0; i < group.Count; i++)
             {
@@ -120,11 +31,111 @@ internal partial class Lexicalizer
             throw new Exception($"Index not found ({op.Id}) [{group.Select(x => x.ToString()).Join(", ")}]");
         }
 
-        internal void Move(SequenceWrapper op, int parentId, bool toLeft)
+        internal void SequenceAffixes(RawOp op)
         {
-            var oldParentId = op.ParentId;
+            var post = op.IsPostfix();
+            var pre = op.IsPrefix();
+
+            if (!post && !pre)
+                return;
+
+            var parentId = Parents[op.Id];
+            var parent = Ops[parentId];
+            var group = Groups[parentId];
+            var index = GetIndex(op);
+
+            if (post)
+            {
+                if (index > 0)
+                {
+                    Move(parentId, index - 1, op, false);
+                }
+                else if (parent.Type.Category.Has(OpCategory.Group))
+                {
+                    //groups will be untangled later
+                    op.Input.Insert(0, parent);
+                    op.PostFixed = true;
+                }
+                else
+                {
+                    throw new QueryCompileException(op, $"Postfix operation missing param");
+                }
+            }
+
+            if (pre)
+            {
+                if (index > group.Count - 2)
+                    throw new QueryCompileException(op, $"Sequence cannot end with prefix operators");
+                Move(parentId, index + 1, op, true);
+            }
+
+
+            /*
+            var i = prefix ? index + 1 : index - 1;
+
+            var target = data.Ops[group[]];
+            op.Input.Add(left);
+            op.PostFixed = true;
+
+
+
+            var oldParentId = Parents[source.Id];
             var oldGroup = Groups[oldParentId];
-            op.ParentId = parentId;
+            Parents[source.Id] = target.Id;
+            */
+        }
+
+
+
+        private void Move(int sourceParentId, int index, RawOp target, bool prefix)
+        {
+            var g = Groups[sourceParentId];
+            var id = g[index];
+            g.RemoveAt(index);
+
+            if (!Groups.TryGetValue(target.Id, out var tg))
+            {
+                tg = [];
+                Groups[target.Id] = tg;
+            }
+
+            var op = Ops[id];
+
+            if (prefix)
+            {
+                tg.Add(id);
+                target.Prefixed = true;
+                target.Input.Add(op);
+            }
+            else
+            {
+                tg.Insert(0, id);
+                target.PostFixed = true;
+                target.Input.Insert(0, op);
+            }
+            
+
+
+
+
+
+            /*
+            var op = Ops[id];
+
+            var i = prefix ? index + 1 : index - 1;
+
+            var toMove = Ops[sourceGroup[i]];
+            sourceGroup.RemoveAt(i);
+
+            target.Input.Add(toMove);
+            target.PostFixed = true;
+
+
+
+            var oldParentId = Parents[source.Id];
+            var oldGroup = Groups[oldParentId];
+            Parents[toMove.Id] = target.Id;
+            */
         }
     }
 
@@ -135,78 +146,70 @@ internal partial class Lexicalizer
         var entries = new List<int>();
 
 
-        for (var i = 0; i < rawOps.Count; i++)
+        foreach (var op in rawOps)
         {
-            var op = rawOps[i];
-            op.Id = i;
-            if (op.Type.Operator == DefaultOp.Operator)
-            {
-                if (op.Accessor != null)
-                    throw new InvalidOperationException("Accessor on default");
-                continue;
-            }
-            data.Ops.Add(i, new SequenceWrapper
-            {
-                Op = op,
-                Id = i,
-                ParentId = -1,
-            });
-            entries.Add(i);
+            data.Ops.Add(op.Id, op);
+            entries.Add(op.Id);
         }
 
+        GroupOps(data, entries);
 
 
-        data.Groups[-1] = [];
-        var stack = new List<int> { -1 };
+        var ordered = entries.Select(x => data.Ops[x]).ToList();
+        ordered.OrderByDescending(x => x.Type.Rank).ThenBy(x => x.Id);
+        foreach (var op in ordered)
+        {
+            if (op.Id == RootOpId)
+                continue;
+            data.SequenceAffixes(op);
+        }
+
+        UnwrapGroups(data, entries);
+        //HandleAccessors(data);
+        //SequenceInner(data);
+    }
+
+    private void GroupOps(SequenceProccessData data, List<int> entries)
+    {
+        //var groups = new Dictionary<int, List<int>>();
+        data.Groups[RootOpId] = [];
+        var stack = new List<int> { RootOpId };
         foreach (var id in entries)
         {
+            if (id == RootOpId)
+                continue;
+
             var op = data.Ops[id];
             var parentId = stack[stack.Count - 1];
 
-            if (parentId >= 0 && op.Op.Type.Operator == data.Ops[parentId].Op.Type.GroupOperator.ToString())
+            if (parentId >= 0 && op.Type == data.Ops[parentId].Type)
             {
                 stack.RemoveAt(stack.Count - 1);
                 continue;
             }
-            
+
             var group = data.Groups[parentId];
-            op.ParentId = parentId;
+            data.Parents[op.Id] = parentId;
             group.Add(op.Id);
 
-            if (op.Op.Type.Category.Has(OpCategory.Group))
+            if (op.Type.Category.Has(OpCategory.Group))
             {
                 stack.Add(op.Id);
                 data.Groups.Add(op.Id, []);
             }
         }
-
-        var ordered = entries.Select(x => data.Ops[x]).ToList();
-        ordered.OrderByDescending(x => x.Op.Type.Rank).ThenBy(x => x.Id);
-        foreach (var op in ordered)
-            HandleSequenceOp(data, op);
-
-
-        //HandleAccessors(data);
-        //SequenceInner(data);
     }
 
-    private void HandleSequenceOp(SequenceProccessData data, SequenceWrapper op)
+    private void UnwrapGroups(SequenceProccessData data, List<int> entries)
     {
-        if (op.Op.Type.Operator == AccessorOp.Operator)
-        {
-            HandleAccessor(data, op);
-            return;
-        }
 
-        if (op.Op.Type.Category.Has(OpCategory.Group))
-        {
-            HandleGroup(data, op);
-            return;
-        }
-
-        HandleFix(data, op);
     }
 
+
+
+
+
+    /*
     private void HandleAccessor(SequenceProccessData data, SequenceWrapper op)
     {
         SequenceWrapper? left = null;
@@ -221,10 +224,10 @@ internal partial class Lexicalizer
             var lId = group[l];
             left = data.Ops[lId];
 
-            if (left.IsBranch())
+            if (left.Op.IsBranch())
                 continue;
 
-            if (!left.IsPrefix())
+            if (!left.Op.IsPrefix())
                 left = null;
 
             break;
@@ -255,16 +258,17 @@ internal partial class Lexicalizer
         else
             data.Move(op, right.Id, true);
     }
+    */
 
 
 
-
-
-
-
-
-    private void HandleGroup(SequenceProccessData data, SequenceWrapper op)
+    private void HandleGroup(SequenceProccessData data, RawOp op)
     {
+
+
+
+
+
 
 
         /*
@@ -302,22 +306,6 @@ internal partial class Lexicalizer
 
 
 
-
-
-
-
-
-
-
-
-
-
-    private void HandleFix(SequenceProccessData data, SequenceWrapper op)
-    {
-        var group = data.Groups[op.ParentId];
-        var index = data.GetIndex(op);
-
-    }
 
 
 

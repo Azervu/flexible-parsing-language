@@ -23,8 +23,8 @@ internal partial class Compiler
     public Compiler()
     {
         Lexicalizer = new Lexicalizer([
-            new OpConfig("{", OpCategory.Group | OpCategory.Branching | OpCategory.Postfix, 100, "}"),
-            new OpConfig(".", OpCategory.Prefix | OpCategory.Default),
+            new OpConfig("{", OpCategory.Group | OpCategory.Branching | OpCategory.Postfix | OpCategory.Root, 100, "}"),
+            new OpConfig(".", OpCategory.Prefix | OpCategory.Postfix | OpCategory.Default),
             new OpConfig("\\", OpCategory.Unescape, -1),
             new OpConfig("(", OpCategory.Group, 99, ")"),
             new OpConfig("$", OpCategory.None),

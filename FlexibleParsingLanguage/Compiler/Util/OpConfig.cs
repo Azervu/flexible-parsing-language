@@ -43,7 +43,9 @@ internal enum OpCategory
 {
     None       = 0b_0000_0000_0000_0000,
     Default    = 0b_0000_0001_0000_0000,
-    Unescape   = 0b_0000_0010_0000_0000,
+    Root       = 0b_0000_0010_0000_0000,
+    Unescape   = 0b_0000_0100_0000_0000,
+
 
 
 
