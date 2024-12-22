@@ -1,14 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using static FlexibleParsingLanguage.Compiler.Util.Lexicalizer;
-
-namespace FlexibleParsingLanguage.Compiler.Util;
+﻿namespace FlexibleParsingLanguage.Compiler.Util;
 
 internal partial class Lexicalizer
 {
@@ -155,73 +145,5 @@ internal partial class Lexicalizer
         }
 
         return ops;
-    }
-
-
-
-
-
-
-
-
-
-
-
-    private List<RawOp> GroupTokens(List<(OpConfig, int, string?, int)> tokens)
-    {
-        var stack = new List<RawOp> { new() { Type = new OpConfig(null, OpCategory.Temp), Children = [] } };
-        RawOp? prefixOp = null;
-
-        for (var i = 0; i < tokens.Count(); i++)
-        {
-            var (op, opIndex, acc, charIndex) = tokens[i];
-
-            var addToPrefix = prefixOp != null;
-
-            var groupOp = stack[stack.Count - 1];
-            if (stack.Count > 1 && op.Operator == groupOp.Type.GroupOperator.ToString())
-            {
-                if (addToPrefix)
-                    throw new InvalidOperationException("Ungrouping is prefix param");
-                stack.RemoveAt(stack.Count - 1);
-                continue;
-            }
-
-            var c = new RawOp
-            {
-                Type = op,
-                Accessor = acc,
-            };
-
-            if (addToPrefix)
-            {
-                if (op.Operator == DefaultOp.Operator && prefixOp.Accessor == null)
-                    prefixOp.Accessor = acc;
-                else
-                    prefixOp.Children = new List<RawOp> { c };
-                prefixOp = null;
-            }
-            else
-            {
-                groupOp.Children.Add(c);
-            }
-
-
-            if (c.Type.GroupOperator != null)
-            {
-                c.Children = new List<RawOp>();
-                stack.Add(c);
-            }
-
-            if (c.Type?.Category.Has(OpCategory.Prefix) == true)
-            {
-                if (c.Accessor == null)
-                    prefixOp = c;
-            }
-        }
-
-        if (prefixOp != null)
-            throw new InvalidOperationException("Prefix lacks param");
-        return stack[0].Children;
     }
 }
