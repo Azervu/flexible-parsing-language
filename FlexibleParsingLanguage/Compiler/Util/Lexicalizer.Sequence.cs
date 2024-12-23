@@ -19,7 +19,6 @@ internal partial class Lexicalizer
         var data = new SequenceProccessData();
         var entries = new List<int>();
 
-
         foreach (var op in ops)
         {
             data.Ops.Add(op.Id, op);
@@ -38,18 +37,25 @@ internal partial class Lexicalizer
             data.SequenceAffixes(op);
         }
 
-        UnwrapGroups(data, entries);
-        //HandleAccessors(data);
-        //SequenceInner(data);
-
-
         foreach (var op in ops)
         {
-            foreach (var op2 in op.Input)
+            foreach (var op2 in op.GetInput())
             {
                 op2.Output.Add(op);
             }
         }
+
+        foreach (var op in ops)
+            RemapInput(data, op);
+
+        for (var i = 0; i < ops.Count; i++)
+        {
+            var op = ops[i];
+            if (!op.Type.Category.Has(OpCategory.Group) || op.Id == RootOpId)
+                continue;
+            UnwrapGroups(data, op);
+        }
+
     }
 
     private class SequenceProccessData
@@ -82,8 +88,6 @@ internal partial class Lexicalizer
             var parent = Ops[parentId];
             var group = Groups[parentId];
 
-
-
             if (post)
             {
                 RawOp? target = null;
@@ -101,14 +105,12 @@ internal partial class Lexicalizer
 
                 if (targetIndex != -1)
                 {
-
-
                     AddInput(parentId, targetIndex, op, false);
                 }
                 else if (parent.Type.Category.Has(OpCategory.Group))
                 {
                     //groups will be untangled later
-                    op.Input.Insert(0, parent);
+                    op.AddPostfix(parent);
                     op.PostFixed = true;
                 }
                 else
@@ -118,14 +120,12 @@ internal partial class Lexicalizer
             }
 
 #if DEBUG
-
             var sss = "";
             foreach (var x in Ops)
             {
                 var o = x.Value;
-                sss += $"\n{(o.Accessor == null ? o.Type.Operator : $"'{o.Accessor}'"),5} | pre {o.Prefixed,5} | post {o.PostFixed,5} | {o.Id} <- [{o.Input.Select(y => y.Id.ToString()).Join(",")}]";
+                sss += $"\n{(o.Accessor == null ? o.Type.Operator : $"'{o.Accessor}'"),5} | pre {o.Prefixed,5} | post {o.PostFixed,5} | {o.Id} <- [{o.GetInput().Select(y => y.Id.ToString()).Join(",")}]";
             }
-
 #endif
 
 
@@ -145,6 +145,7 @@ internal partial class Lexicalizer
 
                 if (targetIndex == -1)
                     throw new QueryCompileException(op, $"Sequence cannot end with prefix operators");
+
                 AddInput(parentId, targetIndex, op, true);
             }
 
@@ -159,8 +160,6 @@ internal partial class Lexicalizer
             */
         }
 
-
-
         private void AddInput(int sourceParentId, int index, RawOp target, bool prefix)
         {
 
@@ -170,12 +169,14 @@ internal partial class Lexicalizer
 
             if (target.Type.Category.Has(OpCategory.Branching))
             {
-                target.Input.Add(op);
+                if (prefix)
+                    target.AddPrefix(op);
+                else
+                    target.AddPostfix(op);
                 return;
             }
 
             Parents[id] = target.Id;
-
             g.RemoveAt(index);
 
             if (!Groups.TryGetValue(target.Id, out var tg))
@@ -185,22 +186,20 @@ internal partial class Lexicalizer
             }
 
 
-
             if (prefix)
             {
-                tg.Add(id);
+                //tg.Add(id);
                 target.Prefixed = true;
-                target.Input.Add(op);
+                target.AddPrefix(op);
             }
             else
             {
-                tg.Insert(0, id);
+                //tg.Insert(0, id);
                 target.PostFixed = true;
-                target.Input.Insert(0, op);
+                target.AddPostfix(op);
             }
         }
     }
-
 
     private void GroupOps(SequenceProccessData data, List<int> entries)
     {
@@ -233,10 +232,101 @@ internal partial class Lexicalizer
         }
     }
 
-    private void UnwrapGroups(SequenceProccessData data, List<int> entries)
+
+
+    private void RemapInput(SequenceProccessData data, RawOp op)
+    {
+        if (!op.Type.Category.Has(OpCategory.Group) || op.Id == RootOpId)
+            return;
+
+        var children = op.Children.Select(x => x.Id).ToHashSet();
+
+        foreach (var o in op.Output)
+        {
+            if (!children.Contains(o.Id))
+                continue;
+
+            
+
+
+        }
+        /*
+
+
+
+        if (!op.Type.Category.Has(OpCategory.Prefix) || op.Type.Category.Has(OpCategory.Group) || op.Input.Count == 0)
+            return;
+
+        var inp = op.Input[0];
+        if (!inp.Type.Category.Has(OpCategory.Group) || inp.Id == RootOpId)
+            return;
+
+        var parent = data.Parents[op.Id];
+
+
+
+        while (true)
+        {
+            if (!inp.Type.Category.Has(OpCategory.Group))
+                break;
+
+            if (inp.Input.Count == 0)
+            {
+                throw new QueryCompileException([op, inp], "Parent needs to ");
+            }
+            inp.Input.Add(inp);
+        }
+        */
+    }
+
+
+
+
+
+
+
+
+    private void UnwrapGroups(SequenceProccessData data, RawOp op)
     {
 
+        /*
+        var children = data.Groups[op.Id];
+
+        if (children.Count > 0)
+        {
+            var first = data.Ops[children[0]];
+            if (first.Input.Count > 0 && first.Input[0].Id == op.Id)
+            {
+
+            }
+        }
+
+
+
+
+
+        if (op.Type.Category.Has(OpCategory.Virtual))
+        {
+
+
+        }
+
+        */
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

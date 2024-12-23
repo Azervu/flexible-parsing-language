@@ -25,8 +25,7 @@ internal partial class Compiler
         Lexicalizer = new Lexicalizer([
             new OpConfig("{", OpCategory.Group | OpCategory.Branching | OpCategory.Postfix | OpCategory.Root, 100, "}"),
             new OpConfig(".", OpCategory.Prefix | OpCategory.Postfix | OpCategory.Default),
-            new OpConfig("\\", OpCategory.Unescape, -1),
-            new OpConfig("(", OpCategory.Group, 99, ")"),
+            new OpConfig("(", OpCategory.Group | OpCategory.Postfix | OpCategory.Virtual, 100, ")"),
             new OpConfig("$", OpCategory.None),
             new OpConfig("~", OpCategory.Postfix),
             new OpConfig("*", OpCategory.Postfix),

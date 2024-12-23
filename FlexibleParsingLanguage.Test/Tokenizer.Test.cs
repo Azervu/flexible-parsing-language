@@ -10,17 +10,18 @@ public class TokenizerTest
 
     public static IEnumerable<object[]> ValidQueries => new List<object[]>
     {
-        new object[] {"Simple", "a.b#cc2.d", "1{  2.[1,'a']  4.[2,'b']  6#[4,'cc2']  8.[6,'d']  10}"},
-        new object[] {"Redundant separator", "b.#c",  "1{  2.[1,'b']  4#[2,'c']  6}"},
-        new object[] {"Non redundant version", "b#c",  "1{  2.[1,'b']  4#[2,'c']  6}"},
-        new object[] {"Escape", "a.b'ee\\'e'c.d", "1{  2.[1,'a']  4.[2,'b']  6.[4,'ee\\'e']  8.[6,'c']  10.[8,'d']  12}"},
+        new object[] {"Simple", "a.b#cc2.d", "1{  2.[1,'a']  4.[2,'b']  6#[4,'cc2']  8.[6,'d']"},
+        new object[] {"Redundant separator", "b.#c",  "1{  2.[1,'b']  4#[2,'c']"},
+        new object[] {"Non redundant version", "b#c",  "1{  2.[1,'b']  4#[2,'c']"},
+        new object[] {"Escape", "a.b'ee\\'e'c.d", "1{  2.[1,'a']  4.[2,'b']  6.[4,'ee\\'e']  8.[6,'c']  10.[8,'d']"},
 
-        new object[] {"Branch", "a{b1:h2}b2:h1", "1{  2.[1,'a']  4{[2]  5.[4,'b1']  7:[5,'h2']  9}  10.[2,'b2']  12:[10,'h1']  14} TODO unwrap branches"},
+        new object[] {"Branch", "a{b1:h2}b2:h1", "1{  2.[1,'a']  4{[2]  5.[4,'b1']  7:[5,'h2']  9}  10.[2,'b2']  12:[10,'h1'] TODO unwrap branches"},
     };
 
     public static IEnumerable<object[]> InvalidQueries => new List<object[]>
     {
-        new object[] { "Un ended escape", "a.b'sdf" },
+        new object[] { "Un-ended escape", "a.b'sdf.c" },
+        new object[] { "Branching group ends with an infix operator", "a.b{c.d#}e" },
     };
 
     [TestMethod]
@@ -78,7 +79,6 @@ public class TokenizerTest
         try
         {
             var parsed = T.Lexicalize(query);
- 
         }
         catch (QueryCompileException ex)
         {
@@ -88,46 +88,30 @@ public class TokenizerTest
         Assert.Fail($"Failed to catch issue in {query}");
     }
 
-
-
-
-
-
-
-
-
-
-
-
     private void LogEntry(HashSet<int> proccessed, StringBuilder log, RawOp t)
     {
         if (proccessed.Contains(t.Id) || (t.Output.Count == 1 && t.Type.Category.Has(OpCategory.Accessor)))
             return;
-        foreach (var input in t.Input)
-            LogEntry(proccessed, log, input);
+
+        var input = t.GetInput().ToList();
+        foreach (var inp in t.GetInput())
+            LogEntry(proccessed, log, inp);
 
         if (log.Length > 0)
             log.Append("  ");
 
-
         proccessed.Add(t.Id);
-
         log.Append($"{t.Id}");
         log.Append((!string.IsNullOrEmpty(t.Type.Operator) ? t.Type.Operator : $"'{t.Accessor}'"));
 
-        if (t.Input.Count > 0)
+        if (input.Count > 0)
         {
-            log.Append($"[{t.Input.Select(x => {
+            log.Append($"[{input.Select(x => {
                 if (x.Output.Count == 1 && x.Type.Category.Has(OpCategory.Accessor))
                     return (!string.IsNullOrEmpty(x.Type.Operator) ? x.Type.Operator : $"'{x.Accessor.Replace("'", "\\'")}'");
                 return x.Id.ToString();
             }).Join(",")}");
-
             log.Append($"]");
         }
-
-
-
     }
-
 }

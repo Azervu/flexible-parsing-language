@@ -15,7 +15,48 @@ internal class RawOp
     internal OpConfig Type { get; set; }
     internal string? Accessor { get; set; }
 
-    internal List<RawOp> Input { get; set; } = new List<RawOp>();
+
+    private List<RawOp> _leftInput = new List<RawOp>();
+    private List<RawOp> _rightInput = new List<RawOp>();
+
+
+    private List<RawOp>? _input = null; 
+    
+    private List<RawOp> Input {
+        get {
+            if (_input == null)
+                _input = [.. _leftInput, .. _rightInput];
+            return _input;
+        }
+    }
+    
+
+    internal IEnumerable<RawOp> GetInput() => Input.AsEnumerable();
+
+
+    internal void AddPostfix(RawOp op)
+    {
+        _input = null;
+        _leftInput.Add(op);
+    }
+
+    internal void AddChildInput(RawOp op)
+    {
+        Children.Add(op);
+    }
+
+    internal void AddPrefix(RawOp op)
+    {
+        _input = null;
+        _rightInput.Add(op);
+    }
+
+
+
+
+
+
+
     internal List<RawOp> Output { get; set; } = new List<RawOp>();
 
     internal bool Prefixed { get; set; }
@@ -43,7 +84,7 @@ internal class RawOp
         if (!IsPrefix())
             return false;
         Prefixed = true;
-        Input.Add(op);
+        _leftInput.Add(op);
         return true;
     }
 
@@ -52,7 +93,7 @@ internal class RawOp
         if (!IsPostfix())
             return false;
         PostFixed = true;
-        Input.Insert(0, op);
+        _rightInput.Insert(0, op);
         return true;
     }
 
@@ -73,7 +114,7 @@ internal class RawOp
         return int.MinValue;
     }
 
-    internal List<RawOp>? Children { get; set; }
+    internal List<RawOp> Children = new List<RawOp>();
 
 
     internal void AddLog(StringBuilder log, int depth)
