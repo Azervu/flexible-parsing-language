@@ -24,6 +24,5 @@ namespace FlexibleParsingLanguage.Compiler.Util
 
             return $"{Op.Type.Operator}({Op.Id}) | message = {Message}{indicator}\n{query}";
         }
-
     }
 }

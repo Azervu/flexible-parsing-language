@@ -14,13 +14,13 @@ namespace FlexibleParsingLanguage.Compiler.Util;
 internal partial class Lexicalizer
 {
 
-    internal void Sequence(ref List<RawOp> rawOps)
+    internal void Sequence(ref List<RawOp> ops)
     {
         var data = new SequenceProccessData();
         var entries = new List<int>();
 
 
-        foreach (var op in rawOps)
+        foreach (var op in ops)
         {
             data.Ops.Add(op.Id, op);
             entries.Add(op.Id);
@@ -41,6 +41,15 @@ internal partial class Lexicalizer
         UnwrapGroups(data, entries);
         //HandleAccessors(data);
         //SequenceInner(data);
+
+
+        foreach (var op in ops)
+        {
+            foreach (var op2 in op.Input)
+            {
+                op2.Output.Add(op);
+            }
+        }
     }
 
     private class SequenceProccessData
@@ -75,25 +84,26 @@ internal partial class Lexicalizer
 
 
 
-
-
-            var sss = "";
-            foreach (var x in Ops)
-            {
-                var o = x.Value;
-                sss += $"\n{(o.Accessor == null ? o.Type.Operator : $"'{o.Accessor}'"),5} | pre {o.Prefixed,5} | post {o.PostFixed,5} | {o.Id} <- [{o.Input.Select(y => y.Id.ToString()).Join(",")}]";
-            }
-
-
-
-
-
             if (post)
             {
-                var index = GetIndex(op);
-                if (index > 0)
+                RawOp? target = null;
+                var targetIndex = -1;
+                for (var i = GetIndex(op) - 1; i >= 0; i--)
                 {
-                    Move(parentId, index - 1, op, false);
+                    var candidate = Ops[group[i]];
+                    if (candidate.Type.Category.Has(OpCategory.Branching))
+                        continue;
+                    target = candidate;
+                    targetIndex = i;
+                    break;
+                }
+
+
+                if (targetIndex != -1)
+                {
+
+
+                    AddInput(parentId, targetIndex, op, false);
                 }
                 else if (parent.Type.Category.Has(OpCategory.Group))
                 {
@@ -107,27 +117,42 @@ internal partial class Lexicalizer
                 }
             }
 
+#if DEBUG
 
+            var sss = "";
+            foreach (var x in Ops)
+            {
+                var o = x.Value;
+                sss += $"\n{(o.Accessor == null ? o.Type.Operator : $"'{o.Accessor}'"),5} | pre {o.Prefixed,5} | post {o.PostFixed,5} | {o.Id} <- [{o.Input.Select(y => y.Id.ToString()).Join(",")}]";
+            }
+
+#endif
 
 
             if (pre)
             {
-                var index = GetIndex(op);
-                if (index > group.Count - 2)
-                    throw new QueryCompileException(op, $"Sequence cannot end with prefix operators");
-                Move(parentId, index + 1, op, true);
-            }
+                RawOp? target = null;
+                var targetIndex = -1;
+                for (var i = GetIndex(op) + 1; i < group.Count; i++)
+                {
+                    var candidate = Ops[group[i]];
+                    if (candidate.Type.Category.Has(OpCategory.Branching))
+                        continue;
+                    target = candidate;
+                    targetIndex = i;
+                    break;
+                }
 
+                if (targetIndex == -1)
+                    throw new QueryCompileException(op, $"Sequence cannot end with prefix operators");
+                AddInput(parentId, targetIndex, op, true);
+            }
 
             /*
             var i = prefix ? index + 1 : index - 1;
-
             var target = data.Ops[group[]];
             op.Input.Add(left);
             op.PostFixed = true;
-
-
-
             var oldParentId = Parents[source.Id];
             var oldGroup = Groups[oldParentId];
             Parents[source.Id] = target.Id;
@@ -136,10 +161,19 @@ internal partial class Lexicalizer
 
 
 
-        private void Move(int sourceParentId, int index, RawOp target, bool prefix)
+        private void AddInput(int sourceParentId, int index, RawOp target, bool prefix)
         {
+
             var g = Groups[sourceParentId];
             var id = g[index];
+            var op = Ops[id];
+
+            if (target.Type.Category.Has(OpCategory.Branching))
+            {
+                target.Input.Add(op);
+                return;
+            }
+
             Parents[id] = target.Id;
 
             g.RemoveAt(index);
@@ -149,10 +183,6 @@ internal partial class Lexicalizer
                 tg = [];
                 Groups[target.Id] = tg;
             }
-
-            var op = Ops[id];
-
-
 
 
 
@@ -168,29 +198,6 @@ internal partial class Lexicalizer
                 target.PostFixed = true;
                 target.Input.Insert(0, op);
             }
-
-
-
-
-
-
-            /*
-            var op = Ops[id];
-
-            var i = prefix ? index + 1 : index - 1;
-
-            var toMove = Ops[sourceGroup[i]];
-            sourceGroup.RemoveAt(i);
-
-            target.Input.Add(toMove);
-            target.PostFixed = true;
-
-
-
-            var oldParentId = Parents[source.Id];
-            var oldGroup = Groups[oldParentId];
-            Parents[toMove.Id] = target.Id;
-            */
         }
     }
 
@@ -208,7 +215,7 @@ internal partial class Lexicalizer
             var op = data.Ops[id];
             var parentId = stack[stack.Count - 1];
 
-            if (parentId >= 0 && op.Type == data.Ops[parentId].Type)
+            if (parentId >= 0 && op.Type.Operator == data.Ops[parentId].Type.GroupOperator)
             {
                 stack.RemoveAt(stack.Count - 1);
                 continue;

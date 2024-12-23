@@ -66,7 +66,7 @@ internal partial class Lexicalizer
 
 
         var tt = tokens.Select(x => $"{x.Op?.Operator ?? ($"'{x.Accessor}'")}").Join("\n");
-        var t = ops.Select(x => $"({x.Id}){x.Type.Operator} '{x.Accessor}'").Join("\n");
+        var t = ops.Select(x => $"({x.Id,2}){(string.IsNullOrEmpty(x.Accessor) ? x.Type.Operator : $"'{x.Accessor}'"),5}").Join("\n");
 
 
         Sequence(ref ops);
@@ -93,7 +93,6 @@ internal partial class Lexicalizer
 
         RawOp? op = null;
 
-
         foreach (var t in tokens)
         {
             var hadOp = false;
@@ -101,7 +100,7 @@ internal partial class Lexicalizer
             if (op != null)
             {
                 if (op.Type != DefaultOp) {
-                    hadOp = true;
+                    hadOp = op.Type.Category.Has(OpCategory.Prefix) && !op.Type.Category.Has(OpCategory.Group);
                     op.Id = idCounter++;
                     ops.Add(op);
                 }
@@ -143,6 +142,35 @@ internal partial class Lexicalizer
             op.Id = idCounter++;
             ops.Add(op);
         }
+
+
+        if (RootOp.Category.Has(OpCategory.Group))
+        {
+
+            ops.Add(new RawOp
+            {
+                Id = idCounter++,
+                CharIndex = -1,
+                Type = Operators[RootOp.GroupOperator],
+            });
+
+        }
+
+
+        /*
+
+
+                var ops = new List<RawOp>(tokens.Count) {
+            new RawOp {
+                Id = 1,
+                CharIndex = -1,
+                Type = RootOp,
+            }
+        };
+        var idCounter = 2;
+
+
+         */
 
         return ops;
     }

@@ -1,4 +1,4 @@
-using FlexibleParsingLanguage.Compiler.Util;
+﻿using FlexibleParsingLanguage.Compiler.Util;
 using System.Text;
 
 namespace FlexibleParsingLanguage.Test;
@@ -10,13 +10,12 @@ public class TokenizerTest
 
     public static IEnumerable<object[]> ValidQueries => new List<object[]>
     {
-        new object[] {"Simple", "a.b#cc2.d", "1{  3'a'  2.[1,3]  5'b'  4.[2,5]  7'cc2'  6#[4,7]  9'd'  8.[6,9]"},
-        new object[] {"Redundant separator", "b.#c",  "1{  3'b'  2.[1,3]  5'c'  4#[2,5]"},
-        new object[] {"Non redundant version", "b#c",  "1{  3'b'  2.[1,3]  5'c'  4#[2,5]"},
-        new object[] {"Escape", "a.b'ee\\'e'c.d", "1{  3'a'  2.[1,3]  5'b'  4.[2,5]  7'ee'e'  6.[4,7]  9'c'  8.[6,9]  11'd'  10.[8,11]"},
+        new object[] {"Simple", "a.b#cc2.d", "1{  2.[1,'a']  4.[2,'b']  6#[4,'cc2']  8.[6,'d']  10}"},
+        new object[] {"Redundant separator", "b.#c",  "1{  2.[1,'b']  4#[2,'c']  6}"},
+        new object[] {"Non redundant version", "b#c",  "1{  2.[1,'b']  4#[2,'c']  6}"},
+        new object[] {"Escape", "a.b'ee\\'e'c.d", "1{  2.[1,'a']  4.[2,'b']  6.[4,'ee\\'e']  8.[6,'c']  10.[8,'d']  12}"},
 
-        new object[] {"Branch", "a.b{c:h2}'ee\\'e'c.d:h1", "1{  3'a'  2.[1,3]  5'b'  4.[2,5]  7'ee'e'  6.[4,7]  9'c'  8.[6,9]  11'd'  10.[8,11]"},
-
+        new object[] {"Branch", "a{b1:h2}b2:h1", "1{  2.[1,'a']  4{[2]  5.[4,'b1']  7:[5,'h2']  9}  10.[2,'b2']  12:[10,'h1']  14} TODO unwrap branches"},
     };
 
     public static IEnumerable<object[]> InvalidQueries => new List<object[]>
@@ -51,9 +50,22 @@ public class TokenizerTest
         var result = log.ToString().Replace("\r", string.Empty);
         var expected = excpectedResult.Replace("\r", string.Empty);
 
-        if (expected != result)
+        var diff = -1;
+        var min = Math.Min(result.Count(), expected.Count());
+        for (int i = 0; i < min; i++)
         {
-            Assert.Fail($"Query mismatch {parserString}\n{expected}\n{result}");
+            if (result[i] == expected[i])
+                continue;
+            diff = i;
+            break;
+        }
+
+        if (diff == -1 && result.Count() != expected.Count())
+            diff = min;
+
+        if (diff != -1)
+        {
+            Assert.Fail($"Query mismatch {parserString}\n{new string(' ', diff)}↓\n{expected}\n{result}");
         }
 
         Assert.AreEqual(expected, result, "string rep mismatch");
@@ -89,7 +101,7 @@ public class TokenizerTest
 
     private void LogEntry(HashSet<int> proccessed, StringBuilder log, RawOp t)
     {
-        if (proccessed.Contains(t.Id))
+        if (proccessed.Contains(t.Id) || (t.Output.Count == 1 && t.Type.Category.Has(OpCategory.Accessor)))
             return;
         foreach (var input in t.Input)
             LogEntry(proccessed, log, input);
@@ -101,21 +113,20 @@ public class TokenizerTest
         proccessed.Add(t.Id);
 
         log.Append($"{t.Id}");
+        log.Append((!string.IsNullOrEmpty(t.Type.Operator) ? t.Type.Operator : $"'{t.Accessor}'"));
 
-        if (!string.IsNullOrEmpty(t.Type.Operator))
-            log.Append(t.Type.Operator);
-
-
-        if (t.Input.Count > 0 || t.Output.Count > 0)
+        if (t.Input.Count > 0)
         {
-            log.Append($"[{t.Input.Select(x => x.Id.ToString()).Join(",")}");
-            if (t.Output.Count > 0)
-                log.Append($"/{t.Output.Select(x => x.Id.ToString()).Join(",")}");
+            log.Append($"[{t.Input.Select(x => {
+                if (x.Output.Count == 1 && x.Type.Category.Has(OpCategory.Accessor))
+                    return (!string.IsNullOrEmpty(x.Type.Operator) ? x.Type.Operator : $"'{x.Accessor.Replace("'", "\\'")}'");
+                return x.Id.ToString();
+            }).Join(",")}");
+
             log.Append($"]");
         }
 
-        if (!string.IsNullOrEmpty(t.Accessor))
-            log.Append($"'{t.Accessor}'");
+
 
     }
 
