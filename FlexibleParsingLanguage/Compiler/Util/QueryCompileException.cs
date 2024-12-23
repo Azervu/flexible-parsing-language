@@ -14,8 +14,10 @@ namespace FlexibleParsingLanguage.Compiler.Util
 
         public string GenerateMessage(string query)
         {
-            var op = Ops[0];
-            var log = new StringBuilder($"{op.Type.Operator}({op.Id}) | message = {Message}");
+            var log = new StringBuilder(Ops.Count > 0
+                ? $"{Ops[0].Type.Operator}({Ops[0].Id}) | message = {Message}"
+                : Message
+            );
 
             var indices = Ops.Where(x => x.CharIndex >= 0).Select(x => x.CharIndex).Distinct().Order().ToList();
             if (indices.Any())
