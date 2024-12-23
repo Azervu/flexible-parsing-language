@@ -15,7 +15,7 @@ public class TokenizerTest
         new object[] {"Non redundant version", "b#c",  "1{  2.[1,'b']  4#[2,'c']"},
         new object[] {"Escape", "a.b'ee\\'e'c.d", "1{  2.[1,'a']  4.[2,'b']  6.[4,'ee\\'e']  8.[6,'c']  10.[8,'d']"},
 
-        new object[] {"Branch", "a{b1:h2}b2:h1", "1{  2.[1,'a']  4{[2]  5.[4,'b1']  7:[5,'h2']  9}  10.[2,'b2']  12:[10,'h1'] TODO unwrap branches"},
+        new object[] {"Branch", "a{b1:h2}b2:h1", "1{  2.[1,'a']  4{[2]  5.[2,'b1']  7:[5,'h2']  9}  10.[2,'b2']  12:[10,'h1']"},
     };
 
     public static IEnumerable<object[]> InvalidQueries => new List<object[]>

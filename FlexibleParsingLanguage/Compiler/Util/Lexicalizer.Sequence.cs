@@ -110,7 +110,7 @@ internal partial class Lexicalizer
                 else if (parent.Type.Category.Has(OpCategory.Group))
                 {
                     //groups will be untangled later
-                    op.AddPostfix(parent);
+                    op.LeftInput.Add(parent);
                     op.PostFixed = true;
                 }
                 else
@@ -170,9 +170,9 @@ internal partial class Lexicalizer
             if (target.Type.Category.Has(OpCategory.Branching))
             {
                 if (prefix)
-                    target.AddPrefix(op);
+                    target.RightInput.Add(op);
                 else
-                    target.AddPostfix(op);
+                    target.LeftInput.Add(op);
                 return;
             }
 
@@ -190,13 +190,13 @@ internal partial class Lexicalizer
             {
                 //tg.Add(id);
                 target.Prefixed = true;
-                target.AddPrefix(op);
+                target.RightInput.Add(op);
             }
             else
             {
                 //tg.Insert(0, id);
                 target.PostFixed = true;
-                target.AddPostfix(op);
+                target.LeftInput.Add(op);
             }
         }
     }
@@ -236,8 +236,56 @@ internal partial class Lexicalizer
 
     private void RemapInput(SequenceProccessData data, RawOp op)
     {
-        if (!op.Type.Category.Has(OpCategory.Group) || op.Id == RootOpId)
+        if (op.Type.Category.Has(OpCategory.Group) || op.Id == RootOpId)
             return;
+
+
+        var replacements = new List<(bool, int, RawOp)>();
+
+        for (var i = 0; i < op.LeftInput.Count; i++)
+        {
+            var x = op.LeftInput[i];
+            if (!x.Type.Category.Has(OpCategory.Group) || x.LeftInput.Count == 0)
+                continue;
+            x = x.LeftInput.First();
+            while (x != null && x.Type.Category.Has(OpCategory.Group))
+                x = x.LeftInput.First();
+
+            if (x == null)
+                throw new QueryCompileException(op, "No valid input from group");
+
+            if (x != null)
+                replacements.Add((true, i, x));
+        }
+
+
+
+        foreach(var (left, i, newOp) in replacements)
+        {
+            RawOp old;
+
+            if (left)
+            {
+                old = op.LeftInput[i];
+                op.LeftInput[i] = newOp;
+            }
+            else
+            {
+                old = op.RightInput[i];
+                op.RightInput[i] = newOp;
+            }
+
+            old.Output.Remove(op);
+            newOp.Output.Add(op);
+
+        }
+
+
+
+
+
+        /*
+
 
         var children = op.Children.Select(x => x.Id).ToHashSet();
 
@@ -246,11 +294,19 @@ internal partial class Lexicalizer
             if (!children.Contains(o.Id))
                 continue;
 
-            
+            var left = op.GetLeftmostChild();
+
+            //left.ReplacePrefixfixInput();
+
+            throw new NotImplementedException("Remap");
+
+
+            //op.
 
 
         }
-        /*
+
+
 
 
 
