@@ -8,9 +8,18 @@ namespace FlexibleParsingLanguage.Compiler.Util
 {
     public class QueryCompileException : Exception
     {
+        public bool CompilerIssue { get; private set; }
+
         internal List<RawOp> Ops { get; private set; }
-        internal QueryCompileException(RawOp op, string message) : base(message) { Ops = new List<RawOp> { op }; }
-        internal QueryCompileException(List<RawOp> ops, string message) : base(message) { Ops = ops; }
+        internal QueryCompileException(RawOp op, string message, bool compilerIssue = false) : base(message) {
+            Ops = new List<RawOp> { op };
+            CompilerIssue = compilerIssue;
+        }
+
+        internal QueryCompileException(List<RawOp> ops, string message, bool compilerIssue = false) : base(message) {
+            Ops = ops;
+            CompilerIssue = compilerIssue;
+        }
 
         public string GenerateMessage(string query)
         {
@@ -22,12 +31,12 @@ namespace FlexibleParsingLanguage.Compiler.Util
             var indices = Ops.Where(x => x.CharIndex >= 0).Select(x => x.CharIndex).Distinct().Order().ToList();
             if (indices.Any())
             {
-                var lastIndex = 0;
+                var lastIndex = -1;
                 log.Append("\n");
                 foreach (var i in indices)
                 {
-                    log.Append(new string(' ', i - lastIndex) + '↓');
-                    lastIndex = i - 1;
+                    log.Append(new string(' ', i - lastIndex -1) + '↓');
+                    lastIndex = i;
                 }
             }
 
@@ -38,3 +47,11 @@ namespace FlexibleParsingLanguage.Compiler.Util
         }
     }
 }
+
+/*
+ 
+Assert.Fail failed. {(4) | message = Could not resolve dependencies
+ ↓   ↓   ↓
+a{@b1:h2}b2:h1
+
+*/

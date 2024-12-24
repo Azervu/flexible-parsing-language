@@ -129,8 +129,6 @@ internal partial class Lexicalizer
                 }
             }
 
-            //var cc = raw[i].ToString();
-
             if (!escaped)
                 throw new QueryCompileException(new RawOp
                 {

@@ -41,28 +41,29 @@ internal class OpConfig
 [Flags]
 internal enum OpCategory
 {
-    None       = 0b_0000_0000_0000_0000,
-    Default    = 0b_0000_0001_0000_0000,
-    Root       = 0b_0000_0010_0000_0000,
-    Unescape   = 0b_0000_0100_0000_0000,
+    None      = 0b_0000_0000_0000_0000,
+    Default   = 0b_0000_0001_0000_0000,
+    Root      = 0b_0000_0010_0000_0000,
 
 
 
 
-    Prefix     = 0b_0000_0000_0000_0001,
-    Postfix    = 0b_0000_0000_0000_0010,
-    Branching  = 0b_0000_0000_0000_0100, //Prefix and Postfix passes through
+
+    Prefix    = 0b_0000_0000_0000_0001,
+    Postfix   = 0b_0000_0000_0000_0010,
+    Branching = 0b_0000_0000_0000_0100, //Prefix and Postfix passes through
 
 
-    Group      = 0b_0000_0000_0001_0000,
-    Virtual    = 0b_0000_0000_0010_0000,
-    Literal    = 0b_0000_0000_0100_0000,
+    Group        = 0b_0000_0000_0001_0000,
+    UnGroup      = 0b_0000_0000_0010_0000,
+    Virtual      = 0b_0000_0000_0100_0000,
+    GroupContext = 0b_0000_0000_1000_0000,
 
 
-
-    UnGroup    = 0b_1000_0000_0000_0000,
+    Literal    = 0b_0001_0000_0000_0000,
+    Unescape   = 0b_0010_0000_0000_0000,
     Temp       = 0b_0100_0000_0000_0000,
-    Accessor   = 0b_0010_0000_0000_0000,
+    Accessor   = 0b_1000_0000_0000_0000,
 
 
 

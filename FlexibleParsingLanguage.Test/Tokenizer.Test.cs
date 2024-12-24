@@ -10,12 +10,14 @@ public class TokenizerTest
 
     public static IEnumerable<object[]> ValidQueries => new List<object[]>
     {
-        new object[] {"Simple", "a.b#cc2.d", "1{  2.[1,'a']  4.[2,'b']  6#[4,'cc2']  8.[6,'d']"},
-        new object[] {"Redundant separator", "b.#c",  "1{  2.[1,'b']  4#[2,'c']"},
-        new object[] {"Non redundant version", "b#c",  "1{  2.[1,'b']  4#[2,'c']"},
-        new object[] {"Escape", "a.b'ee\\'e'c.d", "1{  2.[1,'a']  4.[2,'b']  6.[4,'ee\\'e']  8.[6,'c']  10.[8,'d']"},
+        new object[] {"Simple", "a.b#cc2.d", "1.($,'a')  2.(1,'b')  3#(2,'cc2')  4.(3,'d')"},
+        new object[] {"Redundant separator ", "b.#c", "1.($,'b')  2#(1,'c')"},
+        new object[] {"Non redundant version", "b#c", "1.($,'b')  2#(1,'c')" },
+        new object[] {"Escape", "a.b'ee\\'e'c.d", "1.($,'a')  2.(1,'b')  3.(2,'ee\\'e')  4.(3,'c')  5.(4,'d')"},
 
-        new object[] {"Branch", "a{b1:h2}b2:h1", "1{  2.[1,'a']  5.[2,'b1']  7:[5,'h2']  4{[7]  10.[2,'b2']  12:[10,'h1']"},
+        new object[] {"Branch", "a{@b1:h2}b2:h1", "1.($,'a')  2.(1,'b1')  3:(2,'h2')  4{(3)  5.(1,'b2')  6:(5,'h1')"},
+        new object[] {"Parameter Group", "a#(@b2.c2)b.1", "1{  2.[1,'a']  5.[2,'b1']  7:[5,'h2']  4{[7]  10.[2,'b2']  12:[10,'h1']"},
+
     };
 
     public static IEnumerable<object[]> InvalidQueries => new List<object[]>
@@ -41,14 +43,18 @@ public class TokenizerTest
             Assert.Fail(ex.GenerateMessage(parserString));
         }
 
-        var log = new StringBuilder();
+        var idCounter = 1;
+        var hiddenIdCounter = 1000;
+        var idMap = new Dictionary<int, int>();
+        foreach (var op in parsed)
+        {
+            if (op.IsSimple())
+                op.Id = hiddenIdCounter--;
+            else
+                op.Id = idCounter++;
+        }
 
-        var proccessed = new HashSet<int>();
-
-        foreach (var t in parsed)
-            LogEntry(proccessed, log, t);
-
-        var result = log.ToString().Replace("\r", string.Empty);
+        var result = parsed.RawQueryToString().Replace("\r", string.Empty);
         var expected = excpectedResult.Replace("\r", string.Empty);
 
         var diff = -1;
@@ -82,37 +88,13 @@ public class TokenizerTest
         }
         catch (QueryCompileException ex)
         {
+            if (ex.CompilerIssue)
+                throw;
+
             //only QueryCompileException should be thrown - otherwise it's a library issue
             return;
         }
         Assert.Fail($"Failed to catch issue in {query}");
     }
 
-    private void LogEntry(HashSet<int> proccessed, StringBuilder log, RawOp t)
-    {
-        if (proccessed.Contains(t.Id) || (t.Output.Count == 1 && t.Type.Category.Has(OpCategory.Accessor)))
-            return;
-
-        var input = t.GetInput().ToList();
-        proccessed.Add(t.Id);
-        foreach (var inp in t.GetInput())
-            LogEntry(proccessed, log, inp);
-
-        if (log.Length > 0)
-            log.Append("  ");
-
-
-        log.Append($"{t.Id}");
-        log.Append((!string.IsNullOrEmpty(t.Type.Operator) ? t.Type.Operator : $"'{t.Accessor}'"));
-
-        if (input.Count > 0)
-        {
-            log.Append($"[{input.Select(x => {
-                if (x.Output.Count == 1 && x.Type.Category.Has(OpCategory.Accessor))
-                    return (!string.IsNullOrEmpty(x.Type.Operator) ? x.Type.Operator : $"'{x.Accessor.Replace("'", "\\'")}'");
-                return x.Id.ToString();
-            }).Join(",")}");
-            log.Append($"]");
-        }
-    }
 }

@@ -23,15 +23,15 @@ internal partial class Compiler
     public Compiler()
     {
         Lexicalizer = new Lexicalizer([
-            new OpConfig("{", OpCategory.Group | OpCategory.Branching | OpCategory.Postfix | OpCategory.Root, 100, "}"),
+            new OpConfig("{", OpCategory.Group | OpCategory.Branching | OpCategory.Postfix, 100, "}"),
             new OpConfig(".", OpCategory.Prefix | OpCategory.Postfix | OpCategory.Default),
             new OpConfig("(", OpCategory.Group | OpCategory.Postfix | OpCategory.Virtual, 100, ")"),
-            new OpConfig("$", OpCategory.None),
+            new OpConfig("$", OpCategory.Root),
             new OpConfig("~", OpCategory.Postfix),
             new OpConfig("*", OpCategory.Postfix),
             new OpConfig(":", OpCategory.Prefix | OpCategory.Postfix),
             new OpConfig("|", OpCategory.Prefix | OpCategory.Postfix),
-            new OpConfig("@", OpCategory.Prefix | OpCategory.Postfix),
+            new OpConfig("@", OpCategory.GroupContext | OpCategory.Virtual),
             new OpConfig("#", OpCategory.Prefix | OpCategory.Postfix),
             new OpConfig("##", OpCategory.Prefix | OpCategory.Postfix),
             new OpConfig("\"", OpCategory.Literal, -1, "\""),
@@ -81,7 +81,7 @@ internal partial class Compiler
         var config = new ParserRootConfig { RootType = rootType };
 
 #if DEBUG
-        var token = rootToken.ToString2();
+        var token = rootToken.ToString();
 
         //var debug = rawOps.Select(x => $"{x.GetMetaData().Name} {x.IntAcc} {x.StringAcc} ").Join("\n");
         var s = 345534;

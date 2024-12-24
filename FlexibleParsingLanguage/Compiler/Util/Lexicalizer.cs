@@ -5,8 +5,14 @@ internal partial class Lexicalizer
     internal List<OpConfig> Ops { get; private set; }
 
     private OpConfig DefaultOp { get; set; }
+
+    internal const int RootId = 2;
     private OpConfig RootOp { get; set; }
-    internal const int RootOpId = 1;
+
+
+    internal const int RootGroupId = 1;
+
+    internal static readonly OpConfig RootGroupOperator = new OpConfig("¿", OpCategory.Group, -1, "¿");
 
 
     private OpConfig AccessorOp { get; set; } = new OpConfig(null, OpCategory.Accessor, 99);
@@ -84,64 +90,91 @@ internal partial class Lexicalizer
     {
         var ops = new List<RawOp>(tokens.Count) {
             new RawOp {
-                Id = 1,
+                Id = RootGroupId,
                 CharIndex = -1,
-                Type = RootOp,
+                Type = RootGroupOperator,
             }
         };
         var idCounter = 2;
 
-        RawOp? op = null;
 
+        bool checkedRoot = false;
+
+
+        RawOp? op = null;
         foreach (var t in tokens)
         {
-            var hadOp = false;
-
-            if (op != null)
-            {
-                if (op.Type != DefaultOp) {
-                    hadOp = op.Type.Category.Has(OpCategory.Prefix) && !op.Type.Category.Has(OpCategory.Group);
-                    op.Id = idCounter++;
-                    ops.Add(op);
-                }
-                op = null;
-            }
-
+            RawOp? accessor = null;
             if (t.Op != null)
             {
+                if (t.Op == DefaultOp)
+                    continue;
+
+                if (op != null && op.Type != DefaultOp)
+                    ops.Add(op);
+
                 op = new RawOp
                 {
+                    Id = idCounter++,
                     CharIndex = t.Index,
                     Type = t.Op,
                 };
             }
             else
             {
-                if (!hadOp)
-                {
-                    ops.Add(new RawOp
-                    {
-                        Id = idCounter++,
-                        CharIndex = t.Index,
-                        Type = DefaultOp,
-                    });
-                }
-
-                ops.Add(new RawOp
+                accessor = new RawOp
                 {
                     Id = idCounter++,
                     CharIndex = t.Index,
                     Type = AccessorOp,
                     Accessor = t.Accessor,
-                });
+                };
+
+                if (op != null && !op.Type.Category.Has(OpCategory.Prefix))
+                {
+                    ops.Add(op);
+                    op = null;
+                }
+
+                if (op == null)
+                {
+                    op = new RawOp
+                    {
+                        Id = idCounter++,
+                        CharIndex = t.Index,
+                        Type = DefaultOp,
+                    };
+                }
             }
+
+
+            if (!checkedRoot)
+            {
+                checkedRoot = true;
+                if (op.Type.Category.Has(OpCategory.Postfix))
+                {
+                    ops.Add(new RawOp
+                    {
+                        Id = idCounter++,
+                        CharIndex = t.Index,
+                        Type = RootOp,
+                    });
+                }
+            }
+            if (accessor != null)
+            {
+                ops.Add(op);
+                ops.Add(accessor);
+                op = null;
+                accessor = null;
+            }
+
+
+
         }
 
-        if (op != null && op.Type != DefaultOp)
-        {
-            op.Id = idCounter++;
+        if (op != null)
             ops.Add(op);
-        }
 
         /*
         if (RootOp.Category.Has(OpCategory.Group))

@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using static FlexibleParsingLanguage.Compiler.Util.Lexicalizer;
 
 namespace FlexibleParsingLanguage.Compiler.Util;
-
 
 internal class RawOp
 {
@@ -104,10 +105,80 @@ internal class RawOp
         }
     }
 
-    internal string ToString2()
+    public override string ToString() => ToString(new StringBuilder()).ToString();
+
+    internal StringBuilder ToString(StringBuilder l)
     {
-        var l = new StringBuilder();
-        AddLog(l, 0);
-        return l.ToString();
+        l.Append(Id.ToString());
+        l.Append(string.IsNullOrEmpty(Type.Operator) ? $"'{Accessor.Replace("'", "\\'")}'" : Type.Operator);
+        if (Accessor != null)
+            l.Append($"\"{Accessor}\"");
+
+        var input = GetInput().ToList();
+        if (input.Count > 0)
+        {
+            l.Append('(');
+            l.Append(input.Select(x => {
+                if (x.IsSimple())
+                    return (string.IsNullOrEmpty(x.Type.Operator) ? $"'{x.Accessor.Replace("'", "\\'")}'" : x.Type.Operator);
+
+                return x.Id.ToString();
+            }).Join(","));
+            l.Append(")");
+        }
+        return l;
+    }
+
+}
+
+
+internal static class RawOpExtension
+{
+    internal static string RawQueryToString(this List<RawOp> parsed)
+    {
+
+        var log = new StringBuilder();
+
+        var proccessed = new HashSet<int>();
+
+        foreach (var t in parsed)
+            LogEntry(proccessed, log, t);
+
+        return log.ToString();
+    }
+
+
+    internal static bool IsSimple(this RawOp x) => x.Output.Count == 1 && x.LeftInput.Count == 0 && x.RightInput.Count == 0;
+
+    private static void LogEntry(HashSet<int> proccessed, StringBuilder log, RawOp t)
+    {
+        if (proccessed.Contains(t.Id) || t.IsSimple())
+            return;
+
+        var input = t.GetInput().ToList();
+        proccessed.Add(t.Id);
+        foreach (var inp in t.GetInput())
+            LogEntry(proccessed, log, inp);
+
+        if (log.Length > 0)
+            log.Append("  ");
+
+        t.ToString(log);
+
+        /*
+        log.Append($"{t.Id}");
+        log.Append(string.IsNullOrEmpty(t.Type.Operator) ? $"'{t.Accessor.Replace("'", "\\'")}'" : t.Type.Operator);
+
+        if (input.Count > 0)
+        {
+            log.Append($"[{input.Select(x => {
+                if (x.IsSimple())
+                    return string.IsNullOrEmpty(x.Type.Operator) ? $"'{x.Accessor.Replace("'", "\\'")}'" : x.Type.Operator;
+
+                return x.Id.ToString();
+            }).Join(",")}");
+            log.Append($"]");
+        }
+        */
     }
 }
