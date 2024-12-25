@@ -27,14 +27,7 @@ internal partial class Lexicalizer
         }
 
         GroupOps(data, entries);
-
-
-        var ordered = entries.Select(x => data.Ops[x]).ToList();
-        ordered.OrderByDescending(x => x.Type.Rank).ThenBy(x => x.Id);
-        foreach (var op in ordered)
-        {
-            data.SequenceAffixes(op);
-        }
+        SequenceAffixes(data, ref ops);
 
 
         foreach (var op in ops)
@@ -61,20 +54,7 @@ internal partial class Lexicalizer
         internal Dictionary<int, RawOp> Ops { get; private set; } = new Dictionary<int, RawOp>();
         internal Dictionary<int, List<int>> Groups { get; set; } = new Dictionary<int, List<int>>();
         internal Dictionary<int, int> Parents { get; set; } = new Dictionary<int, int>();
-        internal int GetIndex(RawOp op) => GetIndexData(op).Index;
-
-        internal (int ParentId, int Index) GetIndexData(RawOp op)
-        {
-            var parentId = Parents[op.Id];
-            var group = Groups[parentId];
-            for (var i = 0; i < group.Count; i++)
-            {
-                if (group[i] == op.Id)
-                    return (parentId, i);
-            }
-            throw new QueryCompileException(op, $"Index not found in {parentId} [{group.Select(x => x.ToString()).Join(", ")}]");
-        }
-
+        internal int GetIndex(RawOp op) => Lexicalizer.GetIndex(Parents, Groups, op);
 
         internal void SequenceAffixes(RawOp op)
         {
@@ -278,6 +258,153 @@ internal partial class Lexicalizer
 
 
     }
+
+    private void SequenceAffixes(SequenceProccessData data, ref List<RawOp> ops)
+    {
+        var ordered = new List<(RawOp, int)>();
+
+        ops.Select(x => x).ToList();
+
+
+        for (var i = 0; i < ops.Count; i++)
+            ordered.Add((ops[i], i));
+
+        ordered.OrderByDescending(x => x.Item1.Type.Rank).ThenBy(x => x.Item2);
+
+        var affixGroups = data.Groups.ToDictionary(x => x.Key, x => x.Value.ToList());
+        var affixParents = data.Parents.ToDictionary(x => x.Key, x => x.Value);
+
+        foreach (var op in ordered)
+            SequenceAffixesInner(data, affixParents, affixGroups, op.Item1);
+    }
+
+    private void SequenceAffixesInner(SequenceProccessData data, Dictionary<int, int> parents, Dictionary<int, List<int>> children, RawOp op)
+    {
+        var post = op.IsPostfix();
+        var pre = op.IsPrefix();
+
+        if (!post && !pre)
+            return;
+
+        var parentId = parents[op.Id];
+        var parent = data.Ops[parentId];
+        var group = children[parentId];
+
+        if (post)
+        {
+            RawOp? target = null;
+            var targetIndex = -1;
+
+
+            for (var i = GetIndex(parents, children, op) - 1; i >= 0; i--)
+            {
+                var candidate = data.Ops[group[i]];
+                if (candidate.Type.Category.All(OpCategory.Branching))
+                    continue;
+                target = candidate;
+                targetIndex = i;
+                break;
+            }
+
+
+            if (targetIndex != -1)
+            {
+                AddInput(data, parents, children, parentId, targetIndex, op, false);
+            }
+            else if (parent.Type.Category.All(OpCategory.Group))
+            {
+                //groups will be untangled later
+                op.LeftInput.Add(parent);
+                op.PostFixed = true;
+            }
+            else
+            {
+                throw new QueryCompileException(op, $"Postfix operation missing param");
+            }
+        }
+
+#if DEBUG
+        var sss = "";
+        foreach (var x in data.Ops)
+        {
+            var o = x.Value;
+            sss += $"\n{o.Id,2} {(o.Accessor == null ? o.Type.Operator : $"'{o.Accessor}'"),5} | pre {o.Prefixed,5} | post {o.PostFixed,5} | [{o.GetInput().Select(y => y.Id.ToString()).Join(",")}] {(x.Value == op ? " <- " : null)}";
+        }
+#endif
+
+
+        if (pre)
+        {
+            RawOp? target = null;
+            var targetIndex = -1;
+            for (var i = GetIndex(parents, children, op) + 1; i < group.Count; i++)
+            {
+                var candidate = data.Ops[group[i]];
+                if (candidate.Type.Category.All(OpCategory.Branching))
+                    continue;
+                target = candidate;
+                targetIndex = i;
+                break;
+            }
+
+            if (targetIndex == -1)
+                throw new QueryCompileException(op, $"Prefix operator lacks input");
+
+            AddInput(data, parents, children, parentId, targetIndex, op, true);
+        }
+    }
+
+
+
+    private void AddInput(SequenceProccessData data, Dictionary<int, int> parents, Dictionary<int, List<int>> children, int sourceParentId, int index, RawOp target, bool prefix)
+    {
+
+        var g = children[sourceParentId];
+        var id = g[index];
+        var op = data.Ops[id];
+
+        if (target.Type.Category.All(OpCategory.Branching))
+        {
+            if (prefix)
+                target.RightInput.Add(op);
+            else
+                target.LeftInput.Add(op);
+            return;
+        }
+
+        parents[id] = target.Id;
+        g.RemoveAt(index);
+
+        if (!children.TryGetValue(target.Id, out var tg))
+        {
+            tg = [];
+            children[target.Id] = tg;
+        }
+
+
+        if (prefix)
+        {
+            //tg.Add(id);
+            target.Prefixed = true;
+            target.RightInput.Add(op);
+        }
+        else
+        {
+            //tg.Insert(0, id);
+            target.PostFixed = true;
+            target.LeftInput.Add(op);
+        }
+    }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -765,4 +892,17 @@ internal partial class Lexicalizer
         }
     }
 
+
+
+    private static int GetIndex(Dictionary<int, int> parents, Dictionary<int, List<int>> children, RawOp op)
+    {
+        var parentId = parents[op.Id];
+        var group = children[parentId];
+        for (var i = 0; i < group.Count; i++)
+        {
+            if (group[i] == op.Id)
+                return i;
+        }
+        throw new QueryCompileException(op, $"Index not found in {parentId} [{group.Select(x => x.ToString()).Join(", ")}]");
+    }
 }
