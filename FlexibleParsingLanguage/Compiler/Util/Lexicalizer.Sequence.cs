@@ -53,16 +53,15 @@ internal partial class Lexicalizer
             }
         }
 
-        RemapBranchingHierarchy(data, ref ops);
-
+        RemapGroupInputHierarchy(data, ref ops);
+        //RemapGroupInputHierarchy(data, ref ops, false);
         foreach (var op in ops.Where(x => x.Type.Category.All(OpCategory.ParentInput)))
             AddParentInput(data, op);
 
         foreach (var op in ops)
         {
-
-
-            if (op.Type.Category.All(OpCategory.Branching)) {
+            if (op.Type.Category.All(OpCategory.Branching))
+            {
                 op.LeftInput.Clear();
                 var children = data.AffixChildren[op.Id];
 
@@ -122,7 +121,7 @@ internal partial class Lexicalizer
             var t = data.Ops[x].ToString();
             if (data.GroupParents.TryGetValue(x, out var v))
                 t += " -> " + data.GroupParents[x]
-;           return t;
+; return t;
         }).Join("\n");
 
 
@@ -298,6 +297,7 @@ internal partial class Lexicalizer
         }
 
         parents[id] = target.Id;
+
         g.RemoveAt(index);
 
         if (!children.TryGetValue(target.Id, out var tg))
@@ -309,13 +309,13 @@ internal partial class Lexicalizer
 
         if (prefix)
         {
-            //tg.Add(id);
+            tg.Add(id);
             target.Prefixed = true;
             target.RightInput.Add(op);
         }
         else
         {
-            //tg.Insert(0, id);
+            tg.Insert(0, id);
             target.PostFixed = true;
             target.LeftInput.Add(op);
         }
@@ -406,13 +406,20 @@ internal partial class Lexicalizer
     }
 
 
-    private void RemapBranchingHierarchy(SequenceProccessData data, ref List<RawOp> ops)
+
+
+
+
+
+
+    private void RemapGroupInputHierarchy(SequenceProccessData data, ref List<RawOp> ops)
     {
         var proccessed = new HashSet<int>();
 
+
         foreach (var op in ops)
         {
-            if (!op.Type.Category.All(OpCategory.Branching) || proccessed.Contains(op.Id))
+            if (!op.Type.Category.All(OpCategory.Group) || proccessed.Contains(op.Id))
                 continue;
 
             var active = op;
@@ -422,6 +429,7 @@ internal partial class Lexicalizer
             {
                 if (proccessed.Contains(active.Id))
                 {
+
                     target = active.LeftInput.Count > 0
                         ? active.LeftInput[0]
                         : null;
@@ -432,12 +440,14 @@ internal partial class Lexicalizer
 
                 if (active.LeftInput.Count > 0)
                     active = active.LeftInput[0];
-                else if (data.GroupParents.TryGetValue(active.Id, out var pId))
+                else if (data.AffixParents.TryGetValue(active.Id, out var pId))
                     active = data.Ops[pId];
                 else
                     target = active;
 
-                if (!active.Type.Category.All(OpCategory.Branching))
+
+
+                if (!active.Type.Category.All(OpCategory.Group))
                 {
                     target = active;
                     break;
@@ -454,11 +464,8 @@ internal partial class Lexicalizer
                 {
 
                     if (startId == active.Id)
-                        throw new QueryCompileException(active, "branching loop", true);
+                        throw new QueryCompileException(active, "grouping loop", true);
                 }
-
-
-   
             }
 
             foreach (var r in remaps)
@@ -467,6 +474,116 @@ internal partial class Lexicalizer
                 r.LeftInput.Clear();
                 if (target != null)
                     r.LeftInput.Add(target);
+
+
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    private void RemapGroupInputHierarchyTest(SequenceProccessData data, ref List<RawOp> ops, bool leftInput)
+    {
+        var proccessed = new HashSet<int>();
+
+
+        foreach (var op in ops)
+        {
+            if (!op.Type.Category.All(OpCategory.Group) || proccessed.Contains(op.Id))
+                continue;
+
+            var active = op;
+            RawOp? target = null;
+            var remaps = new List<RawOp> { op };
+            while (true)
+            {
+                if (proccessed.Contains(active.Id))
+                {
+                    if (leftInput)
+                    {
+
+                        target = active.LeftInput.Count > 0
+                            ? active.LeftInput[0]
+                            : null;
+                        break;
+                    }
+                    else
+                    {
+                        target = active.RightInput.Count > 0
+                            ? active.RightInput[0]
+                            : null;
+                        break;
+
+                    }
+                }
+
+                var startId = active.Id;
+
+                if (leftInput)
+                {
+                    if (active.LeftInput.Count > 0)
+                        active = active.LeftInput[0];
+                    else if (data.GroupParents.TryGetValue(active.Id, out var pId))
+                        active = data.Ops[pId];
+                    else
+                        target = active;
+                }
+                else
+                {
+                    if (active.RightInput.Count > 0)
+                        active = active.RightInput[0];
+                    else if (data.GroupParents.TryGetValue(active.Id, out var pId))
+                        active = data.Ops[pId];
+                    else
+                        target = active;
+                }
+
+
+                if (!active.Type.Category.All(OpCategory.Group))
+                {
+                    target = active;
+                    break;
+                }
+
+                remaps.Add(active);
+
+                if (active.Id == RootGroupId)
+                {
+                    target = active;
+                    break;
+                }
+                else
+                {
+
+                    if (startId == active.Id)
+                        throw new QueryCompileException(active, "grouping loop", true);
+                }
+            }
+
+            foreach (var r in remaps)
+            {
+                proccessed.Add(r.Id);
+                if (leftInput)
+                {
+                    r.LeftInput.Clear();
+                    if (target != null)
+                        r.LeftInput.Add(target);
+                }
+                else
+                {
+                    r.RightInput.Clear();
+                    if (target != null)
+                        r.RightInput.Add(target);
+                }
             }
         }
     }
@@ -528,23 +645,6 @@ internal partial class Lexicalizer
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private void DisolveVirtuals(SequenceProccessData data, ref List<RawOp> ops)
     {
 
@@ -557,7 +657,8 @@ internal partial class Lexicalizer
         var removes = new List<int>();
 
 
-        for (int i = 0; i < ops.Count; i++) {
+        for (int i = 0; i < ops.Count; i++)
+        {
             var op = ops[i];
 
             if (!op.Type.Category.All(OpCategory.Virtual))
@@ -576,7 +677,8 @@ internal partial class Lexicalizer
             else
                 continue;
 
-            foreach (var o in op.Output) {
+            foreach (var o in op.Output)
+            {
                 while (true)
                 {
                     var j = o.LeftInput.IndexOf(op);
@@ -598,16 +700,21 @@ internal partial class Lexicalizer
 
 
 
+        removes.Reverse();
+
+        foreach (var i in removes)
+        {
+            ops.RemoveAt(i);
+        }
+
+
 #if DEBUG
         var after = ops.Where(x => !x.IsSimple()).Select(x => x.ToString()).Join("\n");
+        var d = 354;
 #endif
 
 
-        removes.Reverse();
 
-        foreach (var i in removes) {
-            ops.RemoveAt(i);
-        }
 
     }
 
@@ -623,9 +730,10 @@ internal partial class Lexicalizer
         var outOps = new List<RawOp>(ops.Count);
         foreach (var op in ops)
         {
-            if ((op.Type.Category & (OpCategory.Virtual | OpCategory.UnGroup)) > 0 || op.Id == RootGroupId)
+            if ((op.Type.Category & (OpCategory.Virtual | OpCategory.UnGroup)) > 0)
                 continue;
 
+            /*
             if (op.Id == RootGroupId)
             {
                 op.LeftInput.Clear();
@@ -634,6 +742,7 @@ internal partial class Lexicalizer
                 proccessed.Add(op.Id);
                 continue;
             }
+            */
 
 
             if (!ManageAddDependency(dependencyToWaiting, waitingOnDependencies, proccessed, op))

@@ -10,14 +10,17 @@ public class TokenizerTest
 
     public static IEnumerable<object[]> ValidQueries => new List<object[]>
     {
-        new object[] {"Simple", "a.b#cc2.d", "1.($,'a')  2.(1,'b')  3#(2,'cc2')  4.(3,'d')"},
-        new object[] {"Redundancies", "$b.#c{@.d}", "1.($,'b')  2#(1,'c')  3.(2,'d')  4{(3)"},
-        new object[] {"Non redundant", "b#c{@d}", "1.($,'b')  2#(1,'c')  3.(2,'d')  4{(3)" },
-        new object[] {"Escape", "a.b'ee\\'e'c.d", "1.($,'a')  2.(1,'b')  3.(2,'ee\\'e')  4.(3,'c')  5.(4,'d')"},
+        new object[] {"Simple", "a", "1.($,'a')  2{(1)"},
+        new object[] {"Chain", "a.b#cc2.d", "1.($,'a')  2.(1,'b')  3#(2,'cc2')  4.(3,'d')  5{(4)"},
+        new object[] {"Redundancies", "$b.#c{@.d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)"},
+        new object[] {"Non redundant", "b#c{@d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)" },
+        new object[] {"Escape", "a.b'ee\\'e'c.d", "1.($,'a')  2.(1,'b')  3.(2,'ee\\'e')  4.(3,'c')  5.(4,'d')  6{(5)"},
 
-        new object[] {"Branch Simple", "a{@b1:h2}b2:h1", "1.($,'a')  2.(1,'b1')  3:(2,'h2')  4{(3)  5.(1,'b2')  6:(5,'h1')"},
-        new object[] {"Branch Complicated", "a{{@b}@c}d{@e}{@f{@g}}", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)  6.(1,'d')  7.(6,'e')  8{(7)  9.(6,'f')  10{(9)  11.(9,'g')  12{(11)"},
+        new object[] {"Branch Simple", "a{@b}c", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)"},
+        new object[] {"Branch Header", "a{@b1:h2}b2:h1", "1.($,'a')  2.(1,'b1')  3:(2,'h2')  4{(3)  5.(1,'b2')  6:(5,'h1')  7{(6)"},
+        new object[] {"Branch Complicated", "a{{@b}@c}d{@e}{@f{@g}}", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)  6.(1,'d')  7{(6)  8.(6,'e')  9{(8)  10.(6,'f')  11{(10)  12.(10,'g')  13{(12)"},
 
+        new object[] {"Simple Parameter Group", "a(@b)", "1{  2.[1,'a']  5.[2,'b1']  7:[5,'h2']  4{[7]  10.[2,'b2']  12:[10,'h1']"},
         new object[] {"Parameter Group", "a#(@b2.c2)b.1", "1{  2.[1,'a']  5.[2,'b1']  7:[5,'h2']  4{[7]  10.[2,'b2']  12:[10,'h1']"},
 
     };

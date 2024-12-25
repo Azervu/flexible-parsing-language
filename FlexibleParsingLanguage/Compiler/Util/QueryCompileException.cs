@@ -47,11 +47,3 @@ namespace FlexibleParsingLanguage.Compiler.Util
         }
     }
 }
-
-/*
- 
-Assert.Fail failed. {(4) | message = Could not resolve dependencies
- ↓   ↓   ↓
-a{@b1:h2}b2:h1
-
-*/
