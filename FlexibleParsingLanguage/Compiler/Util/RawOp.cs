@@ -18,10 +18,9 @@ internal class RawOp
 
 
     internal List<RawOp> Input { get; private set; } = new List<RawOp>();
-
     internal List<RawOp> LeftInput { get; private set; } = new List<RawOp>();
     internal List<RawOp> RightInput { get; private set; } = new List<RawOp>();
-    internal IEnumerable<RawOp> GetInput() => LeftInput.Concat(RightInput);
+    internal IEnumerable<RawOp> GetRawInput() => LeftInput.Concat(RightInput);
     internal List<RawOp> Output { get; set; } = new List<RawOp>();
     internal bool Prefixed { get; set; }
     internal bool PostFixed { get; set; }
@@ -43,40 +42,6 @@ internal class RawOp
         return false;
     }
 
-    internal bool TryAddPrefix(RawOp op)
-    {
-        if (!IsPrefix())
-            return false;
-        Prefixed = true;
-        LeftInput.Add(op);
-        return true;
-    }
-
-    internal bool TryAddPostfix(RawOp op)
-    {
-        if (!IsPostfix())
-            return false;
-        PostFixed = true;
-        RightInput.Insert(0, op);
-        return true;
-    }
-
-
-    internal bool IsBranch() => Type.Category.All(OpCategory.Branching);
-
-    internal int PrefixRank()
-    {
-        if (IsPrefix())
-            return Type.Rank;
-        return int.MinValue;
-    }
-
-    internal int PostfixRank()
-    {
-        if (IsPostfix())
-            return Type.Rank;
-        return int.MinValue;
-    }
 
     internal List<RawOp> Children = new List<RawOp>();
 
@@ -110,7 +75,7 @@ internal class RawOp
         if (Accessor != null)
             l.Append($"\"{Accessor}\"");
 
-        var input = GetInput().ToList();
+        var input = GetRawInput().ToList();
         if (input.Count > 0)
         {
             l.Append('(');
@@ -144,16 +109,16 @@ internal static class RawOpExtension
     }
 
 
-    internal static bool IsSimple(this RawOp x) => x.Output.Count == 1 && x.LeftInput.Count == 0 && x.RightInput.Count == 0;
+    internal static bool IsSimple(this RawOp x) => x.Output.Count == 1 && x.GetRawInput().Count() == 0;
 
     private static void LogEntry(HashSet<int> proccessed, StringBuilder log, RawOp t)
     {
         if (proccessed.Contains(t.Id) || t.IsSimple())
             return;
 
-        var input = t.GetInput().ToList();
+        var input = t.GetRawInput().ToList();
         proccessed.Add(t.Id);
-        foreach (var inp in t.GetInput())
+        foreach (var inp in t.GetRawInput())
             LogEntry(proccessed, log, inp);
 
         if (log.Length > 0)

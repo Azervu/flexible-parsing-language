@@ -33,6 +33,17 @@ public static class Util
         return true;
     }
 
+
+    public static V GetOrInsert<K, V>(this IDictionary<K, V> dict, K k, Func<V> create)
+    {
+        if (!dict.TryGetValue(k, out var v))
+        {
+            v = create();
+            dict[k] = v;
+        }
+        return v;
+    }
+
     public static IEnumerable<T> LazyConcat<T>(this IEnumerable<T> it, params IEnumerable<T>[] iterators) {
         foreach (var item in it) {
             yield return item;        

@@ -23,6 +23,8 @@ public class TokenizerTest
         new object[] {"Simple Parameter Group", "a(@b)", "1.($,'a')  2.(1,'b')  3.(1,2)  4{(3)"},
         new object[] {"Parameter Group", "a#(@b2.c2)b.1", "1.($,'a')  2.(1,'b2')  3.(2,'c2')  4#(1,3)  5.(4,'b')  6.(5,'1')  7{(6)"},
         new object[] {"Parameter Group root", "a($b)", "1.($,'a')  2.($,'b')  3.(1,2)  4{(3)" },
+
+        new object[] {"Multi Parameter Group", "a(@b,@c,@d)", "1.($,'a')  2.(1,'b')  3.(1,'c')  4.(1,'d')  5.(1,2,3,4)  6{(5)"},
     };
 
     public static IEnumerable<object[]> InvalidQueries => new List<object[]>
