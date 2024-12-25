@@ -11,8 +11,8 @@ public class TokenizerTest
     public static IEnumerable<object[]> ValidQueries => new List<object[]>
     {
         new object[] {"Simple", "a.b#cc2.d", "1.($,'a')  2.(1,'b')  3#(2,'cc2')  4.(3,'d')"},
-        new object[] {"Redundant separator ", "$b.#c", "1.($,'b')  2#(1,'c')"},
-        new object[] {"Non redundant version", "b#c", "1.($,'b')  2#(1,'c')" },
+        new object[] {"Redundancies", "$b.#c{@.d}", "1.($,'b')  2#(1,'c')  3.(2,'d')  4{(3)"},
+        new object[] {"Non redundant", "b#c{d}", "1.($,'b')  2#(1,'c')  3.(2,'d')  4{(3)" },
         new object[] {"Escape", "a.b'ee\\'e'c.d", "1.($,'a')  2.(1,'b')  3.(2,'ee\\'e')  4.(3,'c')  5.(4,'d')"},
 
         new object[] {"Branch Simple", "a{@b1:h2}b2:h1", "1.($,'a')  2.(1,'b1')  3:(2,'h2')  4{(3)  5.(1,'b2')  6:(5,'h1')"},

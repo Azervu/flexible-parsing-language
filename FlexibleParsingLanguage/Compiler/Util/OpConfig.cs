@@ -23,7 +23,7 @@ internal class OpConfig
 
     internal int PrefixRank()
     {
-        if (Category.All(OpCategory.Prefix))
+        if (Category.All(OpCategory.RightInput))
             return Rank;
 
         return int.MinValue;
@@ -31,7 +31,7 @@ internal class OpConfig
 
     internal int PostfixRank()
     {
-        if (Category.All(OpCategory.Postfix))
+        if (Category.All(OpCategory.LeftInput))
             return Rank;
         return int.MinValue;
     }
@@ -49,8 +49,8 @@ internal enum OpCategory
 
 
 
-    Prefix    = 0b_0000_0000_0000_0001,
-    Postfix   = 0b_0000_0000_0000_0010,
+    RightInput    = 0b_0000_0000_0000_0001,
+    LeftInput   = 0b_0000_0000_0000_0010,
     Branching = 0b_0000_0000_0000_0100, //Prefix and Postfix passes through
 
 

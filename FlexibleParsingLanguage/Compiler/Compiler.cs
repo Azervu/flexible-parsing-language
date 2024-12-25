@@ -23,17 +23,17 @@ internal partial class Compiler
     public Compiler()
     {
         Lexicalizer = new Lexicalizer([
-            new OpConfig("{", OpCategory.Group | OpCategory.Branching | OpCategory.Postfix, 100, "}"),
-            new OpConfig(".", OpCategory.Prefix | OpCategory.Postfix | OpCategory.Default),
-            new OpConfig("(", OpCategory.Group | OpCategory.Postfix | OpCategory.Virtual, 100, ")"),
+            new OpConfig("{", OpCategory.Group | OpCategory.Branching | OpCategory.LeftInput, 100, "}"),
+            new OpConfig(".", OpCategory.RightInput | OpCategory.LeftInput | OpCategory.Default),
+            new OpConfig("(", OpCategory.Group | OpCategory.LeftInput | OpCategory.Virtual, 100, ")"),
             new OpConfig("$", OpCategory.Root),
-            new OpConfig("~", OpCategory.Postfix),
-            new OpConfig("*", OpCategory.Postfix),
-            new OpConfig(":", OpCategory.Prefix | OpCategory.Postfix),
-            new OpConfig("|", OpCategory.Prefix | OpCategory.Postfix),
+            new OpConfig("~", OpCategory.LeftInput),
+            new OpConfig("*", OpCategory.LeftInput),
+            new OpConfig(":", OpCategory.RightInput | OpCategory.LeftInput),
+            new OpConfig("|", OpCategory.RightInput | OpCategory.LeftInput),
             new OpConfig("@", OpCategory.ParentInput | OpCategory.Virtual),
-            new OpConfig("#", OpCategory.Prefix | OpCategory.Postfix),
-            new OpConfig("##", OpCategory.Prefix | OpCategory.Postfix),
+            new OpConfig("#", OpCategory.RightInput | OpCategory.LeftInput),
+            new OpConfig("##", OpCategory.RightInput | OpCategory.LeftInput),
             new OpConfig("\"", OpCategory.Literal, -1, "\""),
             new OpConfig("'", OpCategory.Literal, -1, "\'"),
             new OpConfig("\\", OpCategory.Unescape, -1)

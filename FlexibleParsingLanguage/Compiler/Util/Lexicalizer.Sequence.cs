@@ -25,7 +25,8 @@ internal partial class Lexicalizer
 
         internal Dictionary<int, int> AffixParents { get; set; } = new Dictionary<int, int>();
         internal Dictionary<int, List<int>> AffixChildren { get; set; } = new Dictionary<int, List<int>>();
-
+        internal Dictionary<int, List<int>> LeftChildren { get; set; } = new Dictionary<int, List<int>>();
+        internal Dictionary<int, List<int>> RightChildren { get; set; } = new Dictionary<int, List<int>>();
     }
 
 
@@ -224,9 +225,8 @@ internal partial class Lexicalizer
             {
                 AddInput(data, parents, children, parentId, targetIndex, op, false);
             }
-            else if (parent.Type.Category.All(OpCategory.Group))
+            else if (parent.Type.Category.All(OpCategory.Branching | OpCategory.LeftInput))
             {
-                //groups will be untangled later
                 op.LeftInput.Add(parent);
                 op.PostFixed = true;
             }
@@ -260,10 +260,19 @@ internal partial class Lexicalizer
                 break;
             }
 
-            if (targetIndex == -1)
+            if (targetIndex != -1)
+            {
+                AddInput(data, parents, children, parentId, targetIndex, op, true);
+            }
+            else if (parent.Type.Category.All(OpCategory.Branching | OpCategory.RightInput))
+            {
+                op.RightInput.Add(parent);
+                op.PostFixed = true;
+            }
+            else
+            {
                 throw new QueryCompileException(op, $"Prefix operator lacks input");
-
-            AddInput(data, parents, children, parentId, targetIndex, op, true);
+            }
         }
     }
 

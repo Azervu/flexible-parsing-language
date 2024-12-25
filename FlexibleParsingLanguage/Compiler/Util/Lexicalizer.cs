@@ -93,7 +93,7 @@ internal partial class Lexicalizer
                 Id = RootGroupId,
                 CharIndex = -1,
                 Type = RootGroupOperator,
-            }
+            },
         };
         var idCounter = 2;
 
@@ -130,7 +130,7 @@ internal partial class Lexicalizer
                     Accessor = t.Accessor,
                 };
 
-                if (op != null && !op.Type.Category.All(OpCategory.Prefix))
+                if (op != null && !op.Type.Category.All(OpCategory.RightInput))
                 {
                     ops.Add(op);
                     op = null;
@@ -151,7 +151,7 @@ internal partial class Lexicalizer
             if (!checkedRoot)
             {
                 checkedRoot = true;
-                if (op.Type.Category.All(OpCategory.Postfix))
+                if (op.Type.Category.All(OpCategory.LeftInput))
                 {
                     ops.Add(new RawOp
                     {

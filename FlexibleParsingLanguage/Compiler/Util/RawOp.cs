@@ -17,7 +17,7 @@ internal class RawOp
     internal string? Accessor { get; set; }
 
 
-    //internal List<RawOp> Input { get; private set; } = new List<RawOp>();
+    internal List<RawOp> Input { get; private set; } = new List<RawOp>();
 
     internal List<RawOp> LeftInput { get; private set; } = new List<RawOp>();
     internal List<RawOp> RightInput { get; private set; } = new List<RawOp>();
@@ -29,7 +29,7 @@ internal class RawOp
 
     internal bool IsPrefix()
     {
-        if (Type.Category.All(OpCategory.Prefix) && !Prefixed)
+        if (Type.Category.All(OpCategory.RightInput) && !Prefixed)
             return true;
 
         return false;
@@ -37,7 +37,7 @@ internal class RawOp
 
     internal bool IsPostfix()
     {
-        if (Type.Category.All(OpCategory.Postfix) && !PostFixed)
+        if (Type.Category.All(OpCategory.LeftInput) && !PostFixed)
             return true;
 
         return false;
