@@ -15,7 +15,6 @@ namespace FlexibleParsingLanguage.Compiler.Util;
 internal partial class Lexicalizer
 {
 
-
     private class SequenceProccessData
     {
         internal Dictionary<int, RawOp> Ops { get; private set; } = new Dictionary<int, RawOp>();
@@ -27,60 +26,7 @@ internal partial class Lexicalizer
         internal Dictionary<int, int> AffixParents { get; set; } = new Dictionary<int, int>();
         internal Dictionary<int, List<int>> AffixChildren { get; set; } = new Dictionary<int, List<int>>();
 
-
-        /*
-        internal Dictionary<int, int> LeftInput { get; set; }
-        internal Dictionary<int, int> RightInput { get; set; }
-        */
-
-
-        internal int GetIndex(RawOp op) => Lexicalizer.GetIndex(GroupParents, GroupChildren, op);
-
-        private void AddInput(int sourceParentId, int index, RawOp target, bool prefix)
-        {
-
-            var g = GroupChildren[sourceParentId];
-            var id = g[index];
-            var op = Ops[id];
-
-            if (target.Type.Category.All(OpCategory.Branching))
-            {
-                if (prefix)
-                    target.RightInput.Add(op);
-                else
-                    target.LeftInput.Add(op);
-                return;
-            }
-
-            GroupParents[id] = target.Id;
-            g.RemoveAt(index);
-
-            if (!GroupChildren.TryGetValue(target.Id, out var tg))
-            {
-                tg = [];
-                GroupChildren[target.Id] = tg;
-            }
-
-
-            if (prefix)
-            {
-                //tg.Add(id);
-                target.Prefixed = true;
-                target.RightInput.Add(op);
-            }
-            else
-            {
-                //tg.Insert(0, id);
-                target.PostFixed = true;
-                target.LeftInput.Add(op);
-            }
-        }
     }
-
-
-
-
-
 
 
     internal void Sequence(ref List<RawOp> ops)
@@ -113,14 +59,24 @@ internal partial class Lexicalizer
 
         foreach (var op in ops.Where(x => x.Type.Category.All(OpCategory.Branching)))
         {
-            op.LeftInput.Clear();
+            if (op.Type.Category.All(OpCategory.Branching)) {
+                op.LeftInput.Clear();
+                var children = data.AffixChildren[op.Id];
+                for (int i = children.Count - 1; i >= 0; i--)
+                {
+                    var t = data.Ops[children[i]];
 
-            var c = data.AffixChildren[op.Id];
+                    if (!t.Type.Category.All(OpCategory.Branching))
+                    {
+                        op.LeftInput.Add(t);
+                        break;
+                    }
+                }
+            }
+            else
+            {
 
-            if (c.Count == 0)
-                continue;
-
-            op.LeftInput.Add(data.Ops[c.Last()]);
+            }
         }
 
         DisolveVirtuals(data, ref ops);
@@ -362,8 +318,6 @@ internal partial class Lexicalizer
 
         if (ancestor.LeftInput.Count >= 0)
             op.LeftInput.Add(ancestor.LeftInput[0]);
-
-
 
         /*
 

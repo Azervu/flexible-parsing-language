@@ -16,6 +16,9 @@ internal class RawOp
     internal OpConfig Type { get; set; }
     internal string? Accessor { get; set; }
 
+
+    //internal List<RawOp> Input { get; private set; } = new List<RawOp>();
+
     internal List<RawOp> LeftInput { get; private set; } = new List<RawOp>();
     internal List<RawOp> RightInput { get; private set; } = new List<RawOp>();
     internal IEnumerable<RawOp> GetInput() => LeftInput.Concat(RightInput);
