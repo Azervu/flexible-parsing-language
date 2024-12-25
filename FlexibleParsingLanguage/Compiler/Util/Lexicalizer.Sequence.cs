@@ -17,7 +17,7 @@ internal partial class Lexicalizer
 
     private class SequenceProccessData
     {
-        internal Dictionary<int, RawOp> Ops { get; private set; } = new Dictionary<int, RawOp>();
+        internal Dictionary<int, RawOp> Ops { get; set; }
 
         internal Dictionary<int, int> GroupParents { get; set; } = new Dictionary<int, int>();
         internal Dictionary<int, List<int>> GroupChildren { get; set; } = new Dictionary<int, List<int>>();
@@ -33,15 +33,9 @@ internal partial class Lexicalizer
     internal void Sequence(ref List<RawOp> ops)
     {
         var data = new SequenceProccessData();
-        var entries = new List<int>();
+        data.Ops = ops.ToDictionary(x => x.Id, x => x);
 
-        foreach (var op in ops)
-        {
-            data.Ops.Add(op.Id, op);
-            entries.Add(op.Id);
-        }
-
-        GroupOps(data, entries);
+        GroupOps(data, ref ops);
         SequenceAffixes(data, ref ops);
 
 
@@ -60,7 +54,7 @@ internal partial class Lexicalizer
 
         foreach (var op in ops)
         {
-            if (op.Type.Category.All(OpCategory.Branching))
+            if (op.Type.Category.All(OpCategory.Group))
             {
                 op.LeftInput.Clear();
                 var children = data.AffixChildren[op.Id];
@@ -83,13 +77,11 @@ internal partial class Lexicalizer
         SequenceDependencies(data, ref ops);
     }
 
-    private void GroupOps(SequenceProccessData data, List<int> entries)
+    private void GroupOps(SequenceProccessData data, ref List<RawOp> ops)
     {
         var stack = new List<int> { };
-        foreach (var id in entries)
+        foreach (var op in ops)
         {
-            var op = data.Ops[id];
-
             if (stack.Count > 0)
             {
                 var parentId = stack[stack.Count - 1];
@@ -105,14 +97,15 @@ internal partial class Lexicalizer
 
             if (op.Type.Category.All(OpCategory.Group))
             {
-
-
                 stack.Add(op.Id);
                 data.GroupChildren.Add(op.Id, []);
             }
         }
 
+        ops = ops.Where(x => !x.Type.Category.All(OpCategory.UnGroup)).ToList();
 
+
+        /*
 #if DEBUG
         return;
 
@@ -166,7 +159,7 @@ internal partial class Lexicalizer
         var s = 3455;
 
 #endif
-
+        */
 
 
     }
@@ -187,7 +180,20 @@ internal partial class Lexicalizer
         data.AffixChildren = data.GroupChildren.ToDictionary(x => x.Key, x => x.Value.ToList());
 
         foreach (var op in ordered)
+        {
             SequenceAffixesInner(data, data.AffixParents, data.AffixChildren, op.Item1);
+        }
+
+#if DEBUG
+        var sss = "";
+        foreach (var x in data.Ops)
+        {
+            var o = x.Value;
+            sss += $"\n{o.Id,2} {(o.Accessor == null ? o.Type.Operator : $"'{o.Accessor}'"),5} | pre {o.Prefixed,5} | post {o.PostFixed,5} | [{o.GetInput().Select(y => y.Id.ToString()).Join(",")}]";
+        }
+
+        var debug = 543645;
+#endif
     }
 
     private void SequenceAffixesInner(SequenceProccessData data, Dictionary<int, int> parents, Dictionary<int, List<int>> children, RawOp op)
@@ -237,16 +243,6 @@ internal partial class Lexicalizer
                 throw new QueryCompileException(op, $"Postfix operation missing param");
             }
         }
-
-#if DEBUG
-        var sss = "";
-        foreach (var x in data.Ops)
-        {
-            var o = x.Value;
-            sss += $"\n{o.Id,2} {(o.Accessor == null ? o.Type.Operator : $"'{o.Accessor}'"),5} | pre {o.Prefixed,5} | post {o.PostFixed,5} | [{o.GetInput().Select(y => y.Id.ToString()).Join(",")}] {(x.Value == op ? " <- " : null)}";
-        }
-#endif
-
 
         if (pre)
         {
@@ -438,20 +434,21 @@ internal partial class Lexicalizer
 
                 var startId = active.Id;
 
+
                 if (active.LeftInput.Count > 0)
-                    active = active.LeftInput[0];
-                else if (data.AffixParents.TryGetValue(active.Id, out var pId))
-                    active = data.Ops[pId];
-                else
-                    target = active;
-
-
-
-                if (!active.Type.Category.All(OpCategory.Group))
                 {
-                    target = active;
-                    break;
+                    active = active.LeftInput[0];
+                    if (!active.Type.Category.All(OpCategory.Group))
+                    {
+                        target = active;
+                        break;
+                    }
                 }
+                else if (data.AffixParents.TryGetValue(active.Id, out var pId))
+                {
+                    active = data.Ops[pId];
+                }
+
 
                 remaps.Add(active);
 

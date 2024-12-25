@@ -37,7 +37,9 @@ internal partial class Lexicalizer
 
 
             if (op.Category.All(OpCategory.Default))
+            {
                 DefaultOp = op;
+            }
 
             if (op.Category.All(OpCategory.Param))
                 ParamOperator = op;
@@ -108,28 +110,13 @@ internal partial class Lexicalizer
         foreach (var t in tokens)
         {
             RawOp? accessor = null;
-            if (t.Op != null)
-            {
-                if (t.Op == DefaultOp)
-                    continue;
-
-                if (op != null && op.Type != DefaultOp)
-                    ops.Add(op);
-
-                op = new RawOp
-                {
-                    Id = idCounter++,
-                    CharIndex = t.Index,
-                    Type = t.Op,
-                };
-            }
-            else
+            if (t.Op == null || t.Op.Category.All(OpCategory.Accessor))
             {
                 accessor = new RawOp
                 {
                     Id = idCounter++,
                     CharIndex = t.Index,
-                    Type = AccessorOp,
+                    Type = t.Op ?? AccessorOp,
                     Accessor = t.Accessor,
                 };
 
@@ -148,6 +135,21 @@ internal partial class Lexicalizer
                         Type = DefaultOp,
                     };
                 }
+            }
+            else
+            {
+                if (t.Op == DefaultOp)
+                    continue;
+
+                if (op != null && op.Type != DefaultOp)
+                    ops.Add(op);
+
+                op = new RawOp
+                {
+                    Id = idCounter++,
+                    CharIndex = t.Index,
+                    Type = t.Op,
+                };
             }
 
 
