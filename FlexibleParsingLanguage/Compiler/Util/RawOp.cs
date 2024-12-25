@@ -16,24 +16,17 @@ internal class RawOp
     internal OpConfig Type { get; set; }
     internal string? Accessor { get; set; }
 
-
     internal List<RawOp> LeftInput { get; private set; } = new List<RawOp>();
     internal List<RawOp> RightInput { get; private set; } = new List<RawOp>();
-
-
-
     internal IEnumerable<RawOp> GetInput() => LeftInput.Concat(RightInput);
-
-
     internal List<RawOp> Output { get; set; } = new List<RawOp>();
-
     internal bool Prefixed { get; set; }
     internal bool PostFixed { get; set; }
 
 
     internal bool IsPrefix()
     {
-        if (Type.Category.Has(OpCategory.Prefix) && !Prefixed)
+        if (Type.Category.All(OpCategory.Prefix) && !Prefixed)
             return true;
 
         return false;
@@ -41,7 +34,7 @@ internal class RawOp
 
     internal bool IsPostfix()
     {
-        if (Type.Category.Has(OpCategory.Postfix) && !PostFixed)
+        if (Type.Category.All(OpCategory.Postfix) && !PostFixed)
             return true;
 
         return false;
@@ -66,7 +59,7 @@ internal class RawOp
     }
 
 
-    internal bool IsBranch() => Type.Category.Has(OpCategory.Branching);
+    internal bool IsBranch() => Type.Category.All(OpCategory.Branching);
 
     internal int PrefixRank()
     {

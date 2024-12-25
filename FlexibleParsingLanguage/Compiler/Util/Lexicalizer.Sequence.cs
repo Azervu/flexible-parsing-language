@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Security.Principal;
 using System.Text;
@@ -44,11 +45,11 @@ internal partial class Lexicalizer
             }
         }
 
-        foreach (var op in ops.Where(x => x.Type.Category.Has(OpCategory.GroupContext)))
-            InsertGroupContext(data, op);
+        RemapBranchingInputs(data, ref ops);
 
-        foreach (var op in ops.Where(op => op.Type.Category.Has(OpCategory.Group | OpCategory.Branching)))
-            RemapBranchingGroupsInput(data, op);
+        foreach (var op in ops.Where(x => x.Type.Category.All(OpCategory.ParentInput)))
+            AddParentInput(data, op);
+
 
         DisolveVirtuals(data, ref ops);
 
@@ -60,14 +61,16 @@ internal partial class Lexicalizer
         internal Dictionary<int, RawOp> Ops { get; private set; } = new Dictionary<int, RawOp>();
         internal Dictionary<int, List<int>> Groups { get; set; } = new Dictionary<int, List<int>>();
         internal Dictionary<int, int> Parents { get; set; } = new Dictionary<int, int>();
-        internal int GetIndex(RawOp op)
+        internal int GetIndex(RawOp op) => GetIndexData(op).Index;
+
+        internal (int ParentId, int Index) GetIndexData(RawOp op)
         {
             var parentId = Parents[op.Id];
             var group = Groups[parentId];
             for (var i = 0; i < group.Count; i++)
             {
                 if (group[i] == op.Id)
-                    return i;
+                    return (parentId, i);
             }
             throw new QueryCompileException(op, $"Index not found in {parentId} [{group.Select(x => x.ToString()).Join(", ")}]");
         }
@@ -92,7 +95,7 @@ internal partial class Lexicalizer
                 for (var i = GetIndex(op) - 1; i >= 0; i--)
                 {
                     var candidate = Ops[group[i]];
-                    if (candidate.Type.Category.Has(OpCategory.Branching))
+                    if (candidate.Type.Category.All(OpCategory.Branching))
                         continue;
                     target = candidate;
                     targetIndex = i;
@@ -104,7 +107,7 @@ internal partial class Lexicalizer
                 {
                     AddInput(parentId, targetIndex, op, false);
                 }
-                else if (parent.Type.Category.Has(OpCategory.Group))
+                else if (parent.Type.Category.All(OpCategory.Group))
                 {
                     //groups will be untangled later
                     op.LeftInput.Add(parent);
@@ -133,7 +136,7 @@ internal partial class Lexicalizer
                 for (var i = GetIndex(op) + 1; i < group.Count; i++)
                 {
                     var candidate = Ops[group[i]];
-                    if (candidate.Type.Category.Has(OpCategory.Branching))
+                    if (candidate.Type.Category.All(OpCategory.Branching))
                         continue;
                     target = candidate;
                     targetIndex = i;
@@ -154,7 +157,7 @@ internal partial class Lexicalizer
             var id = g[index];
             var op = Ops[id];
 
-            if (target.Type.Category.Has(OpCategory.Branching))
+            if (target.Type.Category.All(OpCategory.Branching))
             {
                 if (prefix)
                     target.RightInput.Add(op);
@@ -208,8 +211,10 @@ internal partial class Lexicalizer
                 group.Add(op.Id);
             }
 
-            if (op.Type.Category.Has(OpCategory.Group))
+            if (op.Type.Category.All(OpCategory.Group))
             {
+
+
                 stack.Add(op.Id);
                 data.Groups.Add(op.Id, []);
             }
@@ -277,25 +282,65 @@ internal partial class Lexicalizer
 
 
 
-
-    private void InsertGroupContext(SequenceProccessData data, RawOp op)
+    private void RemapToContextAtStartOfGroupfdesfd(SequenceProccessData data, RawOp op)
     {
+
+
         var ancestorId = data.Parents[op.Id];
 
+        RawOp? target = null;
+
+
+        if (op.Type.Category.All(OpCategory.ParentInput))
+            return;
+
+        var found = -1;
+
+
+        var active = op;
 
         while (true)
         {
-            if (ancestorId == RootGroupId)
-                break;
-            var ancestor = data.Ops[ancestorId];
-            if (ancestor.Type.Category.Has(OpCategory.Group))
-                break;
-            ancestorId = data.Parents[ancestor.Id];
+            var parentId = data.Parents[active.Id];
+            var parent = data.Ops[parentId];
+
+            if (!parent.Type.Category.All(OpCategory.ParentInput))
+                    break;
+
+            var group = data.Groups[parentId];
+
+            for (var i = 0; i < group.Count; i++)
+            {
+                var id = group[i];
+
+                if (id == op.Id)
+                {
+                    if (found < 0)
+                        return;
+
+        
+                }
+
+                var op2 = data.Ops[id];
+            }
         }
 
 
 
-       RawOp? ctx = null;
+    //.Where(x => x.Type.Category.Has(OpCategory.GroupContext))
+    }
+
+
+    private void AddParentInput(SequenceProccessData data, RawOp op)
+    {
+        RawOp? ctx = null;
+        var ancestorId = data.Parents[op.Id];
+        var ancestor = data.Ops[ancestorId];
+        op.LeftInput.Add(ancestor);
+
+
+
+        /*
 
         while (true)
         {
@@ -323,8 +368,8 @@ internal partial class Lexicalizer
 
             break;
         }
-
-        op.LeftInput.Add(ctx);
+                op.LeftInput.Add(ctx);
+        */
 
 
         /*
@@ -370,8 +415,165 @@ internal partial class Lexicalizer
     }
 
 
-    private void RemapBranchingGroupsInput(SequenceProccessData data, RawOp op)
+    private void RemapBranchingInputs(SequenceProccessData data, ref List<RawOp> ops)
     {
+        var proccessed = new HashSet<int>();
+
+        foreach (var op in ops)
+        {
+            if (!op.Type.Category.All(OpCategory.Branching) || proccessed.Contains(op.Id))
+                continue;
+
+            var active = op;
+            RawOp? target = null;
+            var remaps = new List<RawOp> { op };
+            while (true)
+            {
+                if (proccessed.Contains(active.Id))
+                {
+                    target = active.LeftInput.Count > 0
+                        ? active.LeftInput[0]
+                        : null;
+                    break;
+                }
+
+                var startId = active.Id;
+
+                if (active.LeftInput.Count > 0)
+                    active = active.LeftInput[0];
+                else if (data.Parents.TryGetValue(active.Id, out var pId))
+                    active = data.Ops[pId];
+                else
+                    target = active;
+
+                if (!active.Type.Category.All(OpCategory.Branching))
+                {
+                    target = active;
+                    break;
+                }
+
+                if (startId == active.Id)
+                    throw new QueryCompileException(active, "branching loop", true);
+
+                remaps.Add(active);
+            }
+
+            foreach (var r in remaps)
+            {
+                proccessed.Add(r.Id);
+                r.LeftInput.Clear();
+                if (target != null)
+                    r.LeftInput.Add(target);
+            }
+
+            /*
+
+
+
+            proccessed.Add(op.Id);
+
+            RawOp? target = null;
+          
+            while (true)
+            {
+                var parentId = data.Parents[active.Id];
+
+                var group = data.Groups[parentId];
+                var foundId = parentId;
+
+                for (var i = 0; i < group.Count; i++)
+                {
+                    var entryId = group[i];
+
+                    if (entryId == active.Id)
+                        break;
+
+                    var entry = data.Ops[entryId];
+
+                    if (entry.Type.Category.Any(OpCategory.Branching | OpCategory.UnGroup))
+                        continue;
+
+                    target = entry;
+                }
+
+                if (target != null)
+                    break;
+
+                active = data.Ops[parentId];
+
+                if (parentId == RootGroupId)
+                {
+                    target = data.Ops[parentId];
+                    break;
+                }
+
+
+
+
+            }
+
+            foreach (var r in remaps)
+            {
+
+            }
+            */
+
+
+
+        }
+
+
+
+
+        /*
+                foreach (var op in ops.Where(op => op.Type.Category.All(OpCategory.Branching)))
+ 
+
+ 
+        while (true)
+        {
+            ancestorId = data.Parents[active.Id];
+            if (ancestorId == RootGroupId)
+            {
+                target = data.Ops[ancestorId];
+                break;
+            }
+
+            var group = data.Groups[ancestorId];
+
+            for (var i = 0; i < group.Count; i++)
+            {
+                var entryId = group[i];
+
+                if (entryId == active.Id)
+                    break;
+
+                var entry = data.Ops[entryId];
+
+                if (entry.Type.Category.Any(OpCategory.Branching | OpCategory.UnGroup))
+                    continue;
+
+                target = entry;
+            }
+
+            if (target != null)
+            {
+                if (!target.Type.Category.All(OpCategory.Group))
+                    break;
+                target = null;
+            }
+
+            active = data.Ops[ancestorId];
+        }
+
+        op.LeftInput.Add(target);
+
+
+
+
+
+
+
         var children = data.Groups[op.Id];
 
         if (children.Count == 0)
@@ -381,7 +583,7 @@ internal partial class Lexicalizer
 
         op.LeftInput.Clear();
         op.LeftInput.Add(c);
-
+               */
     }
 
 
@@ -401,7 +603,7 @@ internal partial class Lexicalizer
         for (int i = 0; i < ops.Count; i++) {
             var op = ops[i];
 
-            if (!op.Type.Category.Has(OpCategory.Virtual))
+            if (!op.Type.Category.All(OpCategory.Virtual))
                 continue;
 
             if (op.LeftInput.Count + op.RightInput.Count > 1)

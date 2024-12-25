@@ -36,13 +36,13 @@ internal partial class Lexicalizer
             }
 
 
-            if (op.Category.Has(OpCategory.Default))
+            if (op.Category.All(OpCategory.Default))
                 DefaultOp = op;
 
-            if (op.Category.Has(OpCategory.Root))
+            if (op.Category.All(OpCategory.Root))
                 RootOp = op;
 
-            if (op.Category.Has(OpCategory.Unescape))
+            if (op.Category.All(OpCategory.Unescape))
                 UnescapeToken = op.Operator;
         }
         if (DefaultOp == null)
@@ -130,7 +130,7 @@ internal partial class Lexicalizer
                     Accessor = t.Accessor,
                 };
 
-                if (op != null && !op.Type.Category.Has(OpCategory.Prefix))
+                if (op != null && !op.Type.Category.All(OpCategory.Prefix))
                 {
                     ops.Add(op);
                     op = null;
@@ -151,7 +151,7 @@ internal partial class Lexicalizer
             if (!checkedRoot)
             {
                 checkedRoot = true;
-                if (op.Type.Category.Has(OpCategory.Postfix))
+                if (op.Type.Category.All(OpCategory.Postfix))
                 {
                     ops.Add(new RawOp
                     {

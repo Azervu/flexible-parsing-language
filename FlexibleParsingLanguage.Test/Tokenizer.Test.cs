@@ -11,11 +11,15 @@ public class TokenizerTest
     public static IEnumerable<object[]> ValidQueries => new List<object[]>
     {
         new object[] {"Simple", "a.b#cc2.d", "1.($,'a')  2.(1,'b')  3#(2,'cc2')  4.(3,'d')"},
-        new object[] {"Redundant separator ", "b.#c", "1.($,'b')  2#(1,'c')"},
+        new object[] {"Redundant separator ", "$b.#c", "1.($,'b')  2#(1,'c')"},
         new object[] {"Non redundant version", "b#c", "1.($,'b')  2#(1,'c')" },
         new object[] {"Escape", "a.b'ee\\'e'c.d", "1.($,'a')  2.(1,'b')  3.(2,'ee\\'e')  4.(3,'c')  5.(4,'d')"},
 
         new object[] {"Branch", "a{@b1:h2}b2:h1", "1.($,'a')  2.(1,'b1')  3:(2,'h2')  4{(3)  5.(1,'b2')  6:(5,'h1')"},
+
+        new object[] {"Branch Partial", "a{{@b}@c}d", ""},
+        new object[] {"Branch Complicated", "a{{@b}@c}d{@e}{@f{@g}}", ""},
+
         new object[] {"Parameter Group", "a#(@b2.c2)b.1", "1{  2.[1,'a']  5.[2,'b1']  7:[5,'h2']  4{[7]  10.[2,'b2']  12:[10,'h1']"},
 
     };

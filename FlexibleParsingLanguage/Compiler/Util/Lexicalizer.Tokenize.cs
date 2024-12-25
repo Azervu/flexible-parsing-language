@@ -86,7 +86,7 @@ internal partial class Lexicalizer
                 continue;
 
 
-            if (!op.Category.Has(OpCategory.Literal))
+            if (!op.Category.All(OpCategory.Literal))
             {
                 yield return new Token(op, opStart);
                 searchedIndex = opEnd;

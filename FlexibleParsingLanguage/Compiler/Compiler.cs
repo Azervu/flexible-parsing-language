@@ -31,7 +31,7 @@ internal partial class Compiler
             new OpConfig("*", OpCategory.Postfix),
             new OpConfig(":", OpCategory.Prefix | OpCategory.Postfix),
             new OpConfig("|", OpCategory.Prefix | OpCategory.Postfix),
-            new OpConfig("@", OpCategory.GroupContext | OpCategory.Virtual),
+            new OpConfig("@", OpCategory.ParentInput | OpCategory.Virtual),
             new OpConfig("#", OpCategory.Prefix | OpCategory.Postfix),
             new OpConfig("##", OpCategory.Prefix | OpCategory.Postfix),
             new OpConfig("\"", OpCategory.Literal, -1, "\""),

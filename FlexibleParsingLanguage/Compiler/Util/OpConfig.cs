@@ -23,7 +23,7 @@ internal class OpConfig
 
     internal int PrefixRank()
     {
-        if (Category.Has(OpCategory.Prefix))
+        if (Category.All(OpCategory.Prefix))
             return Rank;
 
         return int.MinValue;
@@ -31,7 +31,7 @@ internal class OpConfig
 
     internal int PostfixRank()
     {
-        if (Category.Has(OpCategory.Postfix))
+        if (Category.All(OpCategory.Postfix))
             return Rank;
         return int.MinValue;
     }
@@ -57,7 +57,7 @@ internal enum OpCategory
     Group        = 0b_0000_0000_0001_0000,
     UnGroup      = 0b_0000_0000_0010_0000,
     Virtual      = 0b_0000_0000_0100_0000,
-    GroupContext = 0b_0000_0000_1000_0000,
+    ParentInput = 0b_0000_0000_1000_0000,
 
 
     Literal    = 0b_0001_0000_0000_0000,
@@ -71,5 +71,6 @@ internal enum OpCategory
 
 internal static class OpCatergoryExtension
 {
-    internal static bool Has(this OpCategory flag, OpCategory value) => (flag & value) == value;
+    internal static bool All(this OpCategory flag, OpCategory value) => (flag & value) == value;
+    internal static bool Any(this OpCategory flag, OpCategory value) => (flag & value) > 0;
 }
