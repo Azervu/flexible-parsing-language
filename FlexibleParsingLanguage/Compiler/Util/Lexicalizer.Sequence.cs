@@ -58,11 +58,14 @@ internal partial class Lexicalizer
         foreach (var op in ops.Where(x => x.Type.Category.All(OpCategory.ParentInput)))
             AddParentInput(data, op);
 
-        foreach (var op in ops.Where(x => x.Type.Category.All(OpCategory.Branching)))
+        foreach (var op in ops)
         {
+
+
             if (op.Type.Category.All(OpCategory.Branching)) {
                 op.LeftInput.Clear();
                 var children = data.AffixChildren[op.Id];
+
                 for (int i = children.Count - 1; i >= 0; i--)
                 {
                     var t = data.Ops[children[i]];
@@ -73,10 +76,6 @@ internal partial class Lexicalizer
                         break;
                     }
                 }
-            }
-            else
-            {
-
             }
         }
 
@@ -194,6 +193,10 @@ internal partial class Lexicalizer
 
     private void SequenceAffixesInner(SequenceProccessData data, Dictionary<int, int> parents, Dictionary<int, List<int>> children, RawOp op)
     {
+
+        if (!parents.ContainsKey(op.Id))
+            return;
+
         var post = op.IsPostfix();
         var pre = op.IsPrefix();
 
@@ -440,10 +443,22 @@ internal partial class Lexicalizer
                     break;
                 }
 
-                if (startId == active.Id)
-                    throw new QueryCompileException(active, "branching loop", true);
-
                 remaps.Add(active);
+
+                if (active.Id == RootGroupId)
+                {
+                    target = active;
+                    break;
+                }
+                else
+                {
+
+                    if (startId == active.Id)
+                        throw new QueryCompileException(active, "branching loop", true);
+                }
+
+
+   
             }
 
             foreach (var r in remaps)

@@ -7,12 +7,12 @@ internal partial class Lexicalizer
     private OpConfig DefaultOp { get; set; }
 
     internal const int RootId = 2;
-    private OpConfig RootOp { get; set; }
+    private OpConfig ParamOperator { get; set; }
 
 
     internal const int RootGroupId = 1;
 
-    internal static readonly OpConfig RootGroupOperator = new OpConfig("¿", OpCategory.Group, -1, "¿");
+    internal readonly OpConfig RootOperator;
 
 
     private OpConfig AccessorOp { get; set; } = new OpConfig(null, OpCategory.Accessor, 99);
@@ -39,16 +39,19 @@ internal partial class Lexicalizer
             if (op.Category.All(OpCategory.Default))
                 DefaultOp = op;
 
-            if (op.Category.All(OpCategory.Root))
-                RootOp = op;
+            if (op.Category.All(OpCategory.Param))
+                ParamOperator = op;
 
             if (op.Category.All(OpCategory.Unescape))
                 UnescapeToken = op.Operator;
+
+            if (op.Category.All(OpCategory.Root))
+                RootOperator = op;
         }
         if (DefaultOp == null)
             throw new Exception("Default operator missing");
 
-        if (RootOp == null)
+        if (ParamOperator == null)
             throw new Exception("Root operator missing");
 
     }
@@ -92,7 +95,7 @@ internal partial class Lexicalizer
             new RawOp {
                 Id = RootGroupId,
                 CharIndex = -1,
-                Type = RootGroupOperator,
+                Type = RootOperator,
             },
         };
         var idCounter = 2;
@@ -157,7 +160,7 @@ internal partial class Lexicalizer
                     {
                         Id = idCounter++,
                         CharIndex = t.Index,
-                        Type = RootOp,
+                        Type = ParamOperator,
                     });
                 }
             }
@@ -189,6 +192,17 @@ internal partial class Lexicalizer
 
         }
         */
+
+        if (RootOperator.Category.All(OpCategory.Group))
+        {
+            ops.Add(new RawOp
+            {
+                Id = idCounter++,
+                CharIndex = -1,
+                Type = Operators[RootOperator.GroupOperator],
+            });
+        };
+
         return ops;
     }
 }
