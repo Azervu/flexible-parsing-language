@@ -15,25 +15,13 @@ internal static partial class FplOperation {
 
     private static IEnumerable<ParseOperation> CompileRead(ParseData parser, RawOp op)
     {
-        if (op.Input.Count != 1)
-            throw new QueryCompileException(op, "wrong number of params");
+        if (op.Input.Count != 2)
+            throw new QueryCompileException(op, $"{op.Input.Count} params | read takes 2");
 
         var input = op.Input[0];
+        var accessor = op.Input[1];
 
-
-
-        yield return new ParseOperation(ReadOperation, input.Accessor);
-
-
-        /*
-        var x =
-
-
-        return new ParseOperation(
-            (a, b) => { }
-
-            );
-        */
+        yield return new ParseOperation(ReadOperation, accessor.Accessor);
     }
 
     internal static void ReadOperation(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ReadFunc((m, readSrc) => m.Parse(readSrc, acc));

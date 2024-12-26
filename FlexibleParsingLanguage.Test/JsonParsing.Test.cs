@@ -47,7 +47,7 @@ public class JsonParsingTest
 
     public static IEnumerable<object[]> SimpleJsonQueries => new List<object[]>
     {
-        new object[] { "Simple Test", "{'k': 'v'}", "k", "'v'" },
+        new object[] { "Simple Test", "{'k': 'v'}", "k", "['v']" },
         
         new object[] { "Simple Header Test", "{'k': 'v'}", "k:h", "{'h':'v'}" },
 

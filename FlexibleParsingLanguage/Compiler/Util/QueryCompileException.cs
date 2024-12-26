@@ -25,8 +25,9 @@ namespace FlexibleParsingLanguage.Compiler.Util
 
         public string GenerateMessage()
         {
+
             var log = new StringBuilder(Ops.Count > 0
-                ? $" | op = {Ops[0].Type.Operator} | message = {Message}"
+                ? $" | op = {Ops[0].Type.Operator}{(string.IsNullOrEmpty(Ops[0].Accessor) ? string.Empty : $"'{Ops[0].Accessor}'")} | message = {Message}"
                 : Message
             );
 

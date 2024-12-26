@@ -79,11 +79,13 @@ internal partial class Compiler
 
         Sequence(ref ops);
 
+
         foreach (var op in ops)
         {
             if (op.Type != FplOperation.Accessor && op.Accessor != null)
                 throw new InvalidOperationException("Accessor on non-accessor operation");
         }
+
         return ops;
     }
 
@@ -105,7 +107,9 @@ internal partial class Compiler
                 {
                 },
             };
-            var compiled = ops.SelectMany(x =>
+            var compiled = ops
+                .Where(x => x.Type.Compile != null)
+                .SelectMany(x =>
             {
                 if (x.Type.Compile == null)
                     throw new QueryCompileException(x, "missing compiler function", true);
@@ -116,7 +120,7 @@ internal partial class Compiler
 
             //TODO handle var config = new ParserRootConfig { RootType = rootType };
 
-            return new FplQuery(compiled, configContext, new ParserRootConfig { });
+            return new FplQuery(compiled, configContext, new ParserRootConfig { RootType = WriteType.Array });
         }
         catch (QueryCompileException ex)
         {

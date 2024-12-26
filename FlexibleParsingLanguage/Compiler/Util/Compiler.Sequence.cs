@@ -83,6 +83,9 @@ internal partial class Compiler
         DissolveVirtuals(data, ref ops);
 
         SequenceDependencies(data, ref ops);
+
+        foreach (var op in ops)
+            op.Input = op.GetRawInput().ToList();
     }
 
     private void GroupOps(SequenceProccessData data, ref List<RawOp> ops)

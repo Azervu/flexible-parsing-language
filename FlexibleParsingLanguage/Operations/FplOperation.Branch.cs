@@ -24,8 +24,10 @@ internal static partial class FplOperation
 
 
 
-        yield return new ParseOperation(BranchOperation, input.Accessor);
+        //yield return new ParseOperation(BranchOperation, input.Accessor);
+        yield return new ParseOperation(ParsesOperationType.WriteAddRead);
 
+        //HandleOp(parser, new ParseOperation(ParsesOperationType.WriteAddRead));
 
         /*
         var x =

@@ -69,13 +69,6 @@ public class FplQuery
     public object Parse(object readRoot)
     {
 
-#if DEBUG
-        var ops = _operations.Select(x => $"\n    {x.OpType.GetMetaData().Name} {x.StringAcc} {x.IntAcc}").Concat();
-
-
-        var s = 456654;
-#endif
-
         IWritingModule writer = new CollectionWritingModule();
 
         object? writeRoot = null;

@@ -3,14 +3,19 @@ using FlexibleParsingLanguage.Compiler.Util;
 using FlexibleParsingLanguage.Parse;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FlexibleParsingLanguage.Operations;
 
 internal static partial class FplOperation
 {
+
+
+
     internal static readonly OpConfig Accessor = new OpConfig(null, OpCategory.Accessor, null, 99);
 
     internal static readonly OpConfig RootParam = new OpConfig("$", OpCategory.RootParam, CompileRootParam);
@@ -18,14 +23,10 @@ internal static partial class FplOperation
 
     private static IEnumerable<ParseOperation> CompileRootParam(ParseData parser, RawOp op)
     {
-        if (op.Input.Count != 1)
-            throw new QueryCompileException(op, "wrong number of params");
+        if (op.Input.Count != 0)
+            throw new QueryCompileException(op, "$ cant take params");
 
-        var input = op.Input[0];
-
-
-
-        yield return new ParseOperation(RootParamOperation, input.Accessor);
+        yield return new ParseOperation(RootParamOperation);
 
 
         /*

@@ -28,7 +28,7 @@ internal partial struct ParsesOperationType
         { WriteArrayInt, new OperationMetaData(WriteType.Array, nameof(WriteArrayInt)) },
 
         { WriteAddRead, new OperationMetaData(WriteType.None, nameof(WriteAddRead)) },
-        { ReadRoot, new OperationMetaData(WriteType.None, nameof(ReadRoot)) },
+
         { WriteRoot, new OperationMetaData(WriteType.None, nameof(WriteRoot)) },
         { Save, new OperationMetaData(WriteType.None, nameof(Save)) },
         { Load, new OperationMetaData(WriteType.None, nameof(Load)) },

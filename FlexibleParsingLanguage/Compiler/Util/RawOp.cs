@@ -102,9 +102,8 @@ internal static class RawOpExtension
         if (proccessed.Contains(t.Id) || t.IsSimple())
             return;
 
-        var input = t.GetRawInput().ToList();
         proccessed.Add(t.Id);
-        foreach (var inp in t.GetRawInput())
+        foreach (var inp in t.Input)
             LogEntry(proccessed, log, inp);
 
         if (log.Length > 0)
