@@ -19,7 +19,6 @@ internal partial class ParseContext
 
         var addHandled = false;
 
-
         for (var i = 0; i < ChildOperator.Count; i++)
         {
             var accessor = ChildOperator[i];
@@ -50,50 +49,6 @@ internal partial class ParseContext
 
         parser.ActiveId = startActiveId;
 
-
         return writeType ?? WriteType.Array;
-
-
-
-        /*
-
-
-        if (writeType != null)
-
-        var lastWriteIndex = -1;
-        for (var i = Accessors.Count - 1; i >= 0; i--)
-        {
-            var accessor = Accessors[i];
-            if (accessor.Operator == ":")
-            {
-                lastWriteIndex = i;
-                break;
-            }
-        }
-
-        for (var i = 0; i < Accessors.Count; i++)
-        {
-            if (i == lastWriteIndex)
-                continue;
-            var accessor = Accessors[i];
-
-            writeType = accessor.Process(parser);
-        }
-
-
-
-
-        if (lastWriteIndex < 0)
-        {
-            HandleOp(parser, this, new ParseOperation(ParseOperationType.WriteAddRead));
-
-            return WriteType.Array;
-        }
-
-        HandleOp(parser, this, new ParseOperation(ParseOperationType.WriteFromRead, Accessors[lastWriteIndex].Param));
-        //foreach (var op in ProcessEndingOperation(parser, this, lastWriteIndex >= 0 ? Accessors[lastWriteIndex] : null))
-
-        return WriteType.Object;
-        */
     }
 }

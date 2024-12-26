@@ -19,10 +19,10 @@ internal partial class ParseContext
         {
             if (_children == null)
             {
-                if (Token.Children == null)
+                if (Token.Input == null)
                     return null;
 
-                _children = Token.Children.Select(x => new ParseContext(x)).ToList();
+                _children = Token.Input.Select(x => new ParseContext(x)).ToList();
             }
             return _children;
         }

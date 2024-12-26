@@ -13,10 +13,7 @@ internal partial class ParseContext
     {
         if (ChildOperator == null || ChildOperator.Count == 0)
         {
-            Action<Parser, ParsingContext, int, string> opt = finalContextOp ? ParsesOperationType.WriteFromRead : ParsesOperationType.Write;
-
-
-
+            Action<FplQuery, ParsingContext, int, string> opt = finalContextOp ? ParsesOperationType.WriteFromRead : ParsesOperationType.Write;
             HandleOp(parser, new ParseOperation(opt, Token.Accessor));
             return WriteType.Object;
         }
@@ -41,7 +38,7 @@ internal partial class ParseContext
 }
 
 
-internal partial class Compiler
+internal partial class OldCompiler
 {
     private ParseOperation? ProcessWriteOperator(ParserRootConfig config, ParseData parser, ParseContext ctx, ParseContext acc)
     {

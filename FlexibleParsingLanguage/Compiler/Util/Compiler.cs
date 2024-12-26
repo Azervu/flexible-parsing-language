@@ -1,6 +1,9 @@
-﻿namespace FlexibleParsingLanguage.Compiler.Util;
+﻿using FlexibleParsingLanguage.Operations;
+using FlexibleParsingLanguage.Parse;
 
-internal partial class Lexicalizer
+namespace FlexibleParsingLanguage.Compiler.Util;
+
+internal partial class Compiler
 {
     internal List<OpConfig> Ops { get; private set; }
 
@@ -9,20 +12,15 @@ internal partial class Lexicalizer
     internal const int RootId = 2;
     private OpConfig ParamOperator { get; set; }
 
-
     internal const int RootGroupId = 1;
 
     internal readonly OpConfig RootOperator;
 
-
-    private OpConfig AccessorOp { get; set; } = new OpConfig(null, OpCategory.Accessor, 99);
-
     private string UnescapeToken { get; set; }
-
 
     private Dictionary<string, OpConfig?> Operators = new();
 
-    public Lexicalizer(List<OpConfig> ops)
+    internal Compiler(List<OpConfig> ops)
     {
         Ops = ops;
         foreach (var op in ops)
@@ -32,16 +30,15 @@ internal partial class Lexicalizer
             if (op.GroupOperator != null)
             {
                 var op2 = op.GroupOperator.ToString();
-                HandleConfigEntry(op2, new OpConfig(op2, OpCategory.UnGroup, -100));
+                HandleConfigEntry(op2, new OpConfig(op2, OpCategory.UnGroup, null, -100));
             }
-
 
             if (op.Category.All(OpCategory.Default))
             {
                 DefaultOp = op;
             }
 
-            if (op.Category.All(OpCategory.Param))
+            if (op.Category.All(OpCategory.RootParam))
                 ParamOperator = op;
 
             if (op.Category.All(OpCategory.Unescape))
@@ -84,11 +81,48 @@ internal partial class Lexicalizer
 
         foreach (var op in ops)
         {
-            if (op.Type != AccessorOp && op.Accessor != null)
+            if (op.Type != FplOperation.Accessor && op.Accessor != null)
                 throw new InvalidOperationException("Accessor on non-accessor operation");
         }
-
         return ops;
+    }
+
+    internal FplQuery Compile(string raw, ParsingMetaContext configContext)
+    {
+        try
+        {
+            var ops = Lexicalize(raw);
+
+            var rootId = 1;
+            var parseData = new ParseData
+            {
+                ActiveId = rootId,
+                LoadedId = rootId,
+                IdCounter = 3,
+                Ops = [],
+                SaveOps = [],
+                OpsMap = new Dictionary<(int LastOp, ParseOperation[]), int>
+                {
+                },
+            };
+            var compiled = ops.SelectMany(x =>
+            {
+                if (x.Type.Compile == null)
+                    throw new QueryCompileException(x, "missing compiler function", true);
+
+                return x.Type.Compile(parseData, x);
+            }).Where(x => x != null).ToList();
+
+
+            //TODO handle var config = new ParserRootConfig { RootType = rootType };
+
+            return new FplQuery(compiled, configContext, new ParserRootConfig { });
+        }
+        catch (QueryCompileException ex)
+        {
+            ex.Query = raw;
+            throw;
+        }
     }
 
     private List<RawOp> ProcessTokens(List<Token> tokens)
@@ -101,11 +135,7 @@ internal partial class Lexicalizer
             },
         };
         var idCounter = 2;
-
-
         bool checkedRoot = false;
-
-
         RawOp? op = null;
         foreach (var t in tokens)
         {
@@ -116,7 +146,7 @@ internal partial class Lexicalizer
                 {
                     Id = idCounter++,
                     CharIndex = t.Index,
-                    Type = t.Op ?? AccessorOp,
+                    Type = t.Op ?? FplOperation.Accessor,
                     Accessor = t.Accessor,
                 };
 

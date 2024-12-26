@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using static FlexibleParsingLanguage.Compiler.Util.Lexicalizer;
+﻿using System.Text;
 
 namespace FlexibleParsingLanguage.Compiler.Util;
 
@@ -15,9 +8,6 @@ internal class RawOp
     internal int CharIndex { get; set; }
     internal OpConfig Type { get; set; }
     internal string? Accessor { get; set; }
-
-
-    internal List<RawOp> Input { get; private set; } = new List<RawOp>();
     internal List<RawOp> LeftInput { get; private set; } = new List<RawOp>();
     internal List<RawOp> RightInput { get; private set; } = new List<RawOp>();
     internal IEnumerable<RawOp> GetRawInput() => LeftInput.Concat(RightInput);
@@ -42,9 +32,7 @@ internal class RawOp
         return false;
     }
 
-
-    internal List<RawOp> Children = new List<RawOp>();
-
+    internal List<RawOp> Input = new List<RawOp>();
 
     internal void AddLog(StringBuilder log, int depth)
     {
@@ -59,9 +47,9 @@ internal class RawOp
         if (Accessor != null)
             log.Append($"\"{Accessor}\"");
 
-        if (Children != null)
+        if (Input != null)
         {
-            foreach (var c in Children)
+            foreach (var c in Input)
                 c.AddLog(log, depth + 1);
         }
     }
@@ -89,9 +77,7 @@ internal class RawOp
         }
         return l;
     }
-
 }
-
 
 internal static class RawOpExtension
 {
@@ -125,6 +111,13 @@ internal static class RawOpExtension
             log.Append("  ");
 
         t.ToString(log);
+
+
+
+
+
+
+
 
         /*
         log.Append($"{t.Id}");

@@ -1,17 +1,47 @@
-﻿using FlexibleParsingLanguage.Converter;
+﻿using FlexibleParsingLanguage.Compiler.Util;
+using FlexibleParsingLanguage.Converter;
 using FlexibleParsingLanguage.Modules;
+using FlexibleParsingLanguage.Operations;
+using FlexibleParsingLanguage.Parse;
+namespace FlexibleParsingLanguage;
 
-namespace FlexibleParsingLanguage.Parse;
-
-public class Parser
+public class FplQuery
 {
+    private static Compiler.Util.Compiler _compiler { get; set; }
+    internal static Compiler.Util.Compiler Compiler {
+        get
+        {
+            if (_compiler == null)
+            {
+                _compiler = new Compiler.Util.Compiler([
+                    FplOperation.Branch,
+                    FplOperation.Read,
+                    new OpConfig(",", OpCategory.GroupSeparator),
+                    new OpConfig("(", OpCategory.Group | OpCategory.Virtual | OpCategory.Accessor, null, 100, ")"),
+                    FplOperation.RootParam,
+                    new OpConfig("~", OpCategory.LeftInput),
+                    new OpConfig("*", OpCategory.LeftInput),
+                    new OpConfig(":", OpCategory.RightInput | OpCategory.LeftInput),
+                    new OpConfig("|", OpCategory.RightInput | OpCategory.LeftInput),
+                    new OpConfig("@", OpCategory.ParentInput | OpCategory.Virtual),
+                    new OpConfig("#", OpCategory.RightInput | OpCategory.LeftInput),
+                    new OpConfig("##", OpCategory.RightInput | OpCategory.LeftInput),
+                    new OpConfig("\"", OpCategory.Literal, null, -1, "\""),
+                    new OpConfig("'", OpCategory.Literal, null, -1, "\'"),
+                    new OpConfig("\\", OpCategory.Unescape, null, -1)
+                ]);
+            }
+            return _compiler;
+        }
+    }
+
     private List<ParseOperation> _operations;
     private ModuleHandler _modules;
     private ParsingMetaContext _rootMetaContext;
     private ParserRootConfig _config;
     internal Dictionary<string, IConverter> _converter;
 
-    internal Parser(
+    internal FplQuery(
         List<ParseOperation> operations,
         ParsingMetaContext rootMetaContext,
         ParserRootConfig config
@@ -32,6 +62,9 @@ public class Parser
             { "xml", new XmlConverter() }
         };
     }
+
+
+    public static FplQuery Compile(string raw, ParsingMetaContext? configContext = null) => Compiler.Compile(raw, configContext);
 
     public object Parse(object readRoot)
     {

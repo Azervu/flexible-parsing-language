@@ -13,35 +13,15 @@ internal class ParseData
     internal int ActiveId { get; set; }
 }
 
-internal partial class Compiler
+internal partial class OldCompiler
 {
 
     public const int ROOT_ID = 1;
 
-    internal Lexicalizer Lexicalizer { get; private set; }
+    internal Util.Compiler Lexicalizer { get; private set; }
 
-    public Compiler()
-    {
-        Lexicalizer = new Lexicalizer([
-            new OpConfig("{", OpCategory.Root | OpCategory.Group | OpCategory.Branching | OpCategory.LeftInput, 100, "}"),
-            new OpConfig(".", OpCategory.RightInput | OpCategory.LeftInput | OpCategory.Default),
-            new OpConfig(",", OpCategory.GroupSeparator),
-            new OpConfig("(", OpCategory.Group | OpCategory.Virtual | OpCategory.Accessor, 100, ")"),
-            new OpConfig("$", OpCategory.Param),
-            new OpConfig("~", OpCategory.LeftInput),
-            new OpConfig("*", OpCategory.LeftInput),
-            new OpConfig(":", OpCategory.RightInput | OpCategory.LeftInput),
-            new OpConfig("|", OpCategory.RightInput | OpCategory.LeftInput),
-            new OpConfig("@", OpCategory.ParentInput | OpCategory.Virtual),
-            new OpConfig("#", OpCategory.RightInput | OpCategory.LeftInput),
-            new OpConfig("##", OpCategory.RightInput | OpCategory.LeftInput),
-            new OpConfig("\"", OpCategory.Literal, -1, "\""),
-            new OpConfig("'", OpCategory.Literal, -1, "\'"),
-            new OpConfig("\\", OpCategory.Unescape, -1)
-        ]);
-    }
 
-    public Parser Compile(string raw, ParsingMetaContext configContext)
+    public FplQuery Compile(string raw, ParsingMetaContext configContext)
     {
         var rawOps = Lexicalizer.Lexicalize(raw);
 
@@ -49,7 +29,7 @@ internal partial class Compiler
         var rootToken = new RawOp
         {
             Type = Lexicalizer.Ops[0],
-            Children = rawOps
+            Input = rawOps
         };
 
         var parseData = new ParseData
@@ -88,7 +68,7 @@ internal partial class Compiler
         var s = 345534;
 #endif
 
-        return new Parser(ops, configContext, config);
+        return new FplQuery(ops, configContext, config);
     }
 
 

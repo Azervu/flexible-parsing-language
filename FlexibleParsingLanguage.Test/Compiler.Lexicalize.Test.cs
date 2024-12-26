@@ -6,7 +6,6 @@ namespace FlexibleParsingLanguage.Test;
 [TestClass]
 public class TokenizerTest
 {
-    private Lexicalizer T { get; set; } = new Compiler.Compiler().Lexicalizer;
 
     public static IEnumerable<object[]> ValidQueries => new List<object[]>
     {
@@ -43,11 +42,11 @@ public class TokenizerTest
         List<RawOp> parsed = new List<RawOp>();
         try
         {
-            parsed = T.Lexicalize(parserString);
+            parsed = FplQuery.Compiler.Lexicalize(parserString);
         }
         catch (QueryCompileException ex)
         {
-            Assert.Fail(ex.GenerateMessage(parserString));
+            Assert.Fail(ex.GenerateMessage());
         }
 
         var idCounter = 1;
@@ -91,7 +90,7 @@ public class TokenizerTest
     {
         try
         {
-            var parsed = T.Lexicalize(query);
+            var parsed = FplQuery.Compiler.Lexicalize(query);
         }
         catch (QueryCompileException ex)
         {

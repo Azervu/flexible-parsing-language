@@ -12,7 +12,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FlexibleParsingLanguage.Compiler.Util;
 
-internal partial class Lexicalizer
+internal partial class Compiler
 {
 
     private class SequenceProccessData

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FlexibleParsingLanguage.Parse;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,13 +14,19 @@ internal class OpConfig
 
     internal OpCategory Category { get; set; }
     internal int Rank { get; set; }
-    internal OpConfig(string op, OpCategory type, int rank = -1, string op2 = null)
+
+
+    internal Func<ParseData, RawOp, IEnumerable<ParseOperation>> Compile { get; set; }
+
+    internal OpConfig(string op, OpCategory type, Func<ParseData, RawOp, IEnumerable<ParseOperation>> compile = null, int rank = -1, string op2 = null)
     {
         Operator = op;
         Category = type;
         Rank = rank;
         GroupOperator = op2;
+        Compile = compile;
     }
+
 
     internal int PrefixRank()
     {
@@ -44,7 +51,7 @@ internal enum OpCategory
     None      = 0b_0000_0000_0000_0000,
     Default   = 0b_0000_0001_0000_0000,
     Root      = 0b_0000_0010_0000_0000,
-    Param     = 0b_0000_1000_0000_0000,
+    RootParam     = 0b_0000_1000_0000_0000,
 
 
 
@@ -68,8 +75,6 @@ internal enum OpCategory
     Unescape   = 0b_0010_0000_0000_0000,
     Temp       = 0b_0100_0000_0000_0000,
     Accessor   = 0b_1000_0000_0000_0000,
-
-
 
 }
 

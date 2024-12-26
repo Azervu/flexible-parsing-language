@@ -9,6 +9,7 @@
 | `:`      | Write                                  |
 | `{` `}`  | Branching                              |
 | `(` `)`  | Grouping                               |
+| `,`      | Parameter Separator                    |
 | `*`      | Foreach                                |
 | `~`      | Name                                   |
 | `|`      | Transformer                            |

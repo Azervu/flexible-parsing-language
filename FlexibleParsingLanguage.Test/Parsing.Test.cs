@@ -8,8 +8,6 @@ namespace FlexibleParsingLanguage.Test;
 [TestClass]
 public class Parsing
 {
-    private Compiler.Compiler L { get; } = new Compiler.Compiler();
-
     public static IEnumerable<object[]> SimpleQueries => new List<object[]>
     {
         new object[] { "ConvertXmlTest", "<a><b1>bbb</b1><b2>bb2</b2></a>", "|xml.a.b2:h1", "{'h1':'bb2'}", null, null },
@@ -54,10 +52,10 @@ public class Parsing
             foreach (var entry in configEntries)
                 rootConfig.AddContext(entry);
 
-        Parser parser;
+        FplQuery parser;
         try
         {
-            parser = L.Compile(query, rootConfig);
+            parser = FplQuery.Compile(query, rootConfig);
         }
         catch (Exception ex)
         {

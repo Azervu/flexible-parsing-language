@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 namespace FlexibleParsingLanguage.Compiler.Util;
 
-internal partial class Lexicalizer
+internal partial class Compiler
 {
     private struct Token
     {

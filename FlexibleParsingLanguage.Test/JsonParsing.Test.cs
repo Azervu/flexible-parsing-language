@@ -1,6 +1,5 @@
-
 using FlexibleParsingLanguage.Compiler;
-using FlexibleParsingLanguage.Parse;
+using FlexibleParsingLanguage.Compiler.Util;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -9,8 +8,6 @@ namespace FlexibleParsingLanguage.Test;
 [TestClass]
 public class JsonParsingTest
 {
-    private Compiler.Compiler L { get; } = new Compiler.Compiler();
-
     public static IEnumerable<object[]> PayloadFiles
     {
         get => Directory.EnumerateFiles("../../../Payloads").Where(f => !f.EndsWith(".result.json") && !f.EndsWith(".query")).Select(x => new object[] { x });
@@ -50,6 +47,11 @@ public class JsonParsingTest
 
     public static IEnumerable<object[]> SimpleJsonQueries => new List<object[]>
     {
+        new object[] { "Simple Test", "{'k': 'v'}", "k", "'v'" },
+        
+        new object[] { "Simple Header Test", "{'k': 'v'}", "k:h", "{'h':'v'}" },
+
+
         new object[] { "Foreach Test", "{'a': 1, 'b': 2, 'c': 3}", "*:*:h", "[{'h':1},{'h':2},{'h':3}]" },
 
         new object[] { "Simple branch test", "{'k': {'ka': 'va', 'kb': 'vb'}}", "k{ka:ha}{kb:hb}", "{'ha':'va','hb':'vb'}" },
@@ -79,14 +81,14 @@ public class JsonParsingTest
 
     private void TestCompleteParsingStep(string payload, string query, string expected, JsonSerializerOptions? serilizationOptions = null, bool singleQuotes = false)
     {
-        Parser parser;
+        FplQuery parser;
         try
         {
-            parser = L.Compile(query, null);
+            parser = FplQuery.Compile(query, null);
         }
-        catch (Exception ex)
+        catch (QueryCompileException ex)
         {
-            Assert.Fail($"Lexicalizations step failed | query = {query} | error = {ex.Message}\n\n{ex.StackTrace}" );
+            Assert.Fail(ex.GenerateMessage());
             return;
         }
 

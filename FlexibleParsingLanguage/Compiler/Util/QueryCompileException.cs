@@ -10,6 +10,8 @@ namespace FlexibleParsingLanguage.Compiler.Util
     {
         public bool CompilerIssue { get; private set; }
 
+        internal string Query { get; set; }
+
         internal List<RawOp> Ops { get; private set; }
         internal QueryCompileException(RawOp op, string message, bool compilerIssue = false) : base(message) {
             Ops = new List<RawOp> { op };
@@ -21,10 +23,10 @@ namespace FlexibleParsingLanguage.Compiler.Util
             CompilerIssue = compilerIssue;
         }
 
-        public string GenerateMessage(string query)
+        public string GenerateMessage()
         {
             var log = new StringBuilder(Ops.Count > 0
-                ? $"{Ops[0].Type.Operator}({Ops[0].Id}) | message = {Message}"
+                ? $" | op = {Ops[0].Type.Operator} | message = {Message}"
                 : Message
             );
 
@@ -42,7 +44,7 @@ namespace FlexibleParsingLanguage.Compiler.Util
 
 
             log.Append("\n");
-            log.Append(query);
+            log.Append(Query);
             return log.ToString();
         }
     }

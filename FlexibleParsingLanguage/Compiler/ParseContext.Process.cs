@@ -5,9 +5,6 @@ namespace FlexibleParsingLanguage.Compiler;
 internal partial class ParseContext
 {
 
-
-
-
     /*
 
 
@@ -19,13 +16,6 @@ internal partial class ParseContext
                         break;
 
     */
-
-
-
-
-
-
-
 
     internal WriteType? Process(ParseData parser, bool finalContextOp)
     {
@@ -48,10 +38,6 @@ internal partial class ParseContext
             case "##":
                 return ProcessContextLookup(parser);
 
-            case "$":
-                HandleOp(parser, new ParseOperation(ParsesOperationType.ReadRoot));
-                break;
-
             case ":":
                 return ProcessWrite(parser, finalContextOp);
             case ".":
@@ -68,46 +54,10 @@ internal partial class ParseContext
 
     private void HandleOp(ParseData parser, ParseOperation? op)
     {
-        if (op == null)
-            return;
-        HandleOps(parser, [op]);
     }
 
     private void HandleOps(ParseData parser, ParseOperation[] ops)
     {
-        var activeId = ops[0].OpType.Op == ParsesOperationType.ReadRoot ? -1 : parser.ActiveId;
-        var key = (activeId, ops);
-        if (parser.OpsMap.TryGetValue(key, out var readId))
-        {
-            parser.ActiveId = readId;
-            return;
-        }
-
-        if (parser.ActiveId != parser.LoadedId)
-        {
-            if (!parser.SaveOps.Contains(parser.ActiveId))
-                throw new Exception("Query parsing error | Unknown read id " + parser.ActiveId);
-            parser.Ops.Add((-1, new ParseOperation(ParsesOperationType.Load, parser.ActiveId)));
-            parser.LoadedId = parser.ActiveId;
-        }
-
-
-        parser.ActiveId = ++parser.IdCounter;
-        parser.SaveOps.Add(parser.ActiveId);
-        parser.LoadedId = parser.ActiveId;
-
-        if (parser.OpsMap.ContainsKey(key))
-            throw new Exception($"Repeated {key.activeId} ");
-
-        foreach (var op in ops)
-            parser.Ops.Add((parser.ActiveId, op));
-
-
-        parser.OpsMap.Add(key, parser.ActiveId);
-        parser.IdCounter++;
-        var saveOp = new ParseOperation(ParsesOperationType.Save, parser.ActiveId);
-        parser.Ops.Add((parser.IdCounter, saveOp));
-        parser.OpsMap.Add((activeId, [saveOp]), parser.IdCounter);
     }
 }
 
