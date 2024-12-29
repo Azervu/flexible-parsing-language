@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace FlexibleParsingLanguage.Compiler.Util;
+namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class Compiler
 {
@@ -55,12 +55,12 @@ internal partial class Compiler
         }
 
         RemapGroupInputHierarchy(data, ref ops);
-        foreach (var op in ops.Where(x => x.Type.Category.All(OpCategory.ParentInput)))
+        foreach (var op in ops.Where(x => x.Type.SequenceType.All(OpSequenceType.ParentInput)))
             AddParentInput(data, op);
 
         foreach (var op in ops)
         {
-            if (op.Type.Category.All(OpCategory.Group))
+            if (op.Type.SequenceType.All(OpSequenceType.Group))
             {
                 op.LeftInput.Clear();
 
@@ -70,7 +70,7 @@ internal partial class Compiler
                     {
                         var t = data.Ops[children[i]];
 
-                        if (!t.Type.Category.All(OpCategory.Branching))
+                        if (!t.Type.SequenceType.All(OpSequenceType.Branching))
                         {
                             op.LeftInput.Add(t);
                             break;
@@ -102,7 +102,7 @@ internal partial class Compiler
                     continue;
                 }
 
-                if (op.Type.Category.All(OpCategory.GroupSeparator))
+                if (op.Type.SequenceType.All(OpSequenceType.GroupSeparator))
                 {
                     stack[stack.Count - 1] = (parentId, i + 1);
                     data.GroupChildren[parentId].Add([]);
@@ -115,14 +115,14 @@ internal partial class Compiler
                 group.Add(op.Id);
             }
 
-            if (op.Type.Category.All(OpCategory.Group))
+            if (op.Type.SequenceType.All(OpSequenceType.Group))
             {
                 stack.Add((op.Id, 0));
                 data.GroupChildren.Add(op.Id, [[]]);
             }
         }
 
-        ops = ops.Where(x => !x.Type.Category.All(OpCategory.UnGroup)).ToList();
+        ops = ops.Where(x => !x.Type.SequenceType.All(OpSequenceType.UnGroup)).ToList();
 
 
         /*
@@ -244,7 +244,7 @@ internal partial class Compiler
             for (var i = index - 1; i >= 0; i--)
             {
                 var candidate = data.Ops[parentChildren[i]];
-                if (candidate.Type.Category.All(OpCategory.Branching))
+                if (candidate.Type.SequenceType.All(OpSequenceType.Branching))
                     continue;
                 target = candidate;
                 targetIndex = i;
@@ -255,7 +255,7 @@ internal partial class Compiler
             {
                 AddInput(data, parentChildren, targetIndex, op, false);
             }
-            else if (parent.Type.Category.All(OpCategory.Branching | OpCategory.LeftInput))
+            else if (parent.Type.SequenceType.All(OpSequenceType.Branching | OpSequenceType.LeftInput))
             {
                 op.LeftInput.Add(parent);
                 op.PostFixed = true;
@@ -279,7 +279,7 @@ internal partial class Compiler
             for (var i = index + 1; i < parentChildren.Count; i++)
             {
                 var candidate = data.Ops[parentChildren[i]];
-                if (candidate.Type.Category.All(OpCategory.Branching))
+                if (candidate.Type.SequenceType.All(OpSequenceType.Branching))
                     continue;
                 target = candidate;
                 targetIndex = i;
@@ -290,7 +290,7 @@ internal partial class Compiler
             {
                 AddInput(data, parentChildren, targetIndex, op, true);
             }
-            else if (parent.Type.Category.All(OpCategory.Branching | OpCategory.RightInput))
+            else if (parent.Type.SequenceType.All(OpSequenceType.Branching | OpSequenceType.RightInput))
             {
                 op.RightInput.Add(parent);
                 op.PostFixed = true;
@@ -310,7 +310,7 @@ internal partial class Compiler
         var id = sourceChildren[sourceIndex];
         var op = data.Ops[id];
 
-        if (target.Type.Category.All(OpCategory.Branching))
+        if (target.Type.SequenceType.All(OpSequenceType.Branching))
         {
             if (prefix)
                 target.RightInput.Add(op);
@@ -367,7 +367,7 @@ internal partial class Compiler
 
         foreach (var op in ops)
         {
-            if (!op.Type.Category.All(OpCategory.Group) || proccessed.Contains(op.Id))
+            if (!op.Type.SequenceType.All(OpSequenceType.Group) || proccessed.Contains(op.Id))
                 continue;
 
             var active = op;
@@ -390,7 +390,7 @@ internal partial class Compiler
                 if (active.LeftInput.Count > 0)
                 {
                     active = active.LeftInput[0];
-                    if (!active.Type.Category.All(OpCategory.Group))
+                    if (!active.Type.SequenceType.All(OpSequenceType.Group))
                     {
                         target = active;
                         break;
@@ -444,7 +444,7 @@ internal partial class Compiler
         {
             var op = ops[i];
 
-            if (!op.Type.Category.All(OpCategory.Virtual))
+            if (!op.Type.SequenceType.All(OpSequenceType.Virtual))
                 continue;
 
 
@@ -504,7 +504,7 @@ internal partial class Compiler
         var outOps = new List<RawOp>(ops.Count);
         foreach (var op in ops)
         {
-            if ((op.Type.Category & (OpCategory.Virtual | OpCategory.UnGroup)) > 0)
+            if ((op.Type.SequenceType & (OpSequenceType.Virtual | OpSequenceType.UnGroup)) > 0)
                 continue;
 
             /*

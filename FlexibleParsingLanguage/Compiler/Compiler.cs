@@ -1,7 +1,7 @@
 ﻿using FlexibleParsingLanguage.Operations;
 using FlexibleParsingLanguage.Parse;
 
-namespace FlexibleParsingLanguage.Compiler.Util;
+namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class Compiler
 {
@@ -30,21 +30,21 @@ internal partial class Compiler
             if (op.GroupOperator != null)
             {
                 var op2 = op.GroupOperator.ToString();
-                HandleConfigEntry(op2, new OpConfig(op2, OpCategory.UnGroup, null, -100));
+                HandleConfigEntry(op2, new OpConfig(op2, OpSequenceType.UnGroup, null, -100));
             }
 
-            if (op.Category.All(OpCategory.Default))
+            if (op.SequenceType.All(OpSequenceType.Default))
             {
                 DefaultOp = op;
             }
 
-            if (op.Category.All(OpCategory.RootParam))
+            if (op.SequenceType.All(OpSequenceType.RootParam))
                 ParamOperator = op;
 
-            if (op.Category.All(OpCategory.Unescape))
+            if (op.SequenceType.All(OpSequenceType.Unescape))
                 UnescapeToken = op.Operator;
 
-            if (op.Category.All(OpCategory.Root))
+            if (op.SequenceType.All(OpSequenceType.Root))
                 RootOperator = op;
         }
         if (DefaultOp == null)
@@ -69,64 +69,71 @@ internal partial class Compiler
 
     internal List<RawOp> Lexicalize(string raw)
     {
-        var tokens = Tokenize(raw).ToList();
-        var ops = ProcessTokens(tokens);
 
-#if DEBUG
-        var tt = tokens.Select(x => $"{x.Op?.Operator ?? ($"'{x.Accessor}'")}").Join("\n");
-        var t = ops.Select(x => $"({x.Id,2}){(string.IsNullOrEmpty(x.Accessor) ? x.Type.Operator : $"'{x.Accessor}'"),5}").Join("\n");
-#endif
-
-        Sequence(ref ops);
-
-
-        foreach (var op in ops)
-        {
-            if (op.Type != FplOperation.Accessor && op.Accessor != null)
-                throw new InvalidOperationException("Accessor on non-accessor operation");
-        }
-
-        return ops;
-    }
-
-    internal FplQuery Compile(string raw, ParsingMetaContext configContext)
-    {
         try
         {
-            var ops = Lexicalize(raw);
+            var tokens = Tokenize(raw).ToList();
+            var ops = ProcessTokens(tokens);
 
-            var rootId = 1;
-            var parseData = new ParseData
+#if DEBUG
+            var tt = tokens.Select(x => $"{x.Op?.Operator ?? ($"'{x.Accessor}'")}").Join("\n");
+            var t = ops.Select(x => $"({x.Id,2}){(string.IsNullOrEmpty(x.Accessor) ? x.Type.Operator : $"'{x.Accessor}'"),5}").Join("\n");
+#endif
+
+            Sequence(ref ops);
+
+
+            foreach (var op in ops)
             {
-                ActiveId = rootId,
-                LoadedId = rootId,
-                IdCounter = 3,
-                Ops = [],
-                SaveOps = [],
-                OpsMap = new Dictionary<(int LastOp, ParseOperation[]), int>
-                {
-                },
-            };
-            var compiled = ops
-                .Where(x => x.Type.Compile != null)
-                .SelectMany(x =>
-            {
-                if (x.Type.Compile == null)
-                    throw new QueryCompileException(x, "missing compiler function", true);
+                if (op.Type != FplOperation.Accessor && op.Accessor != null)
+                    throw new InvalidOperationException("Accessor on non-accessor operation");
+            }
 
-                return x.Type.Compile(parseData, x);
-            }).Where(x => x != null).ToList();
+            return ops;
 
-
-            //TODO handle var config = new ParserRootConfig { RootType = rootType };
-
-            return new FplQuery(compiled, configContext, new ParserRootConfig { RootType = WriteType.Array });
-        }
-        catch (QueryCompileException ex)
+        } catch (QueryCompileException ex)
         {
             ex.Query = raw;
             throw;
         }
+    }
+
+    internal FplQuery Compile(string raw, ParsingMetaContext configContext)
+    {
+        var ops = Lexicalize(raw);
+
+        var rootId = 1;
+        var parseData = new ParseData
+        {
+            ActiveId = rootId,
+            LoadedId = rootId,
+            IdCounter = 3,
+            Ops = [],
+            SaveOps = [],
+            OpsMap = new Dictionary<(int LastOp, ParseOperation[]), int>
+            {
+            },
+        };
+
+        OpCompileType rootType = OpCompileType.None;
+
+        var compiled = ops
+            .Where(x => x.Type.Compile != null)
+            .SelectMany(x =>
+            {
+                if (x.Type.Compile == null)
+                    throw new QueryCompileException(x, "missing compiler function", true);
+
+                if (rootType == OpCompileType.None)
+                    rootType = x.Type.CompileType;
+
+                return x.Type.Compile(parseData, x);
+            }).Where(x => x != null).ToList();
+
+        if (rootType == OpCompileType.None)
+            rootType = OpCompileType.WriteArray;
+
+        return new FplQuery(compiled, configContext, new ParserRootConfig { RootType = rootType });
     }
 
     private List<RawOp> ProcessTokens(List<Token> tokens)
@@ -138,13 +145,14 @@ internal partial class Compiler
                 Type = RootOperator,
             },
         };
+
         var idCounter = 2;
         bool checkedRoot = false;
         RawOp? op = null;
         foreach (var t in tokens)
         {
             RawOp? accessor = null;
-            if (t.Op == null || t.Op.Category.All(OpCategory.Accessor))
+            if (t.Op == null || t.Op.SequenceType.All(OpSequenceType.Accessor))
             {
                 accessor = new RawOp
                 {
@@ -154,7 +162,7 @@ internal partial class Compiler
                     Accessor = t.Accessor,
                 };
 
-                if (op != null && !op.Type.Category.All(OpCategory.RightInput))
+                if (op != null && !op.Type.SequenceType.All(OpSequenceType.RightInput))
                 {
                     ops.Add(op);
                     op = null;
@@ -190,7 +198,7 @@ internal partial class Compiler
             if (!checkedRoot)
             {
                 checkedRoot = true;
-                if (op.Type.Category.All(OpCategory.LeftInput))
+                if (op.Type.SequenceType.All(OpSequenceType.LeftInput))
                 {
                     ops.Add(new RawOp
                     {
@@ -207,29 +215,12 @@ internal partial class Compiler
                 op = null;
                 accessor = null;
             }
-
-
-
         }
 
         if (op != null)
             ops.Add(op);
 
-        /*
-        if (RootOp.Category.Has(OpCategory.Group))
-        {
-
-            ops.Add(new RawOp
-            {
-                Id = idCounter++,
-                CharIndex = -1,
-                Type = Operators[RootOp.GroupOperator],
-            });
-
-        }
-        */
-
-        if (RootOperator.Category.All(OpCategory.Group))
+        if (RootOperator.SequenceType.All(OpSequenceType.Group))
         {
             ops.Add(new RawOp
             {

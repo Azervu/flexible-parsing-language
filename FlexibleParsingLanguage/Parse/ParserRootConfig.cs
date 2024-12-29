@@ -1,4 +1,6 @@
-﻿using System;
+﻿using FlexibleParsingLanguage.Compiler;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,13 +10,5 @@ namespace FlexibleParsingLanguage.Parse;
 
 internal class ParserRootConfig
 {
-    internal WriteType RootType { get; set; }
-}
-
-
-internal enum WriteType
-{
-    None = 0,
-    Object = 1,
-    Array = 2,
+    internal OpCompileType RootType { get; set; }
 }

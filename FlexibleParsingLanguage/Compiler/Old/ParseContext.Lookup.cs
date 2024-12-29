@@ -9,7 +9,7 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class ParseContext
 {
-    internal WriteType? ProcessLookup(ParseData parser)
+    internal OpCompileType? ProcessLookup(ParseData parser)
     {
         var ops = ProcessParam();
         ops.Add(new ParseOperation(ParsesOperationType.Lookup));
@@ -18,7 +18,7 @@ internal partial class ParseContext
         return null;
     }
 
-    internal WriteType? ProcessContextLookup(ParseData parser)
+    internal OpCompileType? ProcessContextLookup(ParseData parser)
     {
         var ops = ProcessParam();
         ops.Add(new ParseOperation(ParsesOperationType.ChangeLookup));

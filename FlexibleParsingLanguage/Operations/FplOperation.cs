@@ -1,5 +1,4 @@
 ﻿using FlexibleParsingLanguage.Compiler;
-using FlexibleParsingLanguage.Compiler.Util;
 using FlexibleParsingLanguage.Parse;
 using System;
 using System.Collections.Generic;
@@ -16,9 +15,9 @@ internal static partial class FplOperation
 
 
 
-    internal static readonly OpConfig Accessor = new OpConfig(null, OpCategory.Accessor, null, 99);
+    internal static readonly OpConfig Accessor = new OpConfig(null, OpSequenceType.Accessor, null, 99);
 
-    internal static readonly OpConfig RootParam = new OpConfig("$", OpCategory.RootParam, CompileRootParam);
+    internal static readonly OpConfig RootParam = new OpConfig("$", OpSequenceType.RootParam, CompileRootParam);
 
 
     private static IEnumerable<ParseOperation> CompileRootParam(ParseData parser, RawOp op)

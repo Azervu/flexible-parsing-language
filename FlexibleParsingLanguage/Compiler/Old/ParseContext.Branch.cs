@@ -1,21 +1,16 @@
 ﻿using FlexibleParsingLanguage.Parse;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class ParseContext
 {
-    internal WriteType ProcessBranch(ParseData parser)
+    internal OpCompileType ProcessBranch(ParseData parser)
     {
         var startActiveId = parser.ActiveId;
         if (ChildOperator == null)
             throw new Exception("Context branch missing accessors");
 
-        WriteType? writeType = null;
+        OpCompileType? writeType = null;
 
         var addHandled = false;
 
@@ -41,7 +36,7 @@ internal partial class ParseContext
 
         if (!addHandled)
         {
-            if (writeType == WriteType.Object)
+            if (writeType == OpCompileType.WriteObject)
                 throw new Exception("Branch-B");
 
             HandleOp(parser, new ParseOperation(ParsesOperationType.WriteAddRead));
@@ -49,6 +44,6 @@ internal partial class ParseContext
 
         parser.ActiveId = startActiveId;
 
-        return writeType ?? WriteType.Array;
+        return writeType ?? OpCompileType.WriteArray;
     }
 }

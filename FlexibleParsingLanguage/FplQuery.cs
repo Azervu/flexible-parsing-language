@@ -1,4 +1,4 @@
-﻿using FlexibleParsingLanguage.Compiler.Util;
+﻿using FlexibleParsingLanguage.Compiler;
 using FlexibleParsingLanguage.Converter;
 using FlexibleParsingLanguage.Modules;
 using FlexibleParsingLanguage.Operations;
@@ -7,28 +7,29 @@ namespace FlexibleParsingLanguage;
 
 public class FplQuery
 {
-    private static Compiler.Util.Compiler _compiler { get; set; }
-    internal static Compiler.Util.Compiler Compiler {
+    private static Compiler.Compiler _compiler { get; set; }
+    internal static Compiler.Compiler Compiler {
         get
         {
             if (_compiler == null)
             {
-                _compiler = new Compiler.Util.Compiler([
+                _compiler = new Compiler.Compiler([
                     FplOperation.Branch,
                     FplOperation.Read,
-                    new OpConfig(",", OpCategory.GroupSeparator),
-                    new OpConfig("(", OpCategory.Group | OpCategory.Virtual | OpCategory.Accessor, null, 100, ")"),
+                    FplOperation.Write,
+                    new OpConfig(",", OpSequenceType.GroupSeparator),
+                    new OpConfig("(", OpSequenceType.Group | OpSequenceType.Virtual | OpSequenceType.Accessor, null, 100, ")"),
                     FplOperation.RootParam,
-                    new OpConfig("~", OpCategory.LeftInput),
-                    new OpConfig("*", OpCategory.LeftInput),
-                    new OpConfig(":", OpCategory.RightInput | OpCategory.LeftInput),
-                    new OpConfig("|", OpCategory.RightInput | OpCategory.LeftInput),
-                    new OpConfig("@", OpCategory.ParentInput | OpCategory.Virtual),
-                    new OpConfig("#", OpCategory.RightInput | OpCategory.LeftInput),
-                    new OpConfig("##", OpCategory.RightInput | OpCategory.LeftInput),
-                    new OpConfig("\"", OpCategory.Literal, null, -1, "\""),
-                    new OpConfig("'", OpCategory.Literal, null, -1, "\'"),
-                    new OpConfig("\\", OpCategory.Unescape, null, -1)
+                    new OpConfig("~", OpSequenceType.LeftInput),
+                    new OpConfig("*", OpSequenceType.LeftInput),
+
+                    new OpConfig("|", OpSequenceType.RightInput | OpSequenceType.LeftInput),
+                    new OpConfig("@", OpSequenceType.ParentInput | OpSequenceType.Virtual),
+                    new OpConfig("#", OpSequenceType.RightInput | OpSequenceType.LeftInput),
+                    new OpConfig("##", OpSequenceType.RightInput | OpSequenceType.LeftInput),
+                    new OpConfig("\"", OpSequenceType.Literal, null, -1, "\""),
+                    new OpConfig("'", OpSequenceType.Literal, null, -1, "\'"),
+                    new OpConfig("\\", OpSequenceType.Unescape, null, -1)
                 ]);
             }
             return _compiler;
@@ -74,10 +75,10 @@ public class FplQuery
         object? writeRoot = null;
         switch (_config.RootType)
         {
-            case WriteType.Array:
+            case OpCompileType.WriteArray:
                 writeRoot = writer.BlankArray();
                 break;
-            case WriteType.Object:
+            case OpCompileType.WriteObject:
                 writeRoot = writer.BlankMap();
                 break;
         }

@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace FlexibleParsingLanguage.Compiler.Util;
+namespace FlexibleParsingLanguage.Compiler;
 
 internal class RawOp
 {
@@ -18,7 +18,7 @@ internal class RawOp
 
     internal bool IsPrefix()
     {
-        if (Type.Category.All(OpCategory.RightInput) && !Prefixed)
+        if (Type.SequenceType.All(OpSequenceType.RightInput) && !Prefixed)
             return true;
 
         return false;
@@ -26,7 +26,7 @@ internal class RawOp
 
     internal bool IsPostfix()
     {
-        if (Type.Category.All(OpCategory.LeftInput) && !PostFixed)
+        if (Type.SequenceType.All(OpSequenceType.LeftInput) && !PostFixed)
             return true;
 
         return false;

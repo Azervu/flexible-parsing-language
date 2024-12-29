@@ -1,4 +1,6 @@
-﻿namespace FlexibleParsingLanguage.Parse;
+﻿using FlexibleParsingLanguage.Compiler;
+
+namespace FlexibleParsingLanguage.Parse;
 
 internal partial struct ParsesOperationType
 {
@@ -11,39 +13,39 @@ internal partial struct ParsesOperationType
         Op = op;
     }
 
-    internal WriteType GetWriteType() => GetMetaData().WriteType;
+    internal OpCompileType GetOpCompileType() => GetMetaData().OpCompileType;
 
     internal OperationMetaData GetMetaData() => Ops[Op];
 
     internal static Dictionary<Action<FplQuery, ParsingContext, int, string>, OperationMetaData> Ops = new Dictionary<Action<FplQuery, ParsingContext, int, string>, OperationMetaData>
     {
 
-        { Read, new OperationMetaData(WriteType.Object, nameof(Read)) },
-        { Write, new OperationMetaData(WriteType.Object, nameof(Write)) },
-        { WriteFromRead, new OperationMetaData(WriteType.Object, nameof(WriteFromRead)) },
+        { Read, new OperationMetaData(OpCompileType.WriteObject, nameof(Read)) },
+        { Write, new OperationMetaData(OpCompileType.WriteObject, nameof(Write)) },
+        { WriteFromRead, new OperationMetaData(OpCompileType.WriteObject, nameof(WriteFromRead)) },
 
-        { ReadInt, new OperationMetaData(WriteType.Array, nameof(ReadInt)) },
-        { ReadFlatten, new OperationMetaData(WriteType.Array, nameof(ReadFlatten)) },
-        { WriteArray, new OperationMetaData(WriteType.Array, nameof(WriteArray)) },
-        { WriteArrayInt, new OperationMetaData(WriteType.Array, nameof(WriteArrayInt)) },
+        { ReadInt, new OperationMetaData(OpCompileType.WriteArray, nameof(ReadInt)) },
+        { ReadFlatten, new OperationMetaData(OpCompileType.WriteArray, nameof(ReadFlatten)) },
+        { WriteArray, new OperationMetaData(OpCompileType.WriteArray, nameof(WriteArray)) },
+        { WriteArrayInt, new OperationMetaData(OpCompileType.WriteArray, nameof(WriteArrayInt)) },
 
-        { WriteAddRead, new OperationMetaData(WriteType.None, nameof(WriteAddRead)) },
+        { WriteAddRead, new OperationMetaData(OpCompileType.None, nameof(WriteAddRead)) },
 
-        { WriteRoot, new OperationMetaData(WriteType.None, nameof(WriteRoot)) },
-        { Save, new OperationMetaData(WriteType.None, nameof(Save)) },
-        { Load, new OperationMetaData(WriteType.None, nameof(Load)) },
-        { ReadName, new OperationMetaData(WriteType.None, nameof(ReadName)) },
-        { WriteInt, new OperationMetaData(WriteType.None, nameof(WriteInt)) },
+        { WriteRoot, new OperationMetaData(OpCompileType.None, nameof(WriteRoot)) },
+        { Save, new OperationMetaData(OpCompileType.None, nameof(Save)) },
+        { Load, new OperationMetaData(OpCompileType.None, nameof(Load)) },
+        { ReadName, new OperationMetaData(OpCompileType.None, nameof(ReadName)) },
+        { WriteInt, new OperationMetaData(OpCompileType.None, nameof(WriteInt)) },
 
-        { WriteFlatten, new OperationMetaData(WriteType.None, nameof(WriteFlatten)) },
-        { Function, new OperationMetaData(WriteType.None, nameof(Function)) },
-        { ParamLiteral, new OperationMetaData(WriteType.None, nameof(ParamLiteral)) },
-        { ParamToRead, new OperationMetaData(WriteType.None, nameof(ParamToRead)) },
-        { ParamFromRead, new OperationMetaData(WriteType.None, nameof(ParamFromRead)) },
-        { Lookup, new OperationMetaData(WriteType.None, nameof(Lookup)) },
-        { ChangeLookup, new OperationMetaData(WriteType.None, nameof(ChangeLookup)) },
-        { LookupRead, new OperationMetaData(WriteType.None, nameof(LookupRead)) },
-        { LookupReadValue, new OperationMetaData(WriteType.None, nameof(LookupReadValue)) },
+        { WriteFlatten, new OperationMetaData(OpCompileType.None, nameof(WriteFlatten)) },
+        { Function, new OperationMetaData(OpCompileType.None, nameof(Function)) },
+        { ParamLiteral, new OperationMetaData(OpCompileType.None, nameof(ParamLiteral)) },
+        { ParamToRead, new OperationMetaData(OpCompileType.None, nameof(ParamToRead)) },
+        { ParamFromRead, new OperationMetaData(OpCompileType.None, nameof(ParamFromRead)) },
+        { Lookup, new OperationMetaData(OpCompileType.None, nameof(Lookup)) },
+        { ChangeLookup, new OperationMetaData(OpCompileType.None, nameof(ChangeLookup)) },
+        { LookupRead, new OperationMetaData(OpCompileType.None, nameof(LookupRead)) },
+        { LookupReadValue, new OperationMetaData(OpCompileType.None, nameof(LookupReadValue)) },
     };
 
     internal static void WriteAddRead(FplQuery parser, ParsingContext context, int intAcc, string acc)
@@ -152,11 +154,11 @@ internal partial struct ParsesOperationType
 
 internal struct OperationMetaData
 {
-    internal WriteType WriteType;
+    internal OpCompileType OpCompileType;
     internal string Name { get; private set; }
-    internal OperationMetaData(WriteType wt, string name)
+    internal OperationMetaData(OpCompileType wt, string name)
     {
-        WriteType = wt;
+        OpCompileType = wt;
         Name = name;
     }
 }

@@ -1,5 +1,4 @@
-﻿using FlexibleParsingLanguage.Compiler.Util;
-using FlexibleParsingLanguage.Parse;
+﻿using FlexibleParsingLanguage.Parse;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace FlexibleParsingLanguage.Compiler;
 
@@ -18,5 +17,5 @@ internal partial class OldCompiler
 
     public const int ROOT_ID = 1;
 
-    internal Util.Compiler Lexicalizer { get; private set; }
+    internal Compiler Compiler { get; private set; }
 }

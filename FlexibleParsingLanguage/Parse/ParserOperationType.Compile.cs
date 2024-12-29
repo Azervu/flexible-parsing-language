@@ -12,7 +12,7 @@ internal partial struct ParsesOperationType
 
     internal class ParserOperationCompileData { }
 
-    internal static (List<ParseOperation>, WriteType) CompileOperations(ParseData data, ParseContext root)
+    internal static (List<ParseOperation>, OpCompileType) CompileOperations(ParseData data, ParseContext root)
     {
         var opsMap = data.OpsMap.ToDictionary(x => x.Value, x => x.Key);
 
@@ -54,49 +54,49 @@ internal partial struct ParsesOperationType
                 loaded.Add(o.IntAcc);
         }
 
-        var rootWriteType = WriteType.None;
+        var rootOpCompileType = OpCompileType.None;
 
         foreach (var (id, o) in data.Ops)
         {
-            if (rootWriteType != WriteType.None)
-                rootWriteType = o.OpType.GetWriteType();
+            if (rootOpCompileType != OpCompileType.None)
+                rootOpCompileType = o.OpType.GetOpCompileType();
 
 
             if (o.OpType.Op == ParsesOperationType.Save && !loaded.Contains(o.IntAcc))
                 continue;
 
             if (o.OpType.Op == ParsesOperationType.WriteFlatten)
-                o.IntAcc = (int)GetWriteType(opsParents[id]);
+                o.IntAcc = (int)GetOpCompileType(opsParents[id]);
 
             outOps.Add(o);
         }
 
-        if (rootWriteType == WriteType.None)
-            rootWriteType = WriteType.Array;
+        if (rootOpCompileType == OpCompileType.None)
+            rootOpCompileType = OpCompileType.WriteArray;
 
 
-        return (outOps, rootWriteType);
+        return (outOps, rootOpCompileType);
     }
 
 
-    private static WriteType GetWriteType(HashSet<ParsesOperationType> opsTypes)
+    private static OpCompileType GetOpCompileType(HashSet<ParsesOperationType> opsTypes)
     {
-        var ii = WriteType.None;
+        var ii = OpCompileType.None;
         foreach (var childOp in opsTypes)
         {
-            var wt = childOp.GetWriteType();
-            if (wt != WriteType.None)
+            var wt = childOp.GetOpCompileType();
+            if (wt != OpCompileType.None)
                 ii = wt;
         }
 
 
 #if DEBUG
-        var debug = opsTypes.Select(x => $"{x.GetMetaData().Name} {x.GetWriteType()}").Join("\n");
+        var debug = opsTypes.Select(x => $"{x.GetMetaData().Name} {x.GetOpCompileType()}").Join("\n");
         var s = 345534;
 #endif
 
-        if (ii == WriteType.None)
-            return WriteType.Array;
+        if (ii == OpCompileType.None)
+            return OpCompileType.WriteArray;
 
         return ii;
     }

@@ -9,13 +9,13 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class ParseContext
 {
-    internal WriteType ProcessWrite(ParseData parser, bool finalContextOp)
+    internal OpCompileType ProcessWrite(ParseData parser, bool finalContextOp)
     {
         if (ChildOperator == null || ChildOperator.Count == 0)
         {
             Action<FplQuery, ParsingContext, int, string> opt = finalContextOp ? ParsesOperationType.WriteFromRead : ParsesOperationType.Write;
             HandleOp(parser, new ParseOperation(opt, Token.Accessor));
-            return WriteType.Object;
+            return OpCompileType.WriteObject;
         }
 
         var op = ChildOperator[0].Operator;
@@ -33,7 +33,7 @@ internal partial class ParseContext
         }
 
 
-        return WriteType.Array;
+        return OpCompileType.WriteArray;
     }
 }
 

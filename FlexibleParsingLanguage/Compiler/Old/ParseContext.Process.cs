@@ -17,7 +17,7 @@ internal partial class ParseContext
 
     */
 
-    internal WriteType? Process(ParseData parser, bool finalContextOp)
+    internal OpCompileType? Process(ParseData parser, bool finalContextOp)
     {
         switch (Token.Type?.Operator)
         {

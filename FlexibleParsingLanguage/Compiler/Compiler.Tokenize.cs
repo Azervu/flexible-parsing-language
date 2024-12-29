@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-namespace FlexibleParsingLanguage.Compiler.Util;
+namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class Compiler
 {
@@ -86,7 +86,7 @@ internal partial class Compiler
                 continue;
 
 
-            if (!op.Category.All(OpCategory.Literal))
+            if (!op.SequenceType.All(OpSequenceType.Literal))
             {
                 yield return new Token(op, opStart);
                 searchedIndex = opEnd;
@@ -99,10 +99,10 @@ internal partial class Compiler
             var escaped = false;
             var unescaped = false;
 
-            for(; i < raw.Length; i++)
+            for (; i < raw.Length; i++)
             {
                 var c = raw[i].ToString();
-                
+
                 escapedString += c;
 
                 if (unescaped)
@@ -138,8 +138,6 @@ internal partial class Compiler
             searchedIndex = i + 1;
 
             yield return new Token(escapedString, searchedIndex);
-
         }
     }
 }
-

@@ -1,5 +1,4 @@
-﻿using FlexibleParsingLanguage.Compiler.Util;
-using System.Text;
+﻿using FlexibleParsingLanguage.Compiler;
 
 namespace FlexibleParsingLanguage.Test;
 
@@ -46,6 +45,7 @@ public class TokenizerTest
         }
         catch (QueryCompileException ex)
         {
+            ex.Query = parserString;
             Assert.Fail(ex.GenerateMessage());
         }
 

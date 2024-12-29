@@ -1,5 +1,4 @@
 ﻿using FlexibleParsingLanguage.Compiler;
-using FlexibleParsingLanguage.Compiler.Util;
 using FlexibleParsingLanguage.Parse;
 using System;
 using System.Collections.Generic;
@@ -11,7 +10,7 @@ namespace FlexibleParsingLanguage.Operations;
 
 internal static partial class FplOperation {
 
-    internal static readonly OpConfig Read = new OpConfig(".", OpCategory.RightInput | OpCategory.LeftInput | OpCategory.Default, CompileRead);
+    internal static readonly OpConfig Read = new OpConfig(".", OpSequenceType.RightInput | OpSequenceType.LeftInput | OpSequenceType.Default, CompileRead);
 
     private static IEnumerable<ParseOperation> CompileRead(ParseData parser, RawOp op)
     {

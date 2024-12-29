@@ -1,5 +1,4 @@
 ﻿using FlexibleParsingLanguage.Compiler;
-using FlexibleParsingLanguage.Compiler.Util;
 using FlexibleParsingLanguage.Parse;
 using System;
 using System.Collections.Generic;
@@ -10,10 +9,7 @@ namespace FlexibleParsingLanguage.Operations;
 
 internal static partial class FplOperation
 {
-    internal static readonly OpConfig Branch = new OpConfig("{", OpCategory.Root | OpCategory.Group | OpCategory.Branching | OpCategory.LeftInput, CompileBranch, 100, "}");
-
-    //                    new OpConfig("{", OpCategory.Root | OpCategory.Group | OpCategory.Branching | OpCategory.LeftInput, null, 100, "}"),
-
+    internal static readonly OpConfig Branch = new OpConfig("{", OpSequenceType.Root | OpSequenceType.Group | OpSequenceType.Branching | OpSequenceType.LeftInput, CompileBranch, 100, "}");
 
     private static IEnumerable<ParseOperation> CompileBranch(ParseData parser, RawOp op)
     {
@@ -23,23 +19,7 @@ internal static partial class FplOperation
         var input = op.Input[0];
 
 
-
-        //yield return new ParseOperation(BranchOperation, input.Accessor);
-        yield return new ParseOperation(ParsesOperationType.WriteAddRead);
-
-        //HandleOp(parser, new ParseOperation(ParsesOperationType.WriteAddRead));
-
-        /*
-        var x =
-
-
-        return new ParseOperation(
-            (a, b) => { }
-
-            );
-        */
+        if (input.Type.CompileType == OpCompileType.None)
+            yield return new ParseOperation(ParsesOperationType.WriteAddRead);
     }
-
-    internal static void BranchOperation(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ReadFunc((m, readSrc) => m.Parse(readSrc, acc));
-
 }

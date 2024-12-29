@@ -1,5 +1,4 @@
-﻿using FlexibleParsingLanguage.Compiler.Util;
-using FlexibleParsingLanguage.Parse;
+﻿using FlexibleParsingLanguage.Parse;
 using System;
 using System.Collections.Generic;
 using System.Linq;
