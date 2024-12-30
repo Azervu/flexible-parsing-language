@@ -99,8 +99,11 @@ internal enum OpCompileType
     WriteArray = 2,
 }
 
-internal static class OpCatergoryExtension
+internal static class OpTypeExtension
 {
     internal static bool All(this OpSequenceType flag, OpSequenceType value) => (flag & value) == value;
     internal static bool Any(this OpSequenceType flag, OpSequenceType value) => (flag & value) > 0;
+
+    internal static bool All(this OpCompileType flag, OpCompileType value) => (flag & value) == value;
+    internal static bool Any(this OpCompileType flag, OpCompileType value) => (flag & value) > 0;
 }

@@ -34,7 +34,7 @@ internal partial class Compiler
             var i = children.IndexOf(op.Id);
             if (i >= 0)
                 return i;
-            throw new QueryCompileException(op, $"Index not found in ({parentId}, {groupIndex}) [{children.Select(x => x.ToString()).Join(", ")}]");
+            throw new QueryException(op, $"Index not found in ({parentId}, {groupIndex}) [{children.Select(x => x.ToString()).Join(", ")}]");
         }
     }
 
@@ -239,7 +239,7 @@ internal partial class Compiler
             var index = parentChildren.IndexOf(op.Id);
 
             if (index == -1)
-                throw new QueryCompileException(op, $"Index not found in ({parentId}, {x.Index}) [{parentChildren.Select(x => x.ToString()).Join(", ")}]");
+                throw new QueryException(op, $"Index not found in ({parentId}, {x.Index}) [{parentChildren.Select(x => x.ToString()).Join(", ")}]");
 
             for (var i = index - 1; i >= 0; i--)
             {
@@ -262,7 +262,7 @@ internal partial class Compiler
             }
             else
             {
-                throw new QueryCompileException(op, $"Postfix operation missing param");
+                throw new QueryException(op, $"Postfix operation missing param");
             }
         }
 
@@ -273,7 +273,7 @@ internal partial class Compiler
 
             var index = parentChildren.IndexOf(op.Id);
             if (index == -1)
-                throw new QueryCompileException(op, $"Index not found in ({parentId}, {x.Index}) [{parentChildren.Select(x => x.ToString()).Join(", ")}]");
+                throw new QueryException(op, $"Index not found in ({parentId}, {x.Index}) [{parentChildren.Select(x => x.ToString()).Join(", ")}]");
 
 
             for (var i = index + 1; i < parentChildren.Count; i++)
@@ -297,7 +297,7 @@ internal partial class Compiler
             }
             else
             {
-                throw new QueryCompileException(op, $"Prefix operator lacks input");
+                throw new QueryException(op, $"Prefix operator lacks input");
             }
         }
     }
@@ -413,7 +413,7 @@ internal partial class Compiler
                 {
 
                     if (startId == active.Id)
-                        throw new QueryCompileException(active, "grouping loop", true);
+                        throw new QueryException(active, "grouping loop", true);
                 }
             }
 
@@ -540,7 +540,7 @@ internal partial class Compiler
             var bb = waitingOnDependencies.SelectMany(x => x.Value.Item1).ToHashSet().Select(x => data.Ops[x]).Select(x => $"({x.Id}){x.Type.Operator}").Join(",");
             var dsffsd = 543354;
 #endif
-            throw new QueryCompileException(waitingOnDependencies.Select(x => x.Value.Item2).ToList(), "Could not resolve dependencies", true);
+            throw new QueryException(waitingOnDependencies.Select(x => x.Value.Item2).ToList(), "Could not resolve dependencies", true);
         }
         ops = outOps;
 

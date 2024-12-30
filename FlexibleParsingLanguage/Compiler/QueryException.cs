@@ -6,19 +6,20 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Compiler;
 
-public class QueryCompileException : Exception
+public class QueryException : Exception
 {
     public bool CompilerIssue { get; private set; }
 
     internal string Query { get; set; }
 
     internal List<RawOp> Ops { get; private set; }
-    internal QueryCompileException(RawOp op, string message, bool compilerIssue = false) : base(message) {
+    internal QueryException
+        (RawOp op, string message, bool compilerIssue = false) : base(message) {
         Ops = new List<RawOp> { op };
         CompilerIssue = compilerIssue;
     }
 
-    internal QueryCompileException(List<RawOp> ops, string message, bool compilerIssue = false) : base(message) {
+    internal QueryException(List<RawOp> ops, string message, bool compilerIssue = false) : base(message) {
         Ops = ops;
         CompilerIssue = compilerIssue;
     }

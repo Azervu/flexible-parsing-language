@@ -14,24 +14,25 @@ internal static partial class FplOperation
     private static IEnumerable<ParseOperation> WriteCompile(ParseData parser, RawOp op)
     {
         if (op.Input.Count != 2)
-            throw new QueryCompileException(op, $"{op.Input.Count} params | read takes 2");
+            throw new QueryException(op, $"{op.Input.Count} params | read takes 2");
 
 
-        foreach (var x in EnsureLoaded(parser, op))
+        foreach (var x in FplOperation.EnsureLoaded(parser, op))
             yield return x;
 
         var input = op.Input[0];
         var accessor = op.Input[1];
 
-        yield return new ParseOperation(WriteOperation, accessor.Accessor);
+        yield return new ParseOperation(OperationWrite, accessor.Accessor);
 
         parser.ActiveId = op.Id;
         parser.LoadedId = op.Id;
 
-        foreach (var x in EnsureSaved(parser, op))
+        foreach (var x in FplOperation.EnsureSaved(parser, op))
             yield return x;
     }
 
-    internal static void WriteOperation(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.WriteStringFromRead(acc);
+
+    internal static void OperationWrite(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.WriteStringFromRead(acc);
 
 }

@@ -25,7 +25,7 @@ internal partial struct ParsesOperationType
         { WriteFromRead, new OperationMetaData(OpCompileType.WriteObject, nameof(WriteFromRead)) },
 
         { ReadInt, new OperationMetaData(OpCompileType.WriteArray, nameof(ReadInt)) },
-        { ReadFlatten, new OperationMetaData(OpCompileType.WriteArray, nameof(ReadFlatten)) },
+
         { WriteArray, new OperationMetaData(OpCompileType.WriteArray, nameof(WriteArray)) },
         { WriteArrayInt, new OperationMetaData(OpCompileType.WriteArray, nameof(WriteArrayInt)) },
 
@@ -74,7 +74,7 @@ internal partial struct ParsesOperationType
 
     internal static void ReadInt(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ReadFunc((m, readSrc) => m.Parse(readSrc, intAcc));
 
-    internal static void ReadFlatten(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ReadFlatten();
+
 
     internal static void WriteArray(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.WriteAction((m, writeHeader) =>
     {

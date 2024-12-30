@@ -130,7 +130,7 @@ internal partial class Compiler
             }
 
             if (!escaped)
-                throw new QueryCompileException(new RawOp
+                throw new QueryException(new RawOp
                 {
                     Type = op,
                     CharIndex = raw.Length - 1

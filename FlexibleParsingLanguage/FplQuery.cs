@@ -12,26 +12,7 @@ public class FplQuery
         get
         {
             if (_compiler == null)
-            {
-                _compiler = new Compiler.Compiler([
-                    FplOperation.Branch,
-                    FplOperation.Read,
-                    FplOperation.Write,
-                    new OpConfig(",", OpSequenceType.GroupSeparator),
-                    new OpConfig("(", OpSequenceType.Group | OpSequenceType.Virtual | OpSequenceType.Accessor, null, 100, ")"),
-                    FplOperation.Param,
-                    new OpConfig("~", OpSequenceType.LeftInput),
-                    new OpConfig("*", OpSequenceType.LeftInput),
-
-                    new OpConfig("|", OpSequenceType.RightInput | OpSequenceType.LeftInput),
-                    new OpConfig("@", OpSequenceType.ParentInput | OpSequenceType.Virtual),
-                    new OpConfig("#", OpSequenceType.RightInput | OpSequenceType.LeftInput),
-                    new OpConfig("##", OpSequenceType.RightInput | OpSequenceType.LeftInput),
-                    new OpConfig("\"", OpSequenceType.Literal, null, -1, "\""),
-                    new OpConfig("'", OpSequenceType.Literal, null, -1, "\'"),
-                    new OpConfig("\\", OpSequenceType.Unescape, null, -1)
-                ]);
-            }
+                _compiler = new Compiler.Compiler(FplOperation.OpConfigs);
             return _compiler;
         }
     }
@@ -64,7 +45,6 @@ public class FplQuery
         };
     }
 
-
     public static FplQuery Compile(string raw, ParsingMetaContext? configContext = null) => Compiler.Compile(raw, configContext);
 
     public object Parse(object readRoot)
@@ -72,16 +52,10 @@ public class FplQuery
 
         IWritingModule writer = new CollectionWritingModule();
 
-        object? writeRoot = null;
-        switch (_config.RootType)
-        {
-            case OpCompileType.WriteArray:
-                writeRoot = writer.BlankArray();
-                break;
-            case OpCompileType.WriteObject:
-                writeRoot = writer.BlankMap();
-                break;
-        }
+        object? writeRoot = (_config.RootType & OpCompileType.WriteObject) > 0
+            ? writer.BlankMap()
+            : writer.BlankArray();
+   
 
         var ctx = new ParsingContext(writer, _modules, readRoot, writeRoot, _rootMetaContext);
 

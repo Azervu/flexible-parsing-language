@@ -29,10 +29,6 @@ internal partial class ParseContext
                 break;
             case "{":
                 return ProcessBranch(parser);
-            case "*":
-                var o = new ParseOperation(ParsesOperationType.ReadFlatten, Token.Accessor);
-                HandleOp(parser, o);
-                break;
             case "#":
                 return ProcessLookup(parser);
             case "##":

@@ -44,7 +44,7 @@ public class TokenizerTest
         {
             parsed = FplQuery.Compiler.Lexicalize(parserString);
         }
-        catch (QueryCompileException ex)
+        catch (QueryException ex)
         {
             ex.Query = parserString;
             Assert.Fail(ex.GenerateMessage());
@@ -93,7 +93,7 @@ public class TokenizerTest
         {
             var parsed = FplQuery.Compiler.Lexicalize(query);
         }
-        catch (QueryCompileException ex)
+        catch (QueryException ex)
         {
             if (ex.CompilerIssue)
                 throw;

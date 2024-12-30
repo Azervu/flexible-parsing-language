@@ -47,8 +47,9 @@ public class JsonParsingTest
     public static IEnumerable<object[]> SimpleJsonQueries => new List<object[]>
     {
         new object[] { "Simple Test", "{'k': 'v'}", "k", "['v']" },
-        
         new object[] { "Simple Header Test", "{'k': 'v'}", "k:h", "{'h':'v'}" },
+        new object[] { "Group Accessor Test", "{'a': { 'b': { 'weirdKey': 'v' } }, 'm': 'weirdKey'}", "a.b.($m):h", "{'h':'v'}" },
+
 
 
         new object[] { "Foreach Test", "{'a': 1, 'b': 2, 'c': 3}", "*:*:h", "[{'h':1},{'h':2},{'h':3}]" },
@@ -56,7 +57,7 @@ public class JsonParsingTest
         new object[] { "Simple branch test", "{'k': {'ka': 'va', 'kb': 'vb'}}", "k{@ka:ha}kb:hb", "{'ha':'va','hb':'vb'}" },
         new object[] { "Unbranch test", "{'a': {'f':1, 'f2': 11}, 'b': {'f':2, 'f2': 12}, 'c': {'f':3, 'f2': 13}}", "*:*{f:fh}{f2:fh2}", "[{'fh':1,'fh2':11},{'fh':2,'fh2':12},{'fh':3,'fh2':13}]" },
 
-        new object[] { "Read Root Test", "{'name':'nv', 'values':[1,2,3]}", "values*:*{$name:n}{:v}", "[{'n':'nv','v':1},{'n':'nv','v':2},{'n':'nv','v':3}]"},
+        new object[] { "Read Root Test", "{'name':'nv', 'values':[1,2,3]}", "values*:*{$name:n}{@:v}", "[{'n':'nv','v':1},{'n':'nv','v':2},{'n':'nv','v':3}]"},
         new object[] { "Write Root Test", "{'k1': {'k2': 1, 'k3': 2}}", "k1:o1{k2:o2}{k3:$:o3}", "{'o1':{'o2':1},'o3':2}"},
 
         new object[] { "Header Branching Test A", "[[1,2,3], [4, 5], [6, 8]]", "*:h1:h2", "{'h1':{'h2':[[1,2,3],[4,5],[6,8]]}}" },
@@ -85,7 +86,7 @@ public class JsonParsingTest
         {
             parser = FplQuery.Compile(query, null);
         }
-        catch (QueryCompileException ex)
+        catch (QueryException ex)
         {
             Assert.Fail(ex.GenerateMessage());
             return;

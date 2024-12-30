@@ -20,7 +20,7 @@ internal partial class FplOperation
     private static IEnumerable<ParseOperation> CompileRootParam(ParseData parser, RawOp op)
     {
         if (op.Input.Count != 0)
-            throw new QueryCompileException(op, "$ can't take params");
+            throw new QueryException(op, "$ can't take params");
 
         var id = op.Type.GetStatusId(parser, op);
 

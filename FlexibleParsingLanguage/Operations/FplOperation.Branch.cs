@@ -15,7 +15,7 @@ internal static partial class FplOperation
     private static IEnumerable<ParseOperation> CompileBranch(ParseData parser, RawOp op)
     {
         if (op.Input.Count != 1)
-            throw new QueryCompileException(op, "wrong number of params");
+            throw new QueryException(op, "wrong number of params");
 
         foreach (var x in EnsureLoaded(parser, op))
             yield return x;
@@ -23,7 +23,7 @@ internal static partial class FplOperation
         var input = op.Input[0];
 
 
-        if (input.Type.CompileType == OpCompileType.None)
+        if ((input.Type.CompileType & (OpCompileType.WriteObject | OpCompileType.WriteArray)) == 0)
             yield return new ParseOperation(ParsesOperationType.WriteAddRead);
     }
 }

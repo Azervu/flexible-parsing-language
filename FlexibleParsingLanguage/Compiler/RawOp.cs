@@ -5,7 +5,12 @@ namespace FlexibleParsingLanguage.Compiler;
 internal class RawOp
 {
     internal int Id { get; set; }
+    internal int GetStatusId(ParseData d) {
 
+        if (Type.GetStatusId != null)
+            return Type.GetStatusId(d, this);
+        return Id;
+    }
     internal int CharIndex { get; set; }
     internal OpConfig Type { get; set; }
     internal string? Accessor { get; set; }

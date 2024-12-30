@@ -72,7 +72,6 @@ internal partial class ParsingContext
             Reads = newReads,
             Write = focus.Write,
             MultiRead = focus.MultiRead,
-
         };
     }
 

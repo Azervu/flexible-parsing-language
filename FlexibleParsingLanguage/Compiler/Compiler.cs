@@ -97,7 +97,7 @@ internal partial class Compiler
 
             return ops;
 
-        } catch (QueryCompileException ex)
+        } catch (QueryException ex)
         {
             ex.Query = raw;
             throw;
