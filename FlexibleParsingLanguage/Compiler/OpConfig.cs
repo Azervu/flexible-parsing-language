@@ -19,6 +19,8 @@ internal class OpConfig
     internal OpCompileType CompileType { get; set; }
     internal int Rank { get; set; }
 
+    internal int CompileRank { get; set; } = 0;
+
     internal Func<ParseData, RawOp, int> GetStatusId { get; set; }
     internal Func<ParseData, RawOp, IEnumerable<ParseOperation>> Compile { get; set; }
 
@@ -97,6 +99,7 @@ internal enum OpCompileType
     None = 0,
     WriteObject = 1,
     WriteArray = 2,
+    Branch = 4,
 }
 
 internal static class OpTypeExtension

@@ -10,6 +10,11 @@ internal class ParseData
     internal int IdCounter { get; set; }
     internal int LoadedId { get; set; }
     internal int ActiveId { get; set; }
+
+    internal Dictionary<int, RawOp> ProccessedMetaData { get; set; } = new Dictionary<int, RawOp>();
+
+    internal Dictionary<int, int> LoadRedirect { get; set; } = new Dictionary<int, int>();
+
 }
 
 internal partial class OldCompiler

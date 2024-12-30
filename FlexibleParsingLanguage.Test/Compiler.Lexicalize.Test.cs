@@ -9,6 +9,7 @@ public class TokenizerTest
     public static IEnumerable<object[]> ValidQueries => new List<object[]>
     {
         new object[] {"Simple", "a", "1.($,'a')  2{(1)"},
+        new object[] {"Simple Header", "k:v", "1.($,'k')  2:(1,'v')  3{(2)"},
         new object[] {"Chain", "a.b#cc2.d", "1.($,'a')  2.(1,'b')  3#(2,'cc2')  4.(3,'d')  5{(4)"},
         new object[] {"Redundancies", "$b.#c{@.d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)"},
         new object[] {"Non redundant", "b#c{@d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)" },

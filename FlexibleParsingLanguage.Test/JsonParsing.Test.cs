@@ -33,7 +33,7 @@ public class JsonParsingTest
         new object[] { "", "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{k2}k1", "[\"v2\",\"v1\"]" },
         new object[] { "", "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{k1:h1}{k2:h2}", "{\"h1\":\"v1\",\"h2\":\"v2\"}" },
         new object[] { "", "{ \"root\": [{\"v\": 1}, {\"v\": 2}, {\"v\": 3}]}", "root*v", "[1,2,3]" },
-        new object[] { "Foreach Array", "{ \"root\": [{\"v\": {\"v\": 1}}, {\"v\": {\"v\": 2}}, {\"v\": {\"v\": 3}}]}", "root*v.v", "[1,2,3]" },
+        new object[] { "Foreach Array", "{ \"root\": [{\"v1\": {\"v2\": 1}}, {\"v1\": {\"v2\": 2}}, {\"v1\": {\"v2\": 3}}]}", "root*v1.v2", "[1,2,3]" },
         new object[] { "", "{ \"root\": [{\"v\": [1, 11, 111]}, {\"v\": [2, 22, 222]}, {\"v\": [3, 33, 333]}]}", "root*v*", "[1,11,111,2,22,222,3,33,333]" },
         new object[] { "", "{ \"root\": [{\"v\": [{\"v2\": 1}, {\"v2\": 11}, {\"v2\": 111}]}, {\"v\": [{\"v2\": 2}, {\"v2\": 22}, {\"v2\": 222}]}, {\"v\": [{\"v2\": 3}, {\"v2\": 33}, {\"v2\":333}]}]}", "root*v*v2", "[1,11,111,2,22,222,3,33,333]" },
         new object[] { "", "{ \"root\": [{\"v\": 1}, {\"v\": 2}, {\"v\": 3}]}", "root*v:h", "{\"h\":[1,2,3]}" },
@@ -49,8 +49,6 @@ public class JsonParsingTest
         new object[] { "Simple Test", "{'k': 'v'}", "k", "['v']" },
         new object[] { "Simple Header Test", "{'k': 'v'}", "k:h", "{'h':'v'}" },
         new object[] { "Group Accessor Test", "{'a': { 'b': { 'weirdKey': 'v' } }, 'm': 'weirdKey'}", "a.b.($m):h", "{'h':'v'}" },
-
-
 
         new object[] { "Foreach Test", "{'a': 1, 'b': 2, 'c': 3}", "*:*:h", "[{'h':1},{'h':2},{'h':3}]" },
 
@@ -88,6 +86,7 @@ public class JsonParsingTest
         }
         catch (QueryException ex)
         {
+            ex.Query = query;
             Assert.Fail(ex.GenerateMessage());
             return;
         }

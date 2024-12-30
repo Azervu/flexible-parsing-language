@@ -9,10 +9,10 @@ internal partial class Compiler
 
     private OpConfig DefaultOp { get; set; }
 
-    internal const int RootId = 2;
+    internal const int RootId = 3;
     private OpConfig ParamOperator { get; set; }
 
-    internal const int RootGroupId = 1;
+    internal const int RootGroupId = 2;
 
     internal readonly OpConfig RootOperator;
 
@@ -95,6 +95,20 @@ internal partial class Compiler
                     throw new InvalidOperationException("Accessor on non-accessor operation");
             }
 
+            foreach (var op in ops)
+            {
+                if (op.Output.Any())
+                    op.Output.Clear();
+            }
+
+            foreach (var op in ops)
+            {
+                foreach (var o in op.Input)
+                {
+                    o.Output.Add(op);
+                }
+            }
+
             return ops;
 
         } catch (QueryException ex)
@@ -114,7 +128,7 @@ internal partial class Compiler
             },
         };
 
-        var idCounter = 2;
+        var idCounter = RootId + 1;
         bool checkedRoot = false;
         RawOp? op = null;
         foreach (var t in tokens)

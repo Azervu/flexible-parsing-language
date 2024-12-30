@@ -12,6 +12,34 @@ internal partial class Compiler
 {
     internal FplQuery CompileOperations(List<RawOp> ops, ParsingMetaContext configContext)
     {
+
+
+        OpCompileType rootType = OpCompileType.None;
+
+
+        var compiles = new List<ParseOperation>();
+
+        var ranks = new HashSet<int>();
+
+
+
+
+
+        /*
+        foreach (var op in ops)
+            ranks.Add(op.Id);
+
+        foreach (var r in ranks.OrderDescending())
+        {
+            var removes = new HashSet<int>();
+
+            foreach (var op in ops)
+            {
+
+            }
+        }
+        */
+
         var parseData = new ParseData
         {
             ActiveId = RootId,
@@ -24,11 +52,7 @@ internal partial class Compiler
             },
         };
 
-        OpCompileType rootType = OpCompileType.None;
-
-
-        var compiles = new List<ParseOperation>();
-
+        var compilesOps = new List<(int Id, List<ParseOperation> Ops)>();
 
         foreach (var op in ops)
         {
@@ -38,15 +62,21 @@ internal partial class Compiler
             if (rootType == OpCompileType.None)
                 rootType = op.Type.CompileType;
 
-            foreach (var o in op.Type.Compile(parseData, op))
-                compiles.Add(o);
-        }
+            var id = op.GetStatusId(parseData);
+            var x = new List<ParseOperation>();
 
+            foreach (var o in op.Type.Compile(parseData, op))
+                x.Add(o);
+
+            compilesOps.Add((id, x));
+        }
 
         if (rootType == OpCompileType.None)
             rootType = OpCompileType.WriteArray;
 
-        return new FplQuery(compiles, configContext, new ParserRootConfig { RootType = rootType });
+
+
+        return new FplQuery(compilesOps.SelectMany(x => x.Ops).ToList(), configContext, new ParserRootConfig { RootType = rootType });
     }
 
 }

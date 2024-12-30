@@ -10,7 +10,11 @@ namespace FlexibleParsingLanguage.Operations;
 
 internal static partial class FplOperation
 {
-    internal static readonly OpConfig Branch = new OpConfig("{", OpSequenceType.Root | OpSequenceType.Group | OpSequenceType.Branching | OpSequenceType.LeftInput, CompileBranch, 100, "}");
+    internal static readonly OpConfig Branch = new OpConfig("{", OpSequenceType.Root | OpSequenceType.Group | OpSequenceType.Branching | OpSequenceType.LeftInput, CompileBranch, 100, "}")
+    {
+        CompileType = OpCompileType.Branch,
+        CompileRank = 100
+    };
 
     private static IEnumerable<ParseOperation> CompileBranch(ParseData parser, RawOp op)
     {
@@ -20,10 +24,20 @@ internal static partial class FplOperation
         foreach (var x in EnsureLoaded(parser, op))
             yield return x;
 
-        var input = op.Input[0];
+        var id = op.GetStatusId(parser);
 
 
-        if ((input.Type.CompileType & (OpCompileType.WriteObject | OpCompileType.WriteArray)) == 0)
+        if (parser.ProccessedMetaData.TryGetValue(id, out var m) && (m.Type.CompileType & OpCompileType.WriteObject) > 0)
+        {
+            yield return new ParseOperation(ParsesOperationType.WriteFromRead, m.Input[1].Accessor);
+        }
+        else
+        {
             yield return new ParseOperation(ParsesOperationType.WriteAddRead);
+
+        }
     }
 }
+
+
+    //internal static void OperationWrite(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.WriteStringFromRead(acc);

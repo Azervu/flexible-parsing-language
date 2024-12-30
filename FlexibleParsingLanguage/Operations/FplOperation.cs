@@ -44,11 +44,7 @@ internal static partial class FplOperation
         }
     }
 
-
     internal static readonly OpConfig Accessor = new OpConfig(null, OpSequenceType.Accessor, null, 99);
-
-
-
 
     internal static IEnumerable<ParseOperation> CompileTransformOperation(ParseData parser, RawOp op, Action<FplQuery, ParsingContext, int, string> opAction)
     {
@@ -146,27 +142,8 @@ internal static partial class FplOperation
 
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     internal static IEnumerable<ParseOperation> EnsureLoaded(ParseData parser, RawOp op)
     {
-
         var inputId = -1;
 
         if (op.Input.Count > 0)
@@ -176,6 +153,9 @@ internal static partial class FplOperation
                 ? x.Type.GetStatusId(parser, x)
                 : x.Id;
         }
+
+        if (parser.LoadRedirect.TryGetValue(inputId, out var id2))
+            inputId = id2;
 
         if (inputId < 0 || inputId == parser.LoadedId)
             yield break;
