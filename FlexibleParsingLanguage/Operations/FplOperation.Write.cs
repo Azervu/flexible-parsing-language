@@ -14,23 +14,98 @@ internal static partial class FplOperation
         CompileType = OpCompileType.WriteObject,
     };
 
+    internal static readonly OpConfig WriteForeach = new OpConfig(":*", OpSequenceType.LeftInput, WriteArrayCompile)
+    {
+        CompileType = OpCompileType.WriteArray,
+    };
+
     private static IEnumerable<ParseOperation> WriteCompile(ParseData parser, RawOp op)
     {
         if (op.Input.Count != 2)
             throw new QueryException(op, $"{op.Input.Count} params | read takes 2");
 
+        var id = op.GetStatusId(parser);
+
+        var writeType = UtilWriteCheckDependenciesx(parser, op);
+
+        if (writeType == OpCompileType.Branch)
+        {
+            parser.LoadRedirect[op.GetStatusId(parser)] = op.Input[0].GetStatusId(parser);
+            yield break;
+        }
+
+
+        foreach (var x in FplOperation.EnsureLoaded(parser, op))
+            yield return x;
+
+        var accessor = op.Input[1];
+
+        switch (writeType)
+        {
+            case OpCompileType.WriteObject:
+                yield return new ParseOperation(ParsesOperationType.Write, accessor.Accessor);
+                break;
+            case OpCompileType.WriteArray:
+
+                yield return new ParseOperation(ParsesOperationType.WriteArray, accessor.Accessor);
+                break;
+        }
+
+        parser.ActiveId = op.Id;
+        parser.LoadedId = op.Id;
+
+        foreach (var x in FplOperation.EnsureSaved(parser, op))
+            yield return x;
+    }
+
+
+    private static IEnumerable<ParseOperation> WriteArrayCompile(ParseData parser, RawOp op)
+    {
+        if (op.Input.Count != 1)
+            throw new QueryException(op, $"{op.Input.Count} write array | read takes 1");
+
 
         var input = op.Input[0];
-        var accessor = op.Input[1];
 
         var id = op.GetStatusId(parser);
 
+        var writeType = UtilWriteCheckDependenciesx(parser, op);
 
-        var output = op.Output;
+        if (writeType == OpCompileType.Branch)
+            yield break;
+
+        foreach (var x in FplOperation.EnsureLoaded(parser, op))
+            yield return x;
+
+        switch (writeType)
+        {
+            case OpCompileType.WriteObject:
+                yield return new ParseOperation(ParsesOperationType.WriteFlatten, 1);
+                break;
+            case OpCompileType.WriteArray:
+
+                yield return new ParseOperation(ParsesOperationType.WriteFlatten, 2);
+                break;
+        }
+
+        parser.ActiveId = op.Id;
+        parser.LoadedId = op.Id;
+
+        foreach (var x in FplOperation.EnsureSaved(parser, op))
+            yield return x;
+    }
+
+
+
+    private static OpCompileType UtilWriteCheckDependenciesx(ParseData parser, RawOp op) {
 
         var branch = false;
         var array = false;
         var obj = false;
+
+
+
+        var output = op.Output;
 
         while (output.Count > 0)
         {
@@ -62,31 +137,23 @@ internal static partial class FplOperation
             output = next;
         }
 
+        var num = (obj ? 1 : 0) + (array ? 1 : 0) + (branch ? 1 : 0);
+        if (num == 0)
+            throw new QueryException(op, "has no write targets");
 
-        if (!obj && !array)
-        {
-            if (!branch)
-                throw new QueryException(op, "has no write targets");
+        if (num > 1)
+            throw new QueryException(op, $"has multiple write targets = {(obj ? "obj, " : string.Empty)}{(array ? "array," : string.Empty)}{(branch ? "branch" : string.Empty)}");
 
-            parser.LoadRedirect[op.GetStatusId(parser)] = input.GetStatusId(parser);
-            yield break;
-        }
-
-        if (obj && array)
-            throw new QueryException(op, "has both object and array write children");
 
         if (branch)
-            throw new QueryException(op, "has both branch and write");
+        {
+            return OpCompileType.Branch;
+        }
+       
 
-        foreach (var x in FplOperation.EnsureLoaded(parser, op))
-            yield return x;
+        if (array)
+            return OpCompileType.WriteArray;
 
-        yield return new ParseOperation(obj ? ParsesOperationType.Write : ParsesOperationType.WriteArray, accessor.Accessor);
-
-        parser.ActiveId = op.Id;
-        parser.LoadedId = op.Id;
-
-        foreach (var x in FplOperation.EnsureSaved(parser, op))
-            yield return x;
+        return OpCompileType.WriteObject;
     }
 }

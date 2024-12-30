@@ -23,9 +23,10 @@ internal static partial class FplOperation
                 _opConfigs = [
                     Branch,
                     Read,
-                    Write,
-                    Param,
                     Foreach,
+                    Write,
+                    WriteForeach,
+                    Param,
                     new OpConfig("@", OpSequenceType.ParentInput | OpSequenceType.Virtual),
                     new OpConfig("\"", OpSequenceType.Literal, null, -1, "\""),
                     new OpConfig("'", OpSequenceType.Literal, null, -1, "\'"),
