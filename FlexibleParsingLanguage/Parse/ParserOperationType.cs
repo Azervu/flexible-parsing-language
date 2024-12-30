@@ -74,8 +74,6 @@ internal partial struct ParsesOperationType
 
     internal static void ReadInt(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ReadFunc((m, readSrc) => m.Parse(readSrc, intAcc));
 
-
-
     internal static void WriteArray(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.WriteAction((m, writeHeader) =>
     {
         var w2 = m.BlankArray();
@@ -90,14 +88,9 @@ internal partial struct ParsesOperationType
         return w1;
     });
 
-
-
     internal static void WriteRoot(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ToRootWrite();
-
     internal static void Save(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.Store[intAcc] = context.Focus;
-
     internal static void Load(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.Focus = context.Store[intAcc];
-
     internal static void ReadName(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ReadName();
     internal static void WriteInt(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.WriteAction((m, writeHeader) =>
     {

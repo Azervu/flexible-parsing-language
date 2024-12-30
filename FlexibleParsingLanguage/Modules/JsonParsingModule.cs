@@ -42,17 +42,20 @@ public class JsonParsingModule : IReadingModule
 
     public object Parse(object raw, string acc)
     {
-        if (raw is JsonObject n)
-            return n[acc];
+        if (raw is not JsonObject n)
+            return null;
 
-        return null;
+        var v = n[acc];
+        return v;
+
     }
 
     public object Parse(object raw, int acc)
     {
-        if (raw is JsonArray a)
-            return a[acc];
+        if (raw is not JsonArray a)
+            return null;
 
-        return null;
+        var v = a[acc];
+        return v;
     }
 }

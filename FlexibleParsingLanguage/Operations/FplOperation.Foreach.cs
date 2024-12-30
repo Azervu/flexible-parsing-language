@@ -10,7 +10,7 @@ namespace FlexibleParsingLanguage.Operations;
 
 internal partial class FplOperation
 {
-    internal static readonly OpConfig Foreach = new OpConfig("*", OpSequenceType.RightInput | OpSequenceType.LeftInput, CompileForeach);
+    internal static readonly OpConfig Foreach = new OpConfig("*", OpSequenceType.LeftInput, CompileForeach);
 
     private static IEnumerable<ParseOperation> CompileForeach(ParseData parser, RawOp op) => CompileTransformOperation(parser, op, OperationForeach);
 

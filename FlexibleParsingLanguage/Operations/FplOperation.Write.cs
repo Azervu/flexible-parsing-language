@@ -55,7 +55,8 @@ internal static partial class FplOperation
                 }
                 else
                 {
-                    next.Add(o);
+                    foreach (var o2 in o.Output)
+                        next.Add(o2);
                 }
             }
             output = next;

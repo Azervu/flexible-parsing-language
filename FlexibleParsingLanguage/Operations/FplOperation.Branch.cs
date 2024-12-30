@@ -29,7 +29,8 @@ internal static partial class FplOperation
 
         if (parser.ProccessedMetaData.TryGetValue(id, out var m) && (m.Type.CompileType & OpCompileType.WriteObject) > 0)
         {
-            yield return new ParseOperation(ParsesOperationType.WriteFromRead, m.Input[1].Accessor);
+            var accessor = m.Input[1].Accessor;
+            yield return new ParseOperation(ParsesOperationType.WriteFromRead, accessor);
         }
         else
         {
