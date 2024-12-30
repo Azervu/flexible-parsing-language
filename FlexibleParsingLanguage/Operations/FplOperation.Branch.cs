@@ -3,6 +3,7 @@ using FlexibleParsingLanguage.Parse;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 namespace FlexibleParsingLanguage.Operations;
@@ -15,6 +16,9 @@ internal static partial class FplOperation
     {
         if (op.Input.Count != 1)
             throw new QueryCompileException(op, "wrong number of params");
+
+        foreach (var x in EnsureLoaded(parser, op))
+            yield return x;
 
         var input = op.Input[0];
 

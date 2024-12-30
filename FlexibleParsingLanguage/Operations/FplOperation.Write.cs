@@ -16,10 +16,20 @@ internal static partial class FplOperation
         if (op.Input.Count != 2)
             throw new QueryCompileException(op, $"{op.Input.Count} params | read takes 2");
 
+
+        foreach (var x in EnsureLoaded(parser, op))
+            yield return x;
+
         var input = op.Input[0];
         var accessor = op.Input[1];
 
         yield return new ParseOperation(WriteOperation, accessor.Accessor);
+
+        parser.ActiveId = op.Id;
+        parser.LoadedId = op.Id;
+
+        foreach (var x in EnsureSaved(parser, op))
+            yield return x;
     }
 
     internal static void WriteOperation(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.WriteStringFromRead(acc);

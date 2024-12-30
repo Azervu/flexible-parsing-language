@@ -19,7 +19,7 @@ public class FplQuery
                     FplOperation.Write,
                     new OpConfig(",", OpSequenceType.GroupSeparator),
                     new OpConfig("(", OpSequenceType.Group | OpSequenceType.Virtual | OpSequenceType.Accessor, null, 100, ")"),
-                    FplOperation.RootParam,
+                    FplOperation.Param,
                     new OpConfig("~", OpSequenceType.LeftInput),
                     new OpConfig("*", OpSequenceType.LeftInput),
 

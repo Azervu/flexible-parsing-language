@@ -34,9 +34,7 @@ internal partial class Compiler
             }
 
             if (op.SequenceType.All(OpSequenceType.Default))
-            {
                 DefaultOp = op;
-            }
 
             if (op.SequenceType.All(OpSequenceType.RootParam))
                 ParamOperator = op;
@@ -67,6 +65,14 @@ internal partial class Compiler
             Operators[op] = config;
     }
 
+    internal FplQuery Compile(string raw, ParsingMetaContext configContext)
+    {
+        var ops = Lexicalize(raw);
+
+        return CompileOperations(ops, configContext);
+    }
+
+
     internal List<RawOp> Lexicalize(string raw)
     {
 
@@ -96,44 +102,6 @@ internal partial class Compiler
             ex.Query = raw;
             throw;
         }
-    }
-
-    internal FplQuery Compile(string raw, ParsingMetaContext configContext)
-    {
-        var ops = Lexicalize(raw);
-
-        var rootId = 1;
-        var parseData = new ParseData
-        {
-            ActiveId = rootId,
-            LoadedId = rootId,
-            IdCounter = 3,
-            Ops = [],
-            SaveOps = [],
-            OpsMap = new Dictionary<(int LastOp, ParseOperation[]), int>
-            {
-            },
-        };
-
-        OpCompileType rootType = OpCompileType.None;
-
-        var compiled = ops
-            .Where(x => x.Type.Compile != null)
-            .SelectMany(x =>
-            {
-                if (x.Type.Compile == null)
-                    throw new QueryCompileException(x, "missing compiler function", true);
-
-                if (rootType == OpCompileType.None)
-                    rootType = x.Type.CompileType;
-
-                return x.Type.Compile(parseData, x);
-            }).Where(x => x != null).ToList();
-
-        if (rootType == OpCompileType.None)
-            rootType = OpCompileType.WriteArray;
-
-        return new FplQuery(compiled, configContext, new ParserRootConfig { RootType = rootType });
     }
 
     private List<RawOp> ProcessTokens(List<Token> tokens)

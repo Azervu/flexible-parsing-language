@@ -14,6 +14,7 @@ public class TokenizerTest
         new object[] {"Non redundant", "b#c{@d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)" },
         new object[] {"Escape", "a.b'ee\\'e'c.d", "1.($,'a')  2.(1,'b')  3.(2,'ee\\'e')  4.(3,'c')  5.(4,'d')  6{(5)"},
         new object[] {"Branch Simple", "a{@b}c", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)"},
+        new object[] {"Branch Multi", "a{@b}{@c}d", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)  6.(1,'d')  7{(6)"},
         new object[] {"Branch Root", "a{$b}c", "1.($,'a')  2.($,'b')  3{(2)  4.(1,'c')  5{(4)"},
         new object[] {"Branch Header", "a{@b1:h2}b2:h1", "1.($,'a')  2.(1,'b1')  3:(2,'h2')  4{(3)  5.(1,'b2')  6:(5,'h1')  7{(6)"},
         new object[] {"Branch Complicated", "a{{@b}@c}d{@e}{@f{@g}}", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)  6.(1,'d')  7{(6)  8.(6,'e')  9{(8)  10.(6,'f')  11{(10)  12.(10,'g')  13{(12)"},

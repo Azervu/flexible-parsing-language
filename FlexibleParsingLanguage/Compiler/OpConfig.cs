@@ -9,6 +9,9 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal class OpConfig
 {
+
+
+
     internal string Operator { get; set; }
     internal string GroupOperator { get; set; }
 
@@ -16,7 +19,7 @@ internal class OpConfig
     internal OpCompileType CompileType { get; set; }
     internal int Rank { get; set; }
 
-
+    internal Func<ParseData, RawOp, int> GetStatusId { get; set; }
     internal Func<ParseData, RawOp, IEnumerable<ParseOperation>> Compile { get; set; }
 
 

@@ -5,6 +5,7 @@ namespace FlexibleParsingLanguage.Compiler;
 internal class RawOp
 {
     internal int Id { get; set; }
+
     internal int CharIndex { get; set; }
     internal OpConfig Type { get; set; }
     internal string? Accessor { get; set; }

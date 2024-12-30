@@ -13,33 +13,44 @@ namespace FlexibleParsingLanguage.Operations;
 internal static partial class FplOperation
 {
 
-
-
     internal static readonly OpConfig Accessor = new OpConfig(null, OpSequenceType.Accessor, null, 99);
 
-    internal static readonly OpConfig RootParam = new OpConfig("$", OpSequenceType.RootParam, CompileRootParam);
 
-
-    private static IEnumerable<ParseOperation> CompileRootParam(ParseData parser, RawOp op)
+    internal static IEnumerable<ParseOperation> EnsureLoaded(ParseData parser, RawOp op)
     {
-        if (op.Input.Count != 0)
-            throw new QueryCompileException(op, "$ cant take params");
 
-        yield return new ParseOperation(RootParamOperation);
+        var inputId = -1;
 
+        foreach (var inp in op.Input)
+        {
+            if (inp.Input.Count > 0)
+                inputId = inp.Id;
+        }
 
-        /*
-        var x =
+        if (inputId < 0 || inputId == parser.LoadedId)
+            yield break;
 
-
-        return new ParseOperation(
-            (a, b) => { }
-
-            );
-        */
+        parser.LoadedId = inputId;
+        yield return new ParseOperation(ParsesOperationType.Load, inputId);
     }
 
-    internal static void RootParamOperation(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ToRootRead();
+
+    internal static IEnumerable<ParseOperation> EnsureSaved(ParseData parser, RawOp op)
+    {
+        if (op.Output.Count <= 1)
+            yield break;
+
+        var id = op.Type.GetStatusId != null
+            ? op.Type.GetStatusId(parser, op)
+            : op.Id;
+
+        if (id == Compiler.Compiler.RootId)
+            yield break;
+
+        yield return new ParseOperation(ParsesOperationType.Save, id);
+    }
+
+
 
 
 
