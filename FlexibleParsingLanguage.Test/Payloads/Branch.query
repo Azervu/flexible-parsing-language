@@ -1,1 +1,1 @@
-root{a1.a2.a3:a}{b1.b2.b3:b}{c1.c2.c3:c}
+root{@a1.a2.a3:a}{@b1.b2.b3:b}c1.c2.c3:c

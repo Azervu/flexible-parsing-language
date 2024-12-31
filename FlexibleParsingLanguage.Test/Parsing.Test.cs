@@ -16,7 +16,7 @@ public class Parsing
 
         //new object[] { "Simple Lookup Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*#id", "['bob','trj']", new List<(string, string)> { ("id", "n53"), ("trj", "a81") }, new List<List<(string, string)>> { } },
 
-        new object[] { "Read Lookup Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*#@id", "['n53','a81']", new List<(string, string)> { ("bob", "n53"), ("trj", "a81") }, new List<List<(string, string)>> { } },
+        new object[] { "Read Lookup Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*#@id", "['n53','a81']", new List<(string, string)> {("bob", "n53"), ("trj", "a81") }, new List<List<(string, string)>> { } },
 
         /*
         new object[] {

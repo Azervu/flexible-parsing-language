@@ -170,7 +170,12 @@ internal static partial class FplOperation
 
         parser.ActiveId = inputId;
         parser.LoadedId = inputId;
-        yield return new ParseOperation(ParsesOperationType.Load, inputId);
+
+
+        if (inputId == Compiler.Compiler.RootId)
+            yield return new ParseOperation(RootParamOperation);
+        else
+            yield return new ParseOperation(ParsesOperationType.Load, inputId);
     }
 
 
