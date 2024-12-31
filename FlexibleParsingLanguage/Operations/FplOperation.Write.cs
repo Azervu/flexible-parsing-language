@@ -76,17 +76,16 @@ internal static partial class FplOperation
 
         var (writeId, writeType) = parser.WriteOutput[op.Output[0].Id];
 
-        if (writeType == OpCompileType.Branch)
-        {
-            parser.ProccessedMetaData[writeId] = op;
-            yield break;
-        }
-
         foreach (var x in FplOperation.EnsureLoaded(parser, op))
             yield return x;
 
         switch (writeType)
         {
+            case OpCompileType.Branch:
+                parser.ProccessedMetaData[writeId] = op;
+                yield return new ParseOperation(ParsesOperationType.WriteFlatten, 2);
+
+                break;
             case OpCompileType.WriteObject:
                 yield return new ParseOperation(ParsesOperationType.WriteFlatten, 1);
                 break;

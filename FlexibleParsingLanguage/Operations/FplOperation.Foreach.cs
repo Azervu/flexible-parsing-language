@@ -10,15 +10,11 @@ namespace FlexibleParsingLanguage.Operations;
 
 internal partial class FplOperation
 {
-    internal static readonly OpConfig Foreach = new OpConfig("*", OpSequenceType.LeftInput, CompileForeach)
+    internal static readonly OpConfig Foreach = new OpConfig("*", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(OperationForeach)]))
     {
         CompileType = OpCompileType.ReadArray,
     };
 
-    private static IEnumerable<ParseOperation> CompileForeach(ParseData parser, RawOp op) {
-        foreach (var x in CompileTransformOperation(parser, op, OperationForeach))
-            yield return x;
-    }
-
     internal static void OperationForeach(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ReadFlatten();
 }
+
