@@ -96,10 +96,12 @@ internal enum OpSequenceType
 [Flags]
 internal enum OpCompileType
 {
-    None = 0,
-    WriteObject = 1,
-    WriteArray = 2,
-    Branch = 4,
+    None        = 0b_0000_0000_0000_0000,
+    WriteObject = 0b_0000_0000_0000_0001,
+    WriteArray  = 0b_0000_0000_0000_0010,
+    Branch      = 0b_0000_0000_0000_0100,
+    ReadObject  = 0b_0000_0000_0000_1000,
+    ReadArray   = 0b_0000_0000_0000_1000,
 }
 
 internal static class OpTypeExtension

@@ -2,7 +2,9 @@
 using FlexibleParsingLanguage.Parse;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -26,10 +28,13 @@ internal static partial class FplOperation
 
         var id = op.GetStatusId(parser);
 
-        var writeType = UtilWriteCheckDependencies(parser, op);
+        var (writeId, writeType) = parser.WriteOutput[op.Output[0].Id];
+
 
         if (writeType == OpCompileType.Branch)
         {
+            parser.ProccessedMetaData[writeId] = op;
+
             parser.LoadRedirect[op.GetStatusId(parser)] = op.Input[0].GetStatusId(parser);
             yield break;
         }
@@ -69,10 +74,14 @@ internal static partial class FplOperation
 
         var id = op.GetStatusId(parser);
 
-        var writeType = UtilWriteCheckDependencies(parser, op);
+
+        var (writeId, writeType) = parser.WriteOutput[op.Output[0].Id];
 
         if (writeType == OpCompileType.Branch)
+        {
+            parser.ProccessedMetaData[writeId] = op;
             yield break;
+        }
 
         foreach (var x in FplOperation.EnsureLoaded(parser, op))
             yield return x;

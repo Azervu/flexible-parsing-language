@@ -38,15 +38,6 @@ internal partial struct ParsesOperationType
                 loaded.Add(o.IntAcc);
         }
 
-        var opsParents = data.OpsMap.GroupBy(x => x.Key.Item1).ToDictionary(
-            x => x.Key,
-            x => x.Select(y => y.Key.Item2.Last().OpType).ToHashSet()
-        );
-
-        var opsChildren = data.OpsMap.GroupBy(x => x.Value).ToDictionary(
-            x => x.Key,
-            x => x.Select(y => y.Key.Item2.Last().OpType).ToHashSet()
-        );
 
         foreach (var o in data.Ops.Select(x => x.Item2))
         {
@@ -56,6 +47,7 @@ internal partial struct ParsesOperationType
 
         var rootOpCompileType = OpCompileType.None;
 
+        /*
         foreach (var (id, o) in data.Ops)
         {
             if (rootOpCompileType != OpCompileType.None)
@@ -70,6 +62,7 @@ internal partial struct ParsesOperationType
 
             outOps.Add(o);
         }
+        */
 
         if (rootOpCompileType == OpCompileType.None)
             rootOpCompileType = OpCompileType.WriteArray;
