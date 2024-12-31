@@ -21,7 +21,12 @@ internal class CollectionWritingModule : IWritingModule
     public void Write(object raw, string acc, object val)
     {
         if (raw is not IDictionary dict)
+        {
+#if DEBUG
+            throw new Exception($"Tried to string write to {raw?.GetType().FullName ?? "null"} ");
+#endif
             return;
+        }
 
         dict.Add(acc, val);
     }

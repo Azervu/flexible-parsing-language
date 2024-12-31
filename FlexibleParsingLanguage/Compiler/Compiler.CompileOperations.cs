@@ -96,7 +96,7 @@ internal partial class Compiler
             if (op.Type.Compile == null)
                 continue;
 
-            if (rootType == OpCompileType.None)
+            if ((rootType & (OpCompileType.WriteArray | OpCompileType.WriteObject)) == 0)
                 rootType = op.Type.CompileType;
 
             var id = op.GetStatusId(parseData);
@@ -110,7 +110,9 @@ internal partial class Compiler
             compilesOps.Add((id, x));
         }
 
-        if (rootType == OpCompileType.None)
+        if ((rootType & OpCompileType.WriteObject) > 0)
+            rootType = OpCompileType.WriteObject;
+        else
             rootType = OpCompileType.WriteArray;
 
         var outOps = compilesOps.SelectMany(x => x.Ops).ToList();
