@@ -26,6 +26,7 @@ internal static partial class FplOperation
                     Foreach,
                     Write,
                     WriteForeach,
+                    WriteRoot,
                     Param,
                     new OpConfig("@", OpSequenceType.ParentInput | OpSequenceType.Virtual),
                     new OpConfig("\"", OpSequenceType.Literal, null, -1, "\""),
@@ -234,4 +235,23 @@ internal static partial class FplOperation
         parser.OpsMap.Add((activeId, [saveOp]), parser.IdCounter);
     }
     */
+    private static IEnumerable<ParseOperation> CompileSaveUtil(ParseData parser, RawOp op, int numInput, Func<ParseData, RawOp, int, IEnumerable<ParseOperation>> func)
+    {
+        if (numInput != 1)
+            throw new QueryException(op, $"{op.Input.Count} write array | read takes 1");
+
+        var id = op.GetStatusId(parser);
+
+        foreach (var x in FplOperation.EnsureLoaded(parser, op))
+            yield return x;
+
+        foreach (var po in func(parser, op, id))
+            yield return po;
+
+        parser.ActiveId = id;
+        parser.LoadedId = id;
+
+        foreach (var x in FplOperation.EnsureSaved(parser, op))
+            yield return x;
+    }
 }

@@ -32,8 +32,10 @@ internal partial class Compiler
 
         while (searchedIndex < raw.Length)
         {
-            var i = searchedIndex;
             var candidate = string.Empty;
+
+            var i = searchedIndex;
+
             var candidateIndex = i;
 
             OpConfig? op = null;
@@ -74,7 +76,6 @@ internal partial class Compiler
                         accessor = string.Empty;
                         accessorIndex = -1;
                         searchedIndex = candidateIndex;
-                        break;
                     }
                 }
             }

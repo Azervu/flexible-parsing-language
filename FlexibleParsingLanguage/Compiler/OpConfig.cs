@@ -100,8 +100,8 @@ internal enum OpCompileType
     WriteObject = 0b_0000_0000_0000_0001,
     WriteArray  = 0b_0000_0000_0000_0010,
     Branch      = 0b_0000_0000_0000_0100,
-    ReadObject  = 0b_0000_0000_0000_1000,
-    ReadArray   = 0b_0000_0000_0000_1000,
+    ReadObject  = 0b_0000_0000_0010_0000,
+    ReadArray   = 0b_0000_0000_0001_0000,
 }
 
 internal static class OpTypeExtension

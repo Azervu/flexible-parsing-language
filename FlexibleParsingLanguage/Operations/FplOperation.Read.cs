@@ -26,9 +26,25 @@ internal static partial class FplOperation {
         var accessor = op.Input[1];
 
 
+        var inputType = OpCompileType.ReadObject;
 
 
-        yield return new ParseOperation(OperationRead, accessor.Accessor);
+        if (parser.ReadInput.TryGetValue(op.Input[0].Id, out var v))
+            inputType = v.Type;
+
+
+        switch (inputType)
+        {
+            case OpCompileType.ReadObject:
+                yield return new ParseOperation(OperationRead, accessor.Accessor);
+                break;
+            case OpCompileType.ReadArray:
+                yield return new ParseOperation(OperationRead, accessor.Accessor);
+                break;
+        }
+
+
+
 
         parser.ActiveId = op.Id;
         parser.LoadedId = op.Id;
@@ -39,6 +55,10 @@ internal static partial class FplOperation {
 
 
     internal static void OperationRead(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ReadFunc((m, readSrc) => m.Parse(readSrc, acc));
+
+
+
+
 }
 
 

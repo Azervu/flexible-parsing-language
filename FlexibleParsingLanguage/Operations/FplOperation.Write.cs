@@ -34,7 +34,6 @@ internal static partial class FplOperation
         if (writeType == OpCompileType.Branch)
         {
             parser.ProccessedMetaData[writeId] = op;
-
             parser.LoadRedirect[op.GetStatusId(parser)] = op.Input[0].GetStatusId(parser);
             yield break;
         }
@@ -102,67 +101,5 @@ internal static partial class FplOperation
 
         foreach (var x in FplOperation.EnsureSaved(parser, op))
             yield return x;
-    }
-
-
-
-    private static OpCompileType UtilWriteCheckDependencies(ParseData parser, RawOp op) {
-
-        var branch = false;
-        var array = false;
-        var obj = false;
-
-
-
-        var output = op.Output;
-
-        while (output.Count > 0)
-        {
-            var next = new List<RawOp>();
-            foreach (var o in output)
-            {
-                if (o.Type.CompileType.All(OpCompileType.Branch))
-                {
-                    var oId = o.GetStatusId(parser);
-                    if (parser.ProccessedMetaData.ContainsKey(oId))
-                        throw new QueryException(op, "Multi inheritance branch");
-                    parser.ProccessedMetaData[oId] = op;
-                    branch = true;
-                }
-                else if (o.Type.CompileType.All(OpCompileType.WriteObject))
-                {
-                    obj = true;
-                }
-                else if (o.Type.CompileType.All(OpCompileType.WriteArray))
-                {
-                    array = true;
-                }
-                else
-                {
-                    foreach (var o2 in o.Output)
-                        next.Add(o2);
-                }
-            }
-            output = next;
-        }
-
-        var num = (obj ? 1 : 0) + (array ? 1 : 0) + (branch ? 1 : 0);
-        if (num == 0)
-            throw new QueryException(op, "has no write targets");
-
-        if (num > 1)
-            throw new QueryException(op, $"has multiple write targets = {(obj ? "obj, " : string.Empty)}{(array ? "array," : string.Empty)}{(branch ? "branch" : string.Empty)}");
-
-
-        if (branch)
-        {
-            return OpCompileType.Branch;
-        }
-       
-
-        if (array)
-            return OpCompileType.WriteArray;
-
-        return OpCompileType.WriteObject;
     }
 }
