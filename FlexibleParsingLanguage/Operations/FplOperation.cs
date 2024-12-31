@@ -31,7 +31,7 @@ internal static partial class FplOperation
 
                     new OpConfig(":$", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(ParsesOperationType.WriteRoot)])),
                     new OpConfig("|", OpSequenceType.LeftInput | OpSequenceType.RightInput, (p, o) => CompileSaveUtil(p, o, 2, [new ParseOperation(ParsesOperationType.Function, o.Input[1].Accessor)])),
-
+                    new OpConfig("~", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(ParsesOperationType.ReadName)])),
 
                     new OpConfig("@", OpSequenceType.ParentInput | OpSequenceType.Virtual),
                     new OpConfig("\"", OpSequenceType.Literal, null, -1, "\""),
@@ -40,8 +40,6 @@ internal static partial class FplOperation
 
                     new OpConfig(",", OpSequenceType.GroupSeparator),
                     new OpConfig("(", OpSequenceType.Group | OpSequenceType.Virtual | OpSequenceType.Accessor, null, 100, ")"),
-                    new OpConfig("~", OpSequenceType.LeftInput),
-                    new OpConfig("|", OpSequenceType.RightInput | OpSequenceType.LeftInput),
 
                     new OpConfig("#", OpSequenceType.RightInput | OpSequenceType.LeftInput),
                     new OpConfig("##", OpSequenceType.RightInput | OpSequenceType.LeftInput),
