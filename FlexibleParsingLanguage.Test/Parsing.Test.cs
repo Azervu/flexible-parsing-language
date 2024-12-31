@@ -59,6 +59,7 @@ public class Parsing
         }
         catch (Exception ex)
         {
+            
             Assert.Fail($"Lexicalizations step failed | query = {query} | error = {ex.Message}\n\n{ex.StackTrace}");
             return;
         }

@@ -67,12 +67,15 @@ internal partial class Compiler
 
     internal FplQuery Compile(string raw, ParsingMetaContext configContext)
     {
-        var ops = Lexicalize(raw);
-
-
-
-
-        return CompileOperations(ops, configContext, raw);
+        try
+        {
+            var ops = Lexicalize(raw);
+            return CompileOperations(ops, configContext, raw);
+        }
+        catch (QueryException ex) {
+            ex.Query = raw;
+            throw;
+        }
     }
 
 

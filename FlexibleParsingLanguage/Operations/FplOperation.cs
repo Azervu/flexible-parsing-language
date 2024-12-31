@@ -26,8 +26,13 @@ internal static partial class FplOperation
                     Foreach,
                     Write,
                     WriteForeach,
-                    WriteRoot,
                     Param,
+
+
+                    new OpConfig(":$", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(ParsesOperationType.WriteRoot)])),
+                    new OpConfig("|", OpSequenceType.LeftInput | OpSequenceType.RightInput, (p, o) => CompileSaveUtil(p, o, 2, [new ParseOperation(ParsesOperationType.Function, o.Input[1].Accessor)])),
+
+
                     new OpConfig("@", OpSequenceType.ParentInput | OpSequenceType.Virtual),
                     new OpConfig("\"", OpSequenceType.Literal, null, -1, "\""),
                     new OpConfig("'", OpSequenceType.Literal, null, -1, "\'"),
@@ -235,17 +240,17 @@ internal static partial class FplOperation
         parser.OpsMap.Add((activeId, [saveOp]), parser.IdCounter);
     }
     */
-    private static IEnumerable<ParseOperation> CompileSaveUtil(ParseData parser, RawOp op, int numInput, Func<ParseData, RawOp, int, IEnumerable<ParseOperation>> func)
+    private static IEnumerable<ParseOperation> CompileSaveUtil(ParseData parser, RawOp op, int numInput, IEnumerable<ParseOperation> pos)
     {
-        if (numInput != 1)
-            throw new QueryException(op, $"{op.Input.Count} write array | read takes 1");
+        if (op.Input.Count != numInput)
+            throw new QueryException(op, $"{op.Input.Count} inputs, takes {numInput}");
 
         var id = op.GetStatusId(parser);
 
         foreach (var x in FplOperation.EnsureLoaded(parser, op))
             yield return x;
 
-        foreach (var po in func(parser, op, id))
+        foreach (var po in pos)
             yield return po;
 
         parser.ActiveId = id;
@@ -254,4 +259,5 @@ internal static partial class FplOperation
         foreach (var x in FplOperation.EnsureSaved(parser, op))
             yield return x;
     }
+
 }
