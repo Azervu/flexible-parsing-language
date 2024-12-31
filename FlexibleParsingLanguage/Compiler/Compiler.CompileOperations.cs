@@ -10,7 +10,7 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal partial class Compiler
 {
-    internal FplQuery CompileOperations(List<RawOp> ops, ParsingMetaContext configContext)
+    internal FplQuery CompileOperations(List<RawOp> ops, ParsingMetaContext configContext, string query)
     {
 
 
@@ -66,7 +66,12 @@ internal partial class Compiler
             var x = new List<ParseOperation>();
 
             foreach (var o in op.Type.Compile(parseData, op))
+            {
+                o.Metadata = op;
                 x.Add(o);
+            }
+
+
 
             compilesOps.Add((id, x));
         }
@@ -75,8 +80,14 @@ internal partial class Compiler
             rootType = OpCompileType.WriteArray;
 
 
+        var outOps = compilesOps.SelectMany(x => x.Ops).ToList();
 
-        return new FplQuery(compilesOps.SelectMany(x => x.Ops).ToList(), configContext, new ParserRootConfig { RootType = rootType });
+
+
+
+
+
+        return new FplQuery(outOps, configContext, new ParserRootConfig { RootType = rootType }, query);
     }
 
 }

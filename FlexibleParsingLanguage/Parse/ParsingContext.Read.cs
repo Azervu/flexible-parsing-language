@@ -59,12 +59,20 @@ internal partial class ParsingContext
         var newReads = new List<ParsingFocusRead>();
         foreach (var r in focus.Reads)
         {
+
+            if (r.Read == null)
+                throw new Exception("Trying to read null");
+
+
             UpdateReadModule(r.Read);
+
+            var r2 = readTransform(ReadingModule, r.Read);
+
             newReads.Add(new ParsingFocusRead
             {
                 Config = r.Config,
                 Key = r.Read,
-                Read = readTransform(ReadingModule, r.Read),
+                Read = r2,
             });
         }
         return new ParsingFocusEntry

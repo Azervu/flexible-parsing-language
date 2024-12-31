@@ -26,7 +26,7 @@ internal static partial class FplOperation
 
         var id = op.GetStatusId(parser);
 
-        var writeType = UtilWriteCheckDependenciesx(parser, op);
+        var writeType = UtilWriteCheckDependencies(parser, op);
 
         if (writeType == OpCompileType.Branch)
         {
@@ -69,7 +69,7 @@ internal static partial class FplOperation
 
         var id = op.GetStatusId(parser);
 
-        var writeType = UtilWriteCheckDependenciesx(parser, op);
+        var writeType = UtilWriteCheckDependencies(parser, op);
 
         if (writeType == OpCompileType.Branch)
             yield break;
@@ -97,7 +97,7 @@ internal static partial class FplOperation
 
 
 
-    private static OpCompileType UtilWriteCheckDependenciesx(ParseData parser, RawOp op) {
+    private static OpCompileType UtilWriteCheckDependencies(ParseData parser, RawOp op) {
 
         var branch = false;
         var array = false;

@@ -32,9 +32,11 @@ internal partial class ParsingContext
             {
                 var w = WritingModule.BlankArray();
                 WritingModule.Append(focusEntry.Write, w);
+
+                var t = TransformRead(read);
                 result.Add(new ParsingFocusEntry
                 {
-                    Reads = [TransformRead(read)],
+                    Reads = [t],
                     Write = w,
                     MultiRead = false,
                 });

@@ -43,7 +43,12 @@ public class JsonParsingModule : IReadingModule
     public object Parse(object raw, string acc)
     {
         if (raw is not JsonObject n)
+        {
+#if DEBUG
+            throw new Exception($"tried to string access {raw?.GetType().FullName ?? "null"} ");
+#endif
             return null;
+        }
 
         var v = n[acc];
         return v;
@@ -53,7 +58,12 @@ public class JsonParsingModule : IReadingModule
     public object Parse(object raw, int acc)
     {
         if (raw is not JsonArray a)
+        {
+#if DEBUG
+            throw new Exception($"tried to int access {raw?.GetType().FullName ?? "null"} ");
+#endif
             return null;
+        }
 
         var v = a[acc];
         return v;

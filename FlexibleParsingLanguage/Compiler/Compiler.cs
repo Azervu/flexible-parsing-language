@@ -69,7 +69,10 @@ internal partial class Compiler
     {
         var ops = Lexicalize(raw);
 
-        return CompileOperations(ops, configContext);
+
+
+
+        return CompileOperations(ops, configContext, raw);
     }
 
 

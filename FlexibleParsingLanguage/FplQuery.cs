@@ -3,6 +3,8 @@ using FlexibleParsingLanguage.Converter;
 using FlexibleParsingLanguage.Modules;
 using FlexibleParsingLanguage.Operations;
 using FlexibleParsingLanguage.Parse;
+using System.Reflection;
+using System.Text;
 namespace FlexibleParsingLanguage;
 
 public class FplQuery
@@ -23,12 +25,16 @@ public class FplQuery
     private ParserRootConfig _config;
     internal Dictionary<string, IConverter> _converter;
 
+    private string _rawQuery;
+
     internal FplQuery(
         List<ParseOperation> operations,
         ParsingMetaContext rootMetaContext,
-        ParserRootConfig config
+        ParserRootConfig config,
+        string rawQuery
     )
     {
+        _rawQuery = rawQuery;
         _config = config;
         _rootMetaContext = rootMetaContext;
         _operations = operations;
@@ -65,9 +71,42 @@ public class FplQuery
             {
                 o.Op(this, ctx, o.IntAcc, o.StringAcc);
             }
+            catch (QueryException ex)
+            {
+                ex.Ops.Add(o.Metadata);
+                ex.Query = _rawQuery;
+                throw;
+            } 
             catch (Exception ex)
             {
-                throw new Exception($"Operation failed {o.OpType.GetMetaData().Name} | {ex.Message}", ex);
+
+                string at = null;
+                if (ex.StackTrace != null)
+                {
+                    foreach (var l in ex.StackTrace.Split(Environment.NewLine))
+                    {
+                        if (l.Contains("FlexibleParsingLanguage"))
+                        {
+                            at = l;
+                            break;
+                        }
+                    }
+                }
+
+                var msg = new StringBuilder(ex.Message);
+                msg.Append(" | version = ");
+                msg.Append(Assembly.GetAssembly(typeof(ParsingContext)).GetName().Version.ToString());
+
+                if (at != null)
+                {
+                    msg.Append(" | ");
+                    msg.Append(at);
+                }
+
+                var ex2 = new QueryException(o.Metadata, msg.ToString(), true);
+                ex2.Query = _rawQuery;
+
+                throw ex2;
             }
         }
 
