@@ -1,8 +1,12 @@
 ﻿namespace FlexibleParsingLanguage.Parse;
 
 
+
+
+
 internal class ParsingFocus
 {
+
     internal List<ParsingFocusEntry> Entries;
 
 
@@ -22,6 +26,23 @@ internal class ParsingFocus
     {
         Entries = entries;
     }
+
+
+
+
+    internal ParsingFocus Transform(Func<ParsingFocusEntry, ParsingFocusEntry> transformAction)
+    {
+        var result = new List<ParsingFocusEntry>();
+        foreach (var focusEntry in Entries)
+            result.Add(transformAction(focusEntry));
+        return new ParsingFocus(result);
+    }
+
+
+
+
+
+
 
 }
 
