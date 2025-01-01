@@ -4,7 +4,7 @@ internal partial class ParsingContext
 {
     internal void ReadAction(Action<ParsingFocusRead> action)
     {
-        foreach (var focusEntry in Focus)
+        foreach (var focusEntry in Focus.Entries)
         {
             foreach (var readEntry in focusEntry.Reads)
             {
@@ -45,7 +45,7 @@ internal partial class ParsingContext
 
     internal void ToRootRead()
     {
-        var root = Store[1][0];
+        var root = Store[Compiler.Compiler.RootId].Entries[0];
         MapFocus((f) => new ParsingFocusEntry
         {
             Reads = root.Reads,

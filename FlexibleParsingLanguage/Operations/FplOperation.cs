@@ -70,7 +70,102 @@ internal static partial class FplOperation
 
 
 
-    internal static IEnumerable<ParseOperation> CompileStringAccessorOperation(ParseData parser, RawOp op, bool isRead, Func<IReadingModule, object, string, object> transform)
+
+
+
+
+
+
+
+
+
+
+
+
+    internal static IEnumerable<ParseOperation> CompileStringAccessorOperation(ParseData parser, RawOp op, bool isRead, Action<FplQuery, ParsingContext, int, string> action)
+    {
+        if (op.Input.Count != 2)
+            throw new QueryException(op, $"{op.Input.Count} params | read takes 2");
+
+        foreach (var x in FplOperation.EnsureLoaded(parser, op))
+            yield return x;
+
+        var input = op.Input[0];
+        var accessorInput = op.Input[1];
+
+
+        if (accessorInput.Accessor != null)
+        {
+            yield return new ParseOperation((query, ctx, i, s) =>
+            {
+
+                //ctx.Focus
+                var acc = ctx.Store[accessorInput.Id];
+
+
+
+                //action(query, ctx, -1, acc);
+
+
+
+
+                //ctx.ReadFunc((m, src) => transform(m, src, accessorInput.Accessor))
+
+
+
+            });
+        }
+        else
+        {
+            yield return new ParseOperation(OperationRead, accessorInput.Accessor);
+        }
+
+
+
+
+
+        /*
+        var inputType = OpCompileType.ReadObject;
+
+        if (parser.ReadInput.TryGetValue(op.Input[0].Id, out var v))
+            inputType = v.Type;
+
+
+
+
+
+        switch (inputType)
+        {
+            case OpCompileType.ReadObject:
+                yield return new ParseOperation(OperationRead, accessor.Accessor);
+                break;
+            case OpCompileType.ReadArray:
+                yield return new ParseOperation(OperationRead, accessor.Accessor);
+                break;
+        }
+        */
+
+
+
+        parser.ActiveId = op.Id;
+        parser.LoadedId = op.Id;
+
+        foreach (var x in FplOperation.EnsureSaved(parser, op))
+            yield return x;
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+    internal static IEnumerable<ParseOperation> CompileStringAccessorOperationOld(ParseData parser, RawOp op, bool isRead, Func<IReadingModule, object, string, object> transform)
     {
         if (op.Input.Count != 2)
             throw new QueryException(op, $"{op.Input.Count} params | read takes 2");

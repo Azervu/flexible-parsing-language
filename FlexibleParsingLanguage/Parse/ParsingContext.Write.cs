@@ -5,7 +5,7 @@ internal partial class ParsingContext
     internal void WriteFlatten()
     {
         var result = new List<ParsingFocusEntry>();
-        foreach (var focusEntry in Focus)
+        foreach (var focusEntry in Focus.Entries)
         {
             for (var i = 0; i < focusEntry.Reads.Count; i++)
             {
@@ -20,13 +20,13 @@ internal partial class ParsingContext
                 });
             }
         }
-        Focus = result;
+        Focus = new ParsingFocus(result);
     }
 
     internal void WriteFlattenArray()
     {
         var result = new List<ParsingFocusEntry>();
-        foreach (var focusEntry in Focus)
+        foreach (var focusEntry in Focus.Entries)
         {
             foreach (var read in focusEntry.Reads)
             {
@@ -42,7 +42,7 @@ internal partial class ParsingContext
                 });
             }
         }
-        Focus = result;
+        Focus = new ParsingFocus(result);
     }
 
     internal void WriteStringFromRead(string acc)
@@ -54,7 +54,7 @@ internal partial class ParsingContext
 
     internal void WriteFromRead(Func<ParsingFocusRead, object> readFunc, Action<IWritingModule, ParsingFocusEntry, object> writeAction)
     {
-        foreach (var focusEntry in Focus)
+        foreach (var focusEntry in Focus.Entries)
         {
             var r = focusEntry.MultiRead
                 ? focusEntry.Reads.Select(readFunc).ToList()
@@ -67,7 +67,7 @@ internal partial class ParsingContext
     internal void WriteTransform(Func<object, object> writeFunc)
     {
         var result = new List<ParsingFocusEntry>();
-        foreach (var focusEntry in Focus)
+        foreach (var focusEntry in Focus.Entries)
         {
             result.Add(new ParsingFocusEntry
             {
@@ -76,13 +76,13 @@ internal partial class ParsingContext
                 MultiRead = focusEntry.MultiRead,
             });
         }
-        Focus = result;
+        Focus = new ParsingFocus(result);
     }
 
     internal void WriteAction(Func<IWritingModule, object, object> writeFunc)
     {
         var result = new List<ParsingFocusEntry>();
-        foreach (var focusEntry in Focus)
+        foreach (var focusEntry in Focus.Entries)
         {
             result.Add(new ParsingFocusEntry
             {
@@ -91,6 +91,6 @@ internal partial class ParsingContext
                 MultiRead = focusEntry.MultiRead,
             });
         }
-        Focus = result;
+        Focus = new ParsingFocus(result);
     }
 }

@@ -50,7 +50,7 @@ internal partial struct ParsesOperationType
 
     internal static void WriteAddRead(FplQuery parser, ParsingContext context, int intAcc, string acc)
     {
-        foreach (var focusEntry in context.Focus)
+        foreach (var focusEntry in context.Focus.Entries)
         {
             //UpdateWriteModule(w);
             if (focusEntry.MultiRead)

@@ -38,6 +38,11 @@ namespace FlexibleParsingLanguage.Modules
             if (raw is IDictionary n)
                 return n[acc];
 
+#if DEBUG
+            var t = raw?.GetType().Name ?? "null";
+            throw new Exception($"Tried to string read {t}");
+#endif
+
             return null;
         }
 
