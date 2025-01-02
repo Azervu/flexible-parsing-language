@@ -68,7 +68,6 @@ public class JsonParsingTest
         new object[] { "Read depth 3", "{ 'a': { 'a': { 'a': 'value' } }}", "a.a.a:bb", "{'bb':'value'}" },
         new object[] { "Write dept 3", "{ 'aa': 'value' }", "aa:b1:b2:b3", "{'b1':{'b2':{'b3':'value'}}}" },
 
-
         new object[] { "Name operator test", "{'a': 1, 'b': 2, 'c': 3}", "*:*{@~:n}:v", "[{'n':'a','v':1},{'n':'b','v':2},{'n':'c','v':3}]" },
         new object[] { "Multi Foreach", "[[[[1,2,3],[11,12,13]],[[21,22,23],[31,42,53]]],[[[99]]]]", "****", "[1,2,3,11,12,13,21,22,23,31,42,53,99]" },
         new object[] { "Interupted Multi Foreach", "[[[[1,2,3],[11,12,13]],[[21,22,23],[31,42,53]]],[[[99]]]]", "**:***", "[[1,2,3,11,12,13],[21,22,23,31,42,53],[99]]" },

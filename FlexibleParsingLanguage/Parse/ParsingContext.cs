@@ -1,14 +1,12 @@
-﻿namespace FlexibleParsingLanguage.Parse;
+﻿using System.Collections;
+
+namespace FlexibleParsingLanguage.Parse;
 
 internal partial class ParsingContext
 {
-    internal ParsingMetaContext ConfigRoot;
-    internal object ReadRoot;
     internal IReadingModule ReadingModule;
-    internal object WriteRoot;
     internal IWritingModule WritingModule;
-    internal readonly Dictionary<int, ParsingFocus> Store;
-    internal ParsingFocus Focus;
+    internal ParsingFocusData Focus;
     private Type _activeType = null;
     private ModuleHandler _modules;
 
@@ -22,37 +20,93 @@ internal partial class ParsingContext
     {
 
         _modules = modules;
-        ReadRoot = readRoot;
-        WriteRoot = writeRoot;
-        Focus = new ParsingFocus(parsingConfig, readRoot, writeRoot ); 
-        Store = new Dictionary<int, ParsingFocus> {
-            { Compiler.Compiler.RootId, Focus }
-        };
+
+
+        Focus = new ParsingFocusData(parsingConfig, readRoot, writeRoot);
+
         WritingModule = writingModule;
-        ConfigRoot = parsingConfig;
     }
 
-    internal void MapFocus(Func<ParsingFocusEntry, ParsingFocusEntry> transformAction)
+    internal void WriteFlatten()
     {
-        var result = new List<ParsingFocusEntry>();
-        foreach (var focusEntry in Focus.Entries)
-            result.Add(transformAction(focusEntry));
-        Focus = new ParsingFocus(result);
-    }
-
-    internal void ToRootWrite()
-    {
-        var root = Store[Compiler.Compiler.RootId].Entries[0];
-        var result = new List<ParsingFocusEntry>();
-        foreach (var f in Focus.Entries)
+        Focus.WriteFlatten((writeParent) =>
         {
-            result.Add(new ParsingFocusEntry
-            {
-                Reads = f.Reads,
-                MultiRead = f.MultiRead,
-                Write = root.Write,
-            });
-        }
-        Focus = new ParsingFocus(result);
+            var w = WritingModule.BlankMap();
+            WritingModule.Append(writeParent.V, w);
+            return new ValueWrapper(w);
+        });
     }
+
+    internal void WriteFlattenArray()
+    {
+        Focus.WriteFlatten((writeParent) =>
+        {
+            var w = WritingModule.BlankArray();
+            WritingModule.Append(writeParent, w);
+            return new ValueWrapper(w);
+        });
+    }
+
+    internal void WriteStringFromRead(string acc)
+    {
+        WriteFromRead(x => TransformReadInner(x.Value), (param) => {
+            if (param.MultiRead)
+                WritingModule.Write(param.Write.V, acc, param.Read.Select(x => x.V).ToList());
+            else
+                WritingModule.Write(param.Write.V, acc, param.Read[0].V);
+        });
+    }
+
+    internal void WriteFromRead(Func<ReadFocusEntry, ValueWrapper> readFunc, Action<WriteParam> writeAction) => Focus.WriteFromRead(readFunc, writeAction);
+
+
+    internal static void WriteAddRead(FplQuery parser, ParsingContext context, int intAcc, string acc)
+    {
+
+
+
+        /*
+        
+                    if (param.Write.V is IDictionary d)
+            {
+                var rng = new Random();
+                d.Add(acc + "_" + rng.Next(99), "***");
+            }
+            else if (param.Write.V is IList l)
+            {
+                l.Add("acc");
+            }
+
+
+
+         */
+
+
+
+        context.WriteFromRead((x) => context.TransformReadInner(x.Value), (w) =>
+        {
+            foreach (var r in w.Read)
+                context.WritingModule.Append(w.Write.V, r.V);
+        });
+    }
+
+
+
+
+    internal void WriteAction(Func<IWritingModule, ValueWrapper, ValueWrapper> writeFunc) => Focus.Write((data) => writeFunc(WritingModule, data));
+
+    internal ValueWrapper TransformReadInner(ValueWrapper raw)
+    {
+        UpdateReadModule(raw);
+        if (ReadingModule == null)
+            return raw;
+        var v = ReadingModule.ExtractValue(raw.V);
+
+        return new ValueWrapper(v);
+    }
+
+
+
+
 }
+

@@ -34,7 +34,7 @@ internal static partial class FplOperation
         }
         else
         {
-            yield return new ParseOperation(ParsesOperationType.WriteAddRead);
+            yield return new ParseOperation(ParsingContext.WriteAddRead);
 
         }
     }

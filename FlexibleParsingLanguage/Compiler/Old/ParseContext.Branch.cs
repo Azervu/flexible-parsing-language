@@ -39,7 +39,7 @@ internal partial class ParseContext
             if (writeType == OpCompileType.WriteObject)
                 throw new Exception("Branch-B");
 
-            HandleOp(parser, new ParseOperation(ParsesOperationType.WriteAddRead));
+            HandleOp(parser, new ParseOperation(ParsingContext.WriteAddRead));
         }
 
         parser.ActiveId = startActiveId;

@@ -42,6 +42,10 @@ internal class CollectionWritingModule : IWritingModule
     {
 
 
+
+
+
+
         switch (target)
         {
             case IList list:
@@ -49,6 +53,11 @@ internal class CollectionWritingModule : IWritingModule
                 break;
             case IDictionary dict:
                 dict.Add(Guid.NewGuid().ToString(), val);
+                break;
+            default:
+#if DEBUG
+                throw new Exception($"Tried to Append to {target?.GetType().FullName ?? "null"} ");
+#endif
                 break;
         }
 

@@ -18,21 +18,6 @@ namespace FlexibleParsingLanguage.Modules
             return val;
         }
 
-        public IEnumerable<(object key, object value)> Foreach(object raw)
-        {
-            switch (raw)
-            {
-                case IList x:
-                    for (var i = 0; i < x.Count; i++)
-                        yield return (i, x[i]);
-                    break;
-                case IDictionary x:
-                    foreach (var k in x.Keys)
-                        yield return (k, x[k]);
-                    break;
-            }
-        }
-
         public object Parse(object raw, string acc)
         {
             if (raw is IDictionary n)
@@ -51,7 +36,31 @@ namespace FlexibleParsingLanguage.Modules
             if (raw is IList a)
                 return a[acc];
 
+#if DEBUG
+            throw new Exception($"Tried to Append to {raw?.GetType().FullName ?? "null"} ");
+#endif
+
             return null;
+        }
+
+        IEnumerable<KeyValuePair<object, object>> IReadingModule.Foreach(object raw)
+        {
+            switch (raw)
+            {
+                case IList x:
+                    for (var i = 0; i < x.Count; i++)
+                        yield return new KeyValuePair<object, object>(i, x[i]);
+                    break;
+                case IDictionary x:
+                    foreach (var k in x.Keys)
+                        yield return new KeyValuePair<object, object>(k, x[k]);
+                    break;
+                default:
+#if DEBUG
+                    throw new Exception($"Tried to Foreach to {raw?.GetType().FullName ?? "null"} ");
+#endif
+                    break;
+            }
         }
     }
 }

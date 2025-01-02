@@ -21,15 +21,6 @@ public class XmlParsingModule : IReadingModule
         return n.InnerText;
     }
 
-    public IEnumerable<(object key, object value)> Foreach(object raw)
-    {
-        if (raw is XmlNode n)
-        {
-            foreach (XmlNode node in n.ChildNodes)
-                yield return (node.BaseURI, node);
-        }
-    }
-
     public object Parse(object raw, string acc)
     {
         if (raw is not XmlNode n)
@@ -44,5 +35,14 @@ public class XmlParsingModule : IReadingModule
             return null;
 
         return n.ChildNodes[acc];
+    }
+
+    IEnumerable<KeyValuePair<object, object>> IReadingModule.Foreach(object raw)
+    {
+        if (raw is XmlNode n)
+        {
+            foreach (XmlNode node in n.ChildNodes)
+                yield return new KeyValuePair<object, object>(node.BaseURI, node);
+        }
     }
 }

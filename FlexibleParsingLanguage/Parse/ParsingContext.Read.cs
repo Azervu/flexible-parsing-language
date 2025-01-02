@@ -2,93 +2,49 @@
 
 internal partial class ParsingContext
 {
-    internal void ReadAction(Action<ParsingFocusRead> action)
-    {
-        foreach (var focusEntry in Focus.Entries)
-        {
-            foreach (var readEntry in focusEntry.Reads)
-            {
-                action(readEntry);
-            }
-        }
-    }
 
-    internal void ReadFunc(Func<IReadingModule, object, object> readTransform) => MapFocus((x) => ReadInner(x, readTransform));
-    internal void ReadTransform(Func<ParsingFocusRead, ParsingFocusRead> readTransform) => MapFocus((focus) => new ParsingFocusEntry
-    {
-        Reads = focus.Reads.Select(readTransform).ToList(),
-        Write = focus.Write,
-        MultiRead = focus.MultiRead,
+
+    internal void ReadFunc(Func<IReadingModule, object, object> readTransform) => Focus.Read((r) => {
+        UpdateReadModule(r);
+        var result = readTransform(ReadingModule, r.V);
+        return new KeyValuePair<ValueWrapper, ValueWrapper>(r, new ValueWrapper(result));
     });
 
-    internal void ReadTransformValue(Func<object, object> readTransform) => ReadTransform((focus) => new ParsingFocusRead
+
+    internal void ReadTransform(Func<ReadFocusEntry, ReadFocusEntry> readTransform) => Focus.ReadInner(readTransform);
+
+    internal void ReadTransformValue(Func<object, object> readTransform) => ReadTransform((focus) => new ReadFocusEntry
+    {
+        Key = focus.Key, //TODO test focus.Value)
+        Value = new ValueWrapper(readTransform(focus.Value.V)),
+        SequenceId = focus.SequenceId
+    });
+
+    internal void ReadName() => ReadTransform((focus) => new ReadFocusEntry
     {
         Key = focus.Key,
-        Config = focus.Config,
-        Read = readTransform(focus.Read),
-
+        Value = focus.Key,
+        SequenceId = focus.SequenceId
+    });
+        
+        
+        
+        
+        
+    internal void ReadFlatten() => Focus.ReadForeach((r) =>
+    {
+        UpdateReadModule(r);
+        return ReadingModule.Foreach(r.V);
     });
 
-    internal void ReadName() => MapFocus((focus) => new ParsingFocusEntry
-    {
-        Reads = focus.Reads.Select(x => new ParsingFocusRead
-        {
-            Key = x.Key,
-            Read = x.Key,
-            Config = x.Config,
-        }).ToList(),
-        Write = focus.Write,
-        MultiRead = focus.MultiRead,
-    });
 
-    internal void ReadFlatten() => MapFocus(ReadFlattenInner);
-
-    internal void ToRootRead()
-    {
-        var root = Store[Compiler.Compiler.RootId].Entries[0];
-        MapFocus((f) => new ParsingFocusEntry
-        {
-            Reads = root.Reads,
-            MultiRead = f.MultiRead,
-            Write = f.Write,
-        });
-    }
-
-    private ParsingFocusEntry ReadInner(ParsingFocusEntry focus, Func<IReadingModule, object, object> readTransform)
-    {
-        var newReads = new List<ParsingFocusRead>();
-        foreach (var r in focus.Reads)
-        {
-
-            if (r.Read == null)
-                throw new Exception("Trying to read null");
-
-
-            UpdateReadModule(r.Read);
-
-            var r2 = readTransform(ReadingModule, r.Read);
-
-            newReads.Add(new ParsingFocusRead
-            {
-                Config = r.Config,
-                Key = r.Read,
-                Read = r2,
-            });
-        }
-        return new ParsingFocusEntry
-        {
-            Reads = newReads,
-            Write = focus.Write,
-            MultiRead = focus.MultiRead,
-        };
-    }
 
     private ParsingFocusEntry ReadFlattenInner(ParsingFocusEntry focus)
     {
         var innerResult = new List<ParsingFocusRead>();
         foreach (var read in focus.Reads)
         {
-            UpdateReadModule(read.Read);
+            UpdateReadModule(new ValueWrapper(read.Read));
             foreach (var (k, v) in ReadingModule.Foreach(read.Read))
                 innerResult.Add(new ParsingFocusRead
                 {
@@ -106,9 +62,25 @@ internal partial class ParsingContext
         };
     }
 
-    private void UpdateReadModule(object obj)
+
+
+
+
+
+
+
+
+
+    internal void ToRootRead()
     {
-        var t = obj?.GetType() ?? typeof(void);
+        Focus.LoadRead(Compiler.Compiler.RootId);
+    }
+
+
+
+    private void UpdateReadModule(ValueWrapper obj)
+    {
+        var t = obj.V?.GetType() ?? typeof(void);
         if (t != _activeType)
         {
             _activeType = t;
@@ -118,16 +90,9 @@ internal partial class ParsingContext
 
     private ParsingFocusRead TransformRead(ParsingFocusRead raw) => new ParsingFocusRead
     {
-        Read = TransformReadInner(raw.Read),
+        Read = TransformReadInner(new ValueWrapper(raw.Read)),
         Key = raw.Key,
         Config = raw.Config,
     };
 
-    internal object TransformReadInner(object raw)
-    {
-        UpdateReadModule(raw);
-        if (ReadingModule == null)
-            return raw;
-        return ReadingModule.ExtractValue(raw);
-    }
 }

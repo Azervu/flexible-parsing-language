@@ -11,9 +11,12 @@ public interface IReadingModule
     public List<Type> HandledTypes { get; }
     public object Parse(object raw, string acc);
     public object Parse(object raw, int acc);
-    public IEnumerable<(object key, object value)> Foreach(object raw);
+    public IEnumerable<KeyValuePair<object, object>> Foreach(object raw);
     public object ExtractValue(object? val);
 }
+
+
+
 
 public interface IWritingModule
 {

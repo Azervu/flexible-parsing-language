@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Parse;
-
-public struct WriteParam
-{
-    public object Read { get; internal set; }
-    public object Write { get; internal set; }
-}
 
 internal class ParsingFocusData
 {
@@ -20,11 +15,9 @@ internal class ParsingFocusData
     private int _writeIdCounter = 1;
 
 
+    internal Dictionary<int, ParsingFocus2> Store { get; set; }
 
-
-    internal Dictionary<int, ParsingFocus2> Storage { get; set; }
-
-    internal Dictionary<int, ReadSequence> Sequences { get; set; } // childId to parent id
+    internal Dictionary<int, ParsingSequence> Sequences { get; set; } // childId to parent id
 
     internal Dictionary<int, List<ReadFocusEntry>> Reads { get; set; }
 
@@ -33,23 +26,91 @@ internal class ParsingFocusData
     internal ParsingFocus2 Active { get; set; }
 
 
-
-    internal void Read(Func<object, object> transform)
+    internal ParsingFocusData(ParsingMetaContext parsingConfig, object readRoot, object writeRoot)
     {
-        var reads = Reads[Active.ReadId];
-        Reads[++_readIdCounter] = reads.Select(x => new ReadFocusEntry { Data = transform(x.Data), SequenceId = x.SequenceId, }).ToList();
+        Sequences = new Dictionary<int, ParsingSequence> {
+            { _sequenceIdCounter, new ParsingSequence { ParentId = -1, Length = 1 } }
+        };
+
+        Reads = new Dictionary<int, List<ReadFocusEntry>>
+        {
+            { _readIdCounter, [ new ReadFocusEntry { Value = new ValueWrapper(readRoot), SequenceId = _sequenceIdCounter } ] }
+        };
+
+        Writes = new Dictionary<int, List<WriteFocusEntry>>
+        {
+            { _writeIdCounter, [ new WriteFocusEntry { Value = new ValueWrapper(writeRoot), SequenceId = _sequenceIdCounter } ] }
+        };
+
+        Active = new ParsingFocus2
+        {
+            WriteId = _writeIdCounter,
+            ReadId = _readIdCounter,
+        };
+
+        Store = new Dictionary<int, ParsingFocus2> {
+            { Compiler.Compiler.RootId, Active }
+        };
+    }
+
+
+    internal void Save(int id)
+    {
+        Store[id] = Active;
+    }
+
+    internal void Load(int id)
+    {
+        Active = Store[id];
+    }
+
+    internal void LoadRead(int id)
+    {
+        var readId = Store[id].ReadId;
+        Active = new ParsingFocus2(readId, Active.WriteId);
+    }
+
+    internal void LoadWrite(int id)
+    {
+        var writeId = Store[id].WriteId;
+        Active = new ParsingFocus2(Active.ReadId, writeId);
+    }
+
+    internal void Read(Func<ValueWrapper, KeyValuePair<ValueWrapper, ValueWrapper>> transform) => ReadInner(x =>
+    {
+        var kv = transform(x.Value);
+        return new ReadFocusEntry { Key = kv.Key, Value = kv.Value, SequenceId = x.SequenceId, };
+    });
+    internal void ReadInner(Func<ReadFocusEntry, ReadFocusEntry> transform)
+    {
+
+        var raws = Reads[Active.ReadId];
+        var reads = raws.Select(transform).ToList();
+
+#if DEBUG
+        if (reads.Count == 0)
+            throw new Exception("ReadInner resulted in no reads");
+#endif
+
+
+        Reads[++_readIdCounter] = reads;
         Active = new ParsingFocus2(_readIdCounter, Active.WriteId);
     }
 
-    internal void Write(Func<object, object> transform)
+    internal void Write(Func<ValueWrapper, ValueWrapper> transform) => WriteInner((x) => new WriteFocusEntry { Value = transform(x.Value), SequenceId = x.SequenceId });
+
+    internal void WriteInner(Func<WriteFocusEntry, WriteFocusEntry> transform)
     {
         var writes = Writes[Active.WriteId];
-        Writes[++_writeIdCounter] = writes.Select(x => new WriteFocusEntry { Data = transform(x.Data), SequenceId = x.SequenceId }).ToList();
+        Writes[++_writeIdCounter] = writes.Select(transform).ToList();
         Active = new ParsingFocus2(Active.ReadId, _writeIdCounter);
     }
 
 
-    internal void WriteFromRead(List<WriteFocusEntry> writes, List<ReadFocusEntry> reads, Func<object, object> extractRead, Action<WriteParam> action)
+
+    internal void WriteFromRead(Func<ReadFocusEntry, ValueWrapper> extractRead, Action<WriteParam> action) => WriteFromRead(Writes[Active.WriteId], Reads[Active.ReadId], extractRead, action);
+
+    internal void WriteFromRead(List<WriteFocusEntry> writes, List<ReadFocusEntry> reads, Func<ReadFocusEntry, ValueWrapper> extractRead, Action<WriteParam> action)
     {
         var ws = GenerateSequencesIntersection(writes, reads);
         foreach (var rw in ws)
@@ -59,42 +120,16 @@ internal class ParsingFocusData
 
             if (r.Count == 0)
                 throw new Exception("no reads in sequence");
-
-
             var sameSequence = w.SequenceId == r[0].SequenceId;
 
+            if (sameSequence && r.Count != 1)
+                throw new Exception($"to many reads in same sequence | [{r.Select(x => x.SequenceId.ToString()).Join(", ")}]");
 
-            if (sameSequence)
-            {
-                if (r.Count != 1)
-                    throw new Exception($"to many reads in same sequence | [{r.Select(x => x.SequenceId.ToString()).Join(", ")}]");
+            var readValues = r.Select(extractRead).ToList();
 
-                action(new WriteParam
-                {
-                    Read = extractRead(r[0].Data),
-                    Write = w.Data
-                });
-
-                continue;
-            }
-            else
-            {
-                action(new WriteParam
-                {
-                    Read = r.Select(extractRead).ToList(),
-                    Write = w.Data
-                });
-
-            }
+            action(new WriteParam(readValues, w.Value, !sameSequence));
         }
     }
-
-
-
-
-
-
-
 
     private new Dictionary<int, (WriteFocusEntry Write, List<ReadFocusEntry> Read)> GenerateSequencesIntersection(List<WriteFocusEntry> writes, List<ReadFocusEntry> reads)
     {
@@ -123,10 +158,10 @@ internal class ParsingFocusData
             var activeId = id;
             while (activeId >= 0)
             {
-                if (!writeChildSequences.TryGetValue(id, out var values))
+                if (!writeChildSequences.TryGetValue(activeId, out var values))
                 {
                     values = [id];
-                    writeChildSequences.Add(id, values);
+                    writeChildSequences.Add(activeId, values);
                 }
                 else
                 {
@@ -144,7 +179,7 @@ internal class ParsingFocusData
             {
                 activeId = Sequences[activeId].ParentId;
                 if (activeId < 0)
-                    throw new InvalidOperationException("read/write missing shared root");
+                    throw new InvalidOperationException($"read/write missing shared root | writes = [{writeChildSequences.Select(x => x.Key.ToString()).Join(", ")}] | reads = [{reads.GroupBy(x => x.SequenceId).Select(x => x.Key.ToString()).Join(", ")}]");
             }
             foreach (var w in ws)
             {
@@ -172,26 +207,104 @@ internal class ParsingFocusData
      */
 
 
-    internal void ReadForeach(Func<object, IEnumerable<object>> transformAction)
-    {
-        var reads = Reads[Active.ReadId];
 
-        foreach (var r in reads)
+
+
+    internal void ReadForeach(Func<ValueWrapper, IEnumerable<KeyValuePair<object, object>>> transformAction)
+    {
+
+        var result = new List<ReadFocusEntry>();
+        foreach (var r in Reads[Active.ReadId])
         {
-            _sequenceIdCounter++;
-            var outReads = transformAction(r.Data).Select(x => new ReadFocusEntry
+            var n = 0;
+            foreach (var kv in transformAction(r.Value))
             {
-                Data = x,
+                result.Add(new ReadFocusEntry
+                {
+                    Key = new ValueWrapper(kv.Key),
+                    Value = new ValueWrapper(kv.Value),
+                    SequenceId = _sequenceIdCounter
+                });
+                n++;
+            }
+
+            Sequences[_sequenceIdCounter].ChildrenIds.Add(_sequenceIdCounter + 1);
+            _sequenceIdCounter++;
+            Sequences[_sequenceIdCounter] = new ParsingSequence { ParentId = r.SequenceId, Length = n };
+
+
+
+
+
+            /*
+
+            var outReads = transformAction(r.Value).Select(x => new ReadFocusEntry
+            {
+                Key = new ValueWrapper(x.Key),
+                Value = new ValueWrapper(x.Value),
                 SequenceId = _sequenceIdCounter
             }).ToList();
             _readIdCounter++;
+
+
+#if DEBUG
+            if (outReads.Count == 0)
+                throw new Exception("ReadForeach resulted in no reads");
+#endif
+
+
+
             Reads[_readIdCounter] = outReads;
-            Sequences[_sequenceIdCounter] = new ReadSequence { ParentId = r.SequenceId, Length = outReads.Count };
+            Sequences[r.SequenceId].ChildrenIds.Add(_readIdCounter);
+
+           */
         }
+
+
+
+        _readIdCounter++;
+        Reads[_readIdCounter] = result;
         Active = new ParsingFocus2(_readIdCounter, Active.WriteId);
     }
 
 
+
+    internal void WriteFlatten(Func<ValueWrapper, ValueWrapper> writeTransform)
+    {
+
+        /*
+        var nextWrites = new List<WriteFocusEntry>();
+        foreach (var w in Writes[Active.WriteId])
+        {
+            var children = Sequences[w.SequenceId].ChildrenIds;
+
+
+            nextWrites.AddRange(children.Select());
+
+            var s = 45646;
+        }
+        */
+
+
+
+
+        var rawWrites = Writes[Active.WriteId];
+
+        foreach (var rw in rawWrites)
+        {
+            var children = Sequences[rw.SequenceId].ChildrenIds;
+            var s = 345653;
+        }
+
+        var writes = rawWrites
+            .SelectMany(w => Sequences[w.SequenceId].ChildrenIds.Select(cId => new WriteFocusEntry { SequenceId = cId, Value = writeTransform(w.Value) }))
+            .ToList();
+
+        _writeIdCounter++;
+        Writes[_writeIdCounter] = writes;
+
+        Active = new ParsingFocus2 { ReadId = Active.ReadId, WriteId = _writeIdCounter };
+    }
 
 }
 
@@ -213,30 +326,27 @@ internal struct ParsingFocus2
 
 }
 
-
-
-internal struct ReadSequence
+internal struct ParsingSequence
 {
-    internal int ParentId { get; set; }
     internal int Length { get; set; }
+    internal int ParentId { get; set; }
+    internal List<int> ChildrenIds { get; set; } = [];
 
+    public ParsingSequence()
+    {
+
+    }
 }
-
 
 internal class ReadFocusEntry
 {
-    internal object Data { get; set; }
+    internal ValueWrapper Key { get; set; }
+    internal ValueWrapper Value { get; set; }
     internal int SequenceId { get; set; }
 }
-
-
-
 
 internal class WriteFocusEntry
 {
-    internal object Data { get; set; }
+    internal ValueWrapper Value { get; set; }
     internal int SequenceId { get; set; }
 }
-
-
-

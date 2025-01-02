@@ -80,7 +80,7 @@ internal static partial class FplOperation
 
 
 
-
+    /*
 
     internal static IEnumerable<ParseOperation> CompileStringAccessorOperation(ParseData parser, RawOp op, bool isRead, Action<FplQuery, ParsingContext, int, string> action)
     {
@@ -124,26 +124,6 @@ internal static partial class FplOperation
 
 
 
-        /*
-        var inputType = OpCompileType.ReadObject;
-
-        if (parser.ReadInput.TryGetValue(op.Input[0].Id, out var v))
-            inputType = v.Type;
-
-
-
-
-
-        switch (inputType)
-        {
-            case OpCompileType.ReadObject:
-                yield return new ParseOperation(OperationRead, accessor.Accessor);
-                break;
-            case OpCompileType.ReadArray:
-                yield return new ParseOperation(OperationRead, accessor.Accessor);
-                break;
-        }
-        */
 
 
 
@@ -154,8 +134,28 @@ internal static partial class FplOperation
             yield return x;
 
     }
+    */
+
+    /*
+    var inputType = OpCompileType.ReadObject;
+
+    if (parser.ReadInput.TryGetValue(op.Input[0].Id, out var v))
+        inputType = v.Type;
 
 
+
+
+
+    switch (inputType)
+    {
+        case OpCompileType.ReadObject:
+            yield return new ParseOperation(OperationRead, accessor.Accessor);
+            break;
+        case OpCompileType.ReadArray:
+            yield return new ParseOperation(OperationRead, accessor.Accessor);
+            break;
+    }
+    */
 
 
 
