@@ -24,20 +24,15 @@ internal static partial class FplOperation {
         var input = op.Input[0];
         var accessor = op.Input[1];
 
-
         var inputType = OpCompileType.ReadObject;
-
 
         if (parser.ReadInput.TryGetValue(op.Input[0].Id, out var v))
             inputType = v.Type;
-
 
         if (accessor.Accessor == null)
         {
             var sdf = 345354;
         }
-
-
 
         switch (inputType)
         {
@@ -48,9 +43,6 @@ internal static partial class FplOperation {
                 yield return new ParseOperation(OperationRead, accessor.Accessor);
                 break;
         }
-
-
-
 
         parser.ActiveId = op.Id;
         parser.LoadedId = op.Id;
@@ -73,28 +65,9 @@ internal static partial class FplOperation {
         var accessor = op.Input[1];
 
         if (accessor.Accessor != null)
-        {
             yield return new ParseOperation(accessorAction, accessor.Accessor);
-        }
         else
-        {
-
-
-            yield return new ParseOperation((FplQuery parser, ParsingContext context, int intAcc, string acc) =>
-            {
-
-        
-
-            });
-
-
-
-            var aId = accessor.GetStatusId(parser);
-
-            
-
-            //yield return new ParseOperation((q, c, i, s) => OperationStringReadLoadAccessor(op, q, c, i, s, transform));
-        }
+            yield return new ParseOperation(OperationReadDynamic, accessor.Id);
 
         parser.ActiveId = op.Id;
         parser.LoadedId = op.Id;
@@ -103,34 +76,6 @@ internal static partial class FplOperation {
             yield return x;
     }
 
-
-    internal static void OperationReadTransitiveAccessor(FplQuery parser, ParsingContext context, int intAcc, string acc)
-    {
-#if DEBUG
-        if (acc == null)
-            throw new Exception("OperationRead null access");
-#endif
-
-
-
-        context.ReadFunc(
-            (m, readSrc) => m.Parse(readSrc, acc)
-            
-            );
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
     internal static void OperationRead(FplQuery parser, ParsingContext context, int intAcc, string acc)
     {
 #if DEBUG
@@ -138,6 +83,22 @@ internal static partial class FplOperation {
             throw new Exception("OperationRead null access");
 #endif
         context.ReadFunc((m, readSrc) => m.Parse(readSrc, acc));
+    }
+
+    internal static void OperationReadDynamic(FplQuery parser, ParsingContext context, int intAcc, string acc)
+    {
+        var readId = context.Focus.Store[intAcc].ReadId;
+        var intersections = context.Focus.GenerateSequencesIntersection(context.Focus.Writes[context.Focus.Active.WriteId], [context.Focus.Reads[readId]]);
+        foreach (var x in intersections)
+        {
+            foreach (var a in x.Intersected)
+            {
+                foreach (var r in a.Foci)
+                {
+                    context.ReadFunc((m, readSrc) => m.Parse(readSrc, r.Value.V.ToString()));
+                }
+            }
+        }
     }
 }
 

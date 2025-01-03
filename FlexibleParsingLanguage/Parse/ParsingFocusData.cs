@@ -23,7 +23,6 @@ internal class ParsingFocusData
 
     internal ParsingFocus2 Active { get; set; }
 
-
     internal ParsingFocusData(ParsingMetaContext parsingConfig, object readRoot, object writeRoot)
     {
         Sequences = new Dictionary<int, ParsingSequence> {
@@ -50,7 +49,6 @@ internal class ParsingFocusData
             { Compiler.Compiler.RootId, Active }
         };
     }
-
 
     internal void Save(int id)
     {
@@ -118,20 +116,8 @@ internal class ParsingFocusData
         }
     }
 
-    struct SequenceIntersection
-    {
-        internal bool MultiRead { get; set; }
-        internal int SequenceId { get; set; }
-        internal FocusEntry Primary { get; set; }
-        internal SequenceIntersectionEntry[] Intersected { get; set; }
-        internal struct SequenceIntersectionEntry
-        {
-            internal bool Multiread { get; set; }
-            internal List<FocusEntry> Foci { get; set; }
-        }
-    }
 
-    private List<SequenceIntersection> GenerateSequencesIntersection(List<FocusEntry> writes, List<FocusEntry>[] reads)
+    internal List<SequenceIntersection> GenerateSequencesIntersection(List<FocusEntry> writes, List<FocusEntry>[] reads)
     {
         var rwSequences = new Dictionary<int, (FocusEntry Write, List<FocusEntry>[] Read)>();
 
@@ -265,6 +251,32 @@ internal class ParsingFocusData
     }
 
 }
+
+
+
+
+
+
+
+
+internal struct SequenceIntersection
+{
+    internal bool MultiRead { get; set; }
+    internal int SequenceId { get; set; }
+    internal FocusEntry Primary { get; set; }
+    internal SequenceIntersectionEntry[] Intersected { get; set; }
+    internal struct SequenceIntersectionEntry
+    {
+        internal bool Multiread { get; set; }
+        internal List<FocusEntry> Foci { get; set; }
+    }
+}
+
+
+
+
+
+
 
 internal struct ParsingFocus2
 {

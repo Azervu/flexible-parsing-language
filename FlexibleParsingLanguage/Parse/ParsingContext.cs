@@ -18,12 +18,8 @@ internal partial class ParsingContext
         ParsingMetaContext parsingConfig
     )
     {
-
         _modules = modules;
-
-
         Focus = new ParsingFocusData(parsingConfig, readRoot, writeRoot);
-
         WritingModule = writingModule;
     }
 
@@ -59,7 +55,6 @@ internal partial class ParsingContext
 
     internal void WriteFromRead(Func<FocusEntry, ValueWrapper> readFunc, Action<WriteParam> writeAction) => Focus.WriteFromRead(readFunc, writeAction);
 
-
     internal static void WriteAddRead(FplQuery parser, ParsingContext context, int intAcc, string acc)
     {
 
@@ -67,7 +62,7 @@ internal partial class ParsingContext
 
         /*
         
-                    if (param.Write.V is IDictionary d)
+            if (param.Write.V is IDictionary d)
             {
                 var rng = new Random();
                 d.Add(acc + "_" + rng.Next(99), "***");
