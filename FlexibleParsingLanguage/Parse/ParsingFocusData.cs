@@ -107,8 +107,6 @@ internal class ParsingFocusData
         Active = new ParsingFocus2(Active.ReadId, _writeIdCounter);
     }
 
-
-
     internal void WriteFromRead(Func<ReadFocusEntry, ValueWrapper> extractRead, Action<WriteParam> action) => WriteFromRead(Writes[Active.WriteId], Reads[Active.ReadId], extractRead, action);
 
     internal void WriteFromRead(List<WriteFocusEntry> writes, List<ReadFocusEntry> reads, Func<ReadFocusEntry, ValueWrapper> extractRead, Action<WriteParam> action)
@@ -122,14 +120,31 @@ internal class ParsingFocusData
             if (r.Count == 0)
                 throw new Exception("no reads in sequence");
             var sameSequence = w.SequenceId == r[0].SequenceId;
-
-            if (sameSequence && r.Count != 1)
-                throw new Exception($"to many reads in same sequence | [{r.Select(x => x.SequenceId.ToString()).Join(", ")}]");
-
             var readValues = r.Select(extractRead).ToList();
 
+            /*
+            if (sameSequence)
+            {
+                foreach (var v in readValues)
+                {
+                    var p = new WriteParam([v], w.Value, false);
+                    action(p);
+                }
 
-            action(new WriteParam(readValues, w.Value, !sameSequence));
+            }
+            else
+            {
+                var p = new WriteParam(readValues, w.Value, true);
+                action(p);
+            }
+            */
+
+#if DEBUG 
+            if (sameSequence && r.Count != 1)
+                throw new Exception("multiple in same sequence");
+#endif
+            var p = new WriteParam(readValues, w.Value, !sameSequence);
+            action(p);
         }
     }
 
@@ -214,9 +229,7 @@ internal class ParsingFocusData
             var write = x.Value.Write;
             log.Append($"\n({write.SequenceId}){ser(write.Value.V)} - [");
             log.Append(read.Select(r => 
-                $"({r.SequenceId}){ser(r.Key.V)}/{ser(r.Value.V)}" +
-                ser(r.Key.V) +
-                ser(r.Value.V)
+                $"({r.SequenceId}){ser(r.Value.V)}"
             ).Join(", "));
 
             log.Append(']');
