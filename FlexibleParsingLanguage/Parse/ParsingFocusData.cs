@@ -119,14 +119,25 @@ internal class ParsingFocusData
 
             if (r.Count == 0)
                 throw new Exception("no reads in sequence");
-            var sameSequence = w.SequenceId == r[0].SequenceId;
-            var readValues = r.Select(extractRead).ToList();
 
+            var readSequence = r[0].SequenceId;
+            var multiRead = true;
+            var sequenceId = w.SequenceId;
+            while (sequenceId >= 0)
+            {
+                if (sequenceId == readSequence)
+                {
+                    multiRead = false;
+                    break;
+                }
+                sequenceId = Sequences[sequenceId].ParentId;
+            }
+            var readValues = r.Select(extractRead).ToList();
 #if DEBUG 
-            if (sameSequence && r.Count != 1)
+            if (!multiRead && r.Count != 1)
                 throw new Exception("multiple in same sequence");
 #endif
-            var p = new WriteParam(readValues, w.Value, !sameSequence);
+            var p = new WriteParam(readValues, w.Value, multiRead);
             action(p);
         }
     }

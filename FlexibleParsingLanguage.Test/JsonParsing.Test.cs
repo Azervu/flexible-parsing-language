@@ -48,7 +48,6 @@ public class JsonParsingTest
     {
         new object[] { "Simple Test", "{'k': 'v'}", "k", "['v']" },
         new object[] { "Simple Header Test", "{'k': 'v'}", "k:h", "{'h':'v'}" },
-
         new object[] { "Foreach Test", "{'a': 1, 'b': 2, 'c': 3}", "*:*:h", "[{'h':1},{'h':2},{'h':3}]" },
 
         new object[] { "Foreach 1A", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]", "*", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]" },
@@ -60,8 +59,11 @@ public class JsonParsingTest
         new object[] { "Interupted Foreach A", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]", "*:***", "[['a11','a12','a21','a22'],['b11','b12','b21','b22']]" },
         new object[] { "Interupted Foreach B", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]", "**:**", "[['a11','a12'],['a21','a22'],['b11','b12'],['b21','b22']]" },
         new object[] { "Interupted Foreach C", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]", "***:*", "[['a11'],['a12'],['a21'],['a22'],['b11'],['b12'],['b21'],['b22']]" },
+        new object[] { "Interupted Foreach 2C", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]", "***:*:h", "[{'h':'a11'},{'h':'a12'},{'h':'a21'},{'h':'a22'},{'h':'b11'},{'h':'b12'},{'h':'b21'},{'h':'b22'}]" },
 
 
+
+        new object[] { "Foreach Header", "[[1,2],[3]]", "**:*:v", "[{'v':1},{'v':2},{'v':3}]"},
 
         new object[] { "Group Accessor Test", "{'a': { 'b': { 'weirdKey': 'v' } }, 'm': 'weirdKey'}", "a.b.($m):h", "{'h':'v'}" },
 
