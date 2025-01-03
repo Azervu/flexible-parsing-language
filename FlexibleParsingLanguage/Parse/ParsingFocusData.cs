@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Parse;
@@ -29,7 +30,7 @@ internal class ParsingFocusData
     internal ParsingFocusData(ParsingMetaContext parsingConfig, object readRoot, object writeRoot)
     {
         Sequences = new Dictionary<int, ParsingSequence> {
-            { _sequenceIdCounter, new ParsingSequence { ParentId = -1, Length = 1 } }
+            { _sequenceIdCounter, new ParsingSequence { ParentId = -1 } }
         };
 
         Reads = new Dictionary<int, List<ReadFocusEntry>>
@@ -127,13 +128,14 @@ internal class ParsingFocusData
 
             var readValues = r.Select(extractRead).ToList();
 
+
             action(new WriteParam(readValues, w.Value, !sameSequence));
         }
     }
 
     private new Dictionary<int, (WriteFocusEntry Write, List<ReadFocusEntry> Read)> GenerateSequencesIntersection(List<WriteFocusEntry> writes, List<ReadFocusEntry> reads)
     {
-        var rwSequences = new Dictionary<int, (WriteFocusEntry, List<ReadFocusEntry>)>();
+        var rwSequences = new Dictionary<int, (WriteFocusEntry Write, List<ReadFocusEntry> Read)>();
 
         foreach (var w in writes)
         {
@@ -150,7 +152,7 @@ internal class ParsingFocusData
         var readSequences = reads
             .GroupBy(x => x.SequenceId)
             .ToDictionary(x => x.Key, x => x.ToList());
-                */
+        */
 
         Dictionary<int, List<int>> writeChildSequences = new();
         foreach (var id in writes.Select(x => x.SequenceId))
@@ -186,6 +188,46 @@ internal class ParsingFocusData
                 rwSequences[w].Item2.AddRange(sg);
             }
         }
+
+
+
+#if DEBUG
+        var opt = new JsonSerializerOptions();
+
+        var log = new StringBuilder();
+
+        var ser = (object x) =>
+        {
+            switch (x)
+            {
+                case string s:
+                    return s;
+            }
+
+            return JsonSerializer.Serialize(x, opt);
+        };
+
+        foreach (var x in rwSequences)
+        {
+            var sequenceId = x.Key;
+            var read = x.Value.Read;
+            var write = x.Value.Write;
+            log.Append($"\n({write.SequenceId}){ser(write.Value.V)} - [");
+            log.Append(read.Select(r => 
+                $"({r.SequenceId}){ser(r.Key.V)}/{ser(r.Value.V)}" +
+                ser(r.Key.V) +
+                ser(r.Value.V)
+            ).Join(", "));
+
+            log.Append(']');
+        }
+        var l = log.ToString();
+
+        var wf = $"{rwSequences.Select(x => $"[{x.Value.Read.Select(y => JsonSerializer.Serialize(y.Key.V, opt) + y.SequenceId + JsonSerializer.Serialize(y.Value.V, opt)).Join(", ")}]").Join("\n")}";
+        //throw new NotImplementedException("Fix this");
+#endif
+
+
         return rwSequences;
     }
 
@@ -216,55 +258,46 @@ internal class ParsingFocusData
         var result = new List<ReadFocusEntry>();
         foreach (var r in Reads[Active.ReadId])
         {
-            var n = 0;
             foreach (var kv in transformAction(r.Value))
             {
+                _sequenceIdCounter++;
                 result.Add(new ReadFocusEntry
                 {
                     Key = new ValueWrapper(kv.Key),
                     Value = new ValueWrapper(kv.Value),
                     SequenceId = _sequenceIdCounter
                 });
-                n++;
+                Sequences[r.SequenceId].ChildrenIds.Add(_sequenceIdCounter);
+                Sequences[_sequenceIdCounter] = new ParsingSequence { ParentId = r.SequenceId };
             }
-
-            Sequences[_sequenceIdCounter].ChildrenIds.Add(_sequenceIdCounter + 1);
-            _sequenceIdCounter++;
-            Sequences[_sequenceIdCounter] = new ParsingSequence { ParentId = r.SequenceId, Length = n };
-
-
-
-
-
-            /*
-
-            var outReads = transformAction(r.Value).Select(x => new ReadFocusEntry
-            {
-                Key = new ValueWrapper(x.Key),
-                Value = new ValueWrapper(x.Value),
-                SequenceId = _sequenceIdCounter
-            }).ToList();
-            _readIdCounter++;
-
-
-#if DEBUG
-            if (outReads.Count == 0)
-                throw new Exception("ReadForeach resulted in no reads");
-#endif
-
-
-
-            Reads[_readIdCounter] = outReads;
-            Sequences[r.SequenceId].ChildrenIds.Add(_readIdCounter);
-
-           */
         }
-
-
 
         _readIdCounter++;
         Reads[_readIdCounter] = result;
         Active = new ParsingFocus2(_readIdCounter, Active.WriteId);
+
+
+
+
+
+#if DEBUG
+
+        var w2 = Writes[Active.WriteId];
+        var r2 = Reads[Active.ReadId];
+        var ws = GenerateSequencesIntersection(w2, r2);
+        var opt = new JsonSerializerOptions();
+        opt.WriteIndented = false;
+        var rr = $"[{r2.Select(x => x.SequenceId + "_" + JsonSerializer.Serialize(x.Value.V, opt)).Join(", ")}]";
+        var ww = $"[{w2.Select(x => x.SequenceId + "_" + JsonSerializer.Serialize(x.Value.V, opt)).Join(", ")}]";
+
+        var wf = $"{ws.Select(
+            x => $"[{x.Value.Read.Select(y => JsonSerializer.Serialize(y.Value.V, opt)).Join(", ")}]"
+        ).Join("\n")}";
+
+        var s = 345345;
+#endif
+
+
     }
 
 
@@ -285,25 +318,43 @@ internal class ParsingFocusData
         }
         */
 
-
-
-
         var rawWrites = Writes[Active.WriteId];
-
-        foreach (var rw in rawWrites)
-        {
-            var children = Sequences[rw.SequenceId].ChildrenIds;
-            var s = 345653;
-        }
-
         var writes = rawWrites
             .SelectMany(w => Sequences[w.SequenceId].ChildrenIds.Select(cId => new WriteFocusEntry { SequenceId = cId, Value = writeTransform(w.Value) }))
             .ToList();
 
         _writeIdCounter++;
         Writes[_writeIdCounter] = writes;
-
         Active = new ParsingFocus2 { ReadId = Active.ReadId, WriteId = _writeIdCounter };
+
+
+
+
+
+#if DEBUG
+
+        foreach (var rw in rawWrites)
+        {
+            var children = Sequences[rw.SequenceId].ChildrenIds;
+            var rtfdgs = 345653;
+        }
+        var w2 = Writes[Active.WriteId];
+        var r2 = Reads[Active.ReadId];
+        var ws = GenerateSequencesIntersection(w2, r2);
+        var opt = new JsonSerializerOptions();
+        opt.WriteIndented = false;
+        var rr = $"[{r2.Select(x => x.SequenceId + "_" + JsonSerializer.Serialize(x.Value.V, opt)).Join(", ")}]";
+        var ww = $"[{w2.Select(x => x.SequenceId + "_" + JsonSerializer.Serialize(x.Value.V, opt)).Join(", ")}]";
+
+        var wf = $"{ws.Select(
+            x => $"[{x.Value.Read.Select(y => JsonSerializer.Serialize(y.Value.V, opt)).Join(", ")}]"
+        ).Join("\n")}";
+
+        var s = 345345;
+#endif
+
+
+
     }
 
 }
@@ -328,7 +379,6 @@ internal struct ParsingFocus2
 
 internal struct ParsingSequence
 {
-    internal int Length { get; set; }
     internal int ParentId { get; set; }
     internal List<int> ChildrenIds { get; set; } = [];
 
