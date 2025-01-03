@@ -10,19 +10,16 @@ namespace FlexibleParsingLanguage.Parse;
 
 internal class ParsingFocusData
 {
-
     private int _sequenceIdCounter = 1;
     private int _readIdCounter = 1;
     private int _writeIdCounter = 1;
-
-
     internal Dictionary<int, ParsingFocus2> Store { get; set; }
 
     internal Dictionary<int, ParsingSequence> Sequences { get; set; } // childId to parent id
 
-    internal Dictionary<int, List<ReadFocusEntry>> Reads { get; set; }
+    internal Dictionary<int, List<FocusEntry>> Reads { get; set; }
 
-    internal Dictionary<int, List<WriteFocusEntry>> Writes { get; set; }
+    internal Dictionary<int, List<FocusEntry>> Writes { get; set; }
 
     internal ParsingFocus2 Active { get; set; }
 
@@ -33,14 +30,14 @@ internal class ParsingFocusData
             { _sequenceIdCounter, new ParsingSequence { ParentId = -1 } }
         };
 
-        Reads = new Dictionary<int, List<ReadFocusEntry>>
+        Reads = new Dictionary<int, List<FocusEntry>>
         {
-            { _readIdCounter, [ new ReadFocusEntry { Value = new ValueWrapper(readRoot), SequenceId = _sequenceIdCounter } ] }
+            { _readIdCounter, [ new FocusEntry { Value = new ValueWrapper(readRoot), SequenceId = _sequenceIdCounter } ] }
         };
 
-        Writes = new Dictionary<int, List<WriteFocusEntry>>
+        Writes = new Dictionary<int, List<FocusEntry>>
         {
-            { _writeIdCounter, [ new WriteFocusEntry { Value = new ValueWrapper(writeRoot), SequenceId = _sequenceIdCounter } ] }
+            { _writeIdCounter, [ new FocusEntry { Value = new ValueWrapper(writeRoot), SequenceId = _sequenceIdCounter } ] }
         };
 
         Active = new ParsingFocus2
@@ -80,9 +77,9 @@ internal class ParsingFocusData
     internal void Read(Func<ValueWrapper, KeyValuePair<ValueWrapper, ValueWrapper>> transform) => ReadInner(x =>
     {
         var kv = transform(x.Value);
-        return new ReadFocusEntry { Key = kv.Key, Value = kv.Value, SequenceId = x.SequenceId, };
+        return new FocusEntry { Key = kv.Key, Value = kv.Value, SequenceId = x.SequenceId, };
     });
-    internal void ReadInner(Func<ReadFocusEntry, ReadFocusEntry> transform)
+    internal void ReadInner(Func<FocusEntry, FocusEntry> transform)
     {
 
         var raws = Reads[Active.ReadId];
@@ -93,64 +90,56 @@ internal class ParsingFocusData
             throw new Exception("ReadInner resulted in no reads");
 #endif
 
-
         Reads[++_readIdCounter] = reads;
         Active = new ParsingFocus2(_readIdCounter, Active.WriteId);
     }
 
-    internal void Write(Func<ValueWrapper, ValueWrapper> transform) => WriteInner((x) => new WriteFocusEntry { Value = transform(x.Value), SequenceId = x.SequenceId });
+    internal void Write(Func<ValueWrapper, ValueWrapper> transform) => WriteInner((x) => new FocusEntry { Value = transform(x.Value), SequenceId = x.SequenceId });
 
-    internal void WriteInner(Func<WriteFocusEntry, WriteFocusEntry> transform)
+    internal void WriteInner(Func<FocusEntry, FocusEntry> transform)
     {
         var writes = Writes[Active.WriteId];
         Writes[++_writeIdCounter] = writes.Select(transform).ToList();
         Active = new ParsingFocus2(Active.ReadId, _writeIdCounter);
     }
 
-    internal void WriteFromRead(Func<ReadFocusEntry, ValueWrapper> extractRead, Action<WriteParam> action) => WriteFromRead(Writes[Active.WriteId], Reads[Active.ReadId], extractRead, action);
-
-    internal void WriteFromRead(List<WriteFocusEntry> writes, List<ReadFocusEntry> reads, Func<ReadFocusEntry, ValueWrapper> extractRead, Action<WriteParam> action)
+    internal void WriteFromRead(Func<FocusEntry, ValueWrapper> extractRead, Action<WriteParam> action)
     {
-        var ws = GenerateSequencesIntersection(writes, reads);
+        var ws = GenerateSequencesIntersection(Writes[Active.WriteId], [Reads[Active.ReadId]]);
         foreach (var rw in ws)
         {
-            var w = rw.Value.Item1;
-            var r = rw.Value.Item2;
+            var write = rw.Primary;
+            var read = rw.Intersected[0];
 
-            if (r.Count == 0)
+            if (read.Foci.Count == 0)
                 throw new Exception("no reads in sequence");
-
-            var readSequence = r[0].SequenceId;
-            var multiRead = true;
-            var sequenceId = w.SequenceId;
-            while (sequenceId >= 0)
-            {
-                if (sequenceId == readSequence)
-                {
-                    multiRead = false;
-                    break;
-                }
-                sequenceId = Sequences[sequenceId].ParentId;
-            }
-            var readValues = r.Select(extractRead).ToList();
-#if DEBUG 
-            if (!multiRead && r.Count != 1)
-                throw new Exception("multiple in same sequence");
-#endif
-            var p = new WriteParam(readValues, w.Value, multiRead);
+            var p = new WriteParam(read.Foci.Select(extractRead).ToList(), write.Value, read.Multiread);
             action(p);
         }
     }
 
-    private new Dictionary<int, (WriteFocusEntry Write, List<ReadFocusEntry> Read)> GenerateSequencesIntersection(List<WriteFocusEntry> writes, List<ReadFocusEntry> reads)
+    struct SequenceIntersection
     {
-        var rwSequences = new Dictionary<int, (WriteFocusEntry Write, List<ReadFocusEntry> Read)>();
+        internal bool MultiRead { get; set; }
+        internal int SequenceId { get; set; }
+        internal FocusEntry Primary { get; set; }
+        internal SequenceIntersectionEntry[] Intersected { get; set; }
+        internal struct SequenceIntersectionEntry
+        {
+            internal bool Multiread { get; set; }
+            internal List<FocusEntry> Foci { get; set; }
+        }
+    }
+
+    private List<SequenceIntersection> GenerateSequencesIntersection(List<FocusEntry> writes, List<FocusEntry>[] reads)
+    {
+        var rwSequences = new Dictionary<int, (FocusEntry Write, List<FocusEntry>[] Read)>();
 
         foreach (var w in writes)
         {
             if (rwSequences.ContainsKey(w.SequenceId))
                 throw new InvalidOperationException("multiple write heads on same sequence");
-            rwSequences[w.SequenceId] = (w, new());
+            rwSequences[w.SequenceId] = (w, reads.Select(x => new List<FocusEntry>()).ToArray());
         }
 
         Dictionary<int, List<int>> writeChildSequences = new();
@@ -172,35 +161,78 @@ internal class ParsingFocusData
             }
         }
 
-        foreach (var sg in reads.GroupBy(x => x.SequenceId))
+        for (var i = 0; i < reads.Length; i++)
         {
-            var activeId = sg.Key;
-            List<int>? ws = null;
-            while (!writeChildSequences.TryGetValue(activeId, out ws))
+            var r = reads[i];
+
+            foreach (var sg in r.GroupBy(x => x.SequenceId))
             {
-                activeId = Sequences[activeId].ParentId;
-                if (activeId < 0)
-                    throw new InvalidOperationException($"read/write missing shared root | writes = [{writeChildSequences.Select(x => x.Key.ToString()).Join(", ")}] | reads = [{reads.GroupBy(x => x.SequenceId).Select(x => x.Key.ToString()).Join(", ")}]");
-            }
-            foreach (var w in ws)
-            {
-                rwSequences[w].Item2.AddRange(sg);
+                var activeId = sg.Key;
+                List<int>? ws = null;
+                while (!writeChildSequences.TryGetValue(activeId, out ws))
+                {
+                    activeId = Sequences[activeId].ParentId;
+                    if (activeId < 0)
+                        throw new InvalidOperationException($"read/write missing shared root | writes = [{writeChildSequences.Select(x => x.Key.ToString()).Join(", ")}] | reads = [{r.GroupBy(x => x.SequenceId).Select(x => x.Key.ToString()).Join(", ")}]");
+                }
+                foreach (var w in ws)
+                {
+                    rwSequences[w].Item2[i].AddRange(sg);
+                }
             }
         }
-        return rwSequences;
-    }
 
+        return rwSequences.Select(x =>
+        {
+            var multiRead = true;
+            var sequenceId = x.Key;
+            var primaryAncestors = new HashSet<int> {};
+            while (sequenceId >= 0)
+            {
+                primaryAncestors.Add(sequenceId);
+                sequenceId = Sequences[sequenceId].ParentId;
+            }
+
+            var inter = x.Value.Read.Select(x =>
+            {
+                var multiRead = true;
+                if (x.Count > 0)
+                {
+                    var sequences = x.Select(y => y.SequenceId).ToHashSet();
+                    if (sequences.Count == 1)
+                        multiRead = !primaryAncestors.Contains(sequences.First());
+#if DEBUG
+                    if (!multiRead && x.Count > 1)
+                        throw new Exception("multiple in same sequence");
+#endif
+                }
+                return new SequenceIntersection.SequenceIntersectionEntry
+                {
+                    Multiread = multiRead,
+                    Foci = x,
+                };
+            });
+
+            return new SequenceIntersection
+            {
+                MultiRead = multiRead,
+                SequenceId = x.Key,
+                Primary = x.Value.Write,
+                Intersected = inter.ToArray(),
+            };
+        }).ToList();
+    }
 
     internal void ReadForeach(Func<ValueWrapper, IEnumerable<KeyValuePair<object, object>>> transformAction)
     {
 
-        var result = new List<ReadFocusEntry>();
+        var result = new List<FocusEntry>();
         foreach (var r in Reads[Active.ReadId])
         {
             foreach (var kv in transformAction(r.Value))
             {
                 _sequenceIdCounter++;
-                result.Add(new ReadFocusEntry
+                result.Add(new FocusEntry
                 {
                     Key = new ValueWrapper(kv.Key),
                     Value = new ValueWrapper(kv.Value),
@@ -214,38 +246,17 @@ internal class ParsingFocusData
         _readIdCounter++;
         Reads[_readIdCounter] = result;
         Active = new ParsingFocus2(_readIdCounter, Active.WriteId);
-
-
-
-
-
-#if DEBUG
-
-        var w2 = Writes[Active.WriteId];
-        var r2 = Reads[Active.ReadId];
-        var ws = GenerateSequencesIntersection(w2, r2);
-        var opt = new JsonSerializerOptions();
-        opt.WriteIndented = false;
-        var rr = $"[{r2.Select(x => x.SequenceId + "_" + JsonSerializer.Serialize(x.Value.V, opt)).Join(", ")}]";
-        var ww = $"[{w2.Select(x => x.SequenceId + "_" + JsonSerializer.Serialize(x.Value.V, opt)).Join(", ")}]";
-
-        var wf = $"{ws.Select(
-            x => $"[{x.Value.Read.Select(y => JsonSerializer.Serialize(y.Value.V, opt)).Join(", ")}]"
-        ).Join("\n")}";
-
-        var s = 345345;
-#endif
     }
 
     internal void WriteFlatten(Func<ValueWrapper, ValueWrapper> writeTransform)
     {
-        var result = new List<WriteFocusEntry>();
+        var result = new List<FocusEntry>();
 
-        foreach (var x in GenerateSequencesIntersection(Writes[Active.WriteId], Reads[Active.ReadId]))
+        foreach (var x in GenerateSequencesIntersection(Writes[Active.WriteId], [Reads[Active.ReadId]]))
         {
-            var w = x.Value.Write;
-            var rs = x.Value.Read;
-            result.AddRange(rs.Select(r => new WriteFocusEntry { SequenceId = r.SequenceId, Value = writeTransform(w.Value) }));
+            var w = x.Primary;
+            var rs = x.Intersected[0];
+            result.AddRange(rs.Foci.Select(r => new FocusEntry { SequenceId = r.SequenceId, Value = writeTransform(w.Value) }));
         }
 
         _writeIdCounter++;
@@ -255,22 +266,15 @@ internal class ParsingFocusData
 
 }
 
-
-
 internal struct ParsingFocus2
 {
-
     internal int WriteId { get; set; }
-
     internal int ReadId { get; set; }
-
     internal ParsingFocus2(int readId, int writeId)
     {
         WriteId = writeId;
         ReadId = readId;
     }
-
-
 }
 
 internal struct ParsingSequence
@@ -284,15 +288,9 @@ internal struct ParsingSequence
     }
 }
 
-internal class ReadFocusEntry
+internal class FocusEntry
 {
     internal ValueWrapper Key { get; set; }
-    internal ValueWrapper Value { get; set; }
-    internal int SequenceId { get; set; }
-}
-
-internal class WriteFocusEntry
-{
     internal ValueWrapper Value { get; set; }
     internal int SequenceId { get; set; }
 }

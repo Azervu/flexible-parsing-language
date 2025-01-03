@@ -57,7 +57,7 @@ internal partial class ParsingContext
         });
     }
 
-    internal void WriteFromRead(Func<ReadFocusEntry, ValueWrapper> readFunc, Action<WriteParam> writeAction) => Focus.WriteFromRead(readFunc, writeAction);
+    internal void WriteFromRead(Func<FocusEntry, ValueWrapper> readFunc, Action<WriteParam> writeAction) => Focus.WriteFromRead(readFunc, writeAction);
 
 
     internal static void WriteAddRead(FplQuery parser, ParsingContext context, int intAcc, string acc)
