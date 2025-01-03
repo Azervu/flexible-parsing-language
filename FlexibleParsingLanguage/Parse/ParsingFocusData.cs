@@ -122,23 +122,6 @@ internal class ParsingFocusData
             var sameSequence = w.SequenceId == r[0].SequenceId;
             var readValues = r.Select(extractRead).ToList();
 
-            /*
-            if (sameSequence)
-            {
-                foreach (var v in readValues)
-                {
-                    var p = new WriteParam([v], w.Value, false);
-                    action(p);
-                }
-
-            }
-            else
-            {
-                var p = new WriteParam(readValues, w.Value, true);
-                action(p);
-            }
-            */
-
 #if DEBUG 
             if (sameSequence && r.Count != 1)
                 throw new Exception("multiple in same sequence");
@@ -158,16 +141,6 @@ internal class ParsingFocusData
                 throw new InvalidOperationException("multiple write heads on same sequence");
             rwSequences[w.SequenceId] = (w, new());
         }
-
-        /*
-        var writeSequences = writes
-            .GroupBy(x => x.SequenceId)
-            .ToDictionary(x => x.Key, x => x.ToList());
-
-        var readSequences = reads
-            .GroupBy(x => x.SequenceId)
-            .ToDictionary(x => x.Key, x => x.ToList());
-        */
 
         Dictionary<int, List<int>> writeChildSequences = new();
         foreach (var id in writes.Select(x => x.SequenceId))
@@ -203,66 +176,8 @@ internal class ParsingFocusData
                 rwSequences[w].Item2.AddRange(sg);
             }
         }
-
-
-
-#if DEBUG
-        var opt = new JsonSerializerOptions();
-
-        var log = new StringBuilder();
-
-        var ser = (object x) =>
-        {
-            switch (x)
-            {
-                case string s:
-                    return s;
-            }
-
-            return JsonSerializer.Serialize(x, opt);
-        };
-
-        foreach (var x in rwSequences)
-        {
-            var sequenceId = x.Key;
-            var read = x.Value.Read;
-            var write = x.Value.Write;
-            log.Append($"\n({write.SequenceId}){ser(write.Value.V)} - [");
-            log.Append(read.Select(r => 
-                $"({r.SequenceId}){ser(r.Value.V)}"
-            ).Join(", "));
-
-            log.Append(']');
-        }
-        var l = log.ToString();
-
-        var wf = $"{rwSequences.Select(x => $"[{x.Value.Read.Select(y => JsonSerializer.Serialize(y.Key.V, opt) + y.SequenceId + JsonSerializer.Serialize(y.Value.V, opt)).Join(", ")}]").Join("\n")}";
-        //throw new NotImplementedException("Fix this");
-#endif
-
-
         return rwSequences;
     }
-
-    /*
-    
-        internal void WriteFromRead(Func<ParsingFocusRead, object> readFunc, Action<IWritingModule, ParsingFocusEntry, object> writeAction)
-    {
-        foreach (var focusEntry in Focus.Entries)
-        {
-            var r = focusEntry.MultiRead
-                ? focusEntry.Reads.Select(readFunc).ToList()
-                : readFunc(focusEntry.Reads[0]);
-
-            writeAction(WritingModule, focusEntry, r);
-        }
-    }
-
-
-     */
-
-
-
 
 
     internal void ReadForeach(Func<ValueWrapper, IEnumerable<KeyValuePair<object, object>>> transformAction)
@@ -309,65 +224,22 @@ internal class ParsingFocusData
 
         var s = 345345;
 #endif
-
-
     }
-
-
 
     internal void WriteFlatten(Func<ValueWrapper, ValueWrapper> writeTransform)
     {
+        var result = new List<WriteFocusEntry>();
 
-        /*
-        var nextWrites = new List<WriteFocusEntry>();
-        foreach (var w in Writes[Active.WriteId])
+        foreach (var x in GenerateSequencesIntersection(Writes[Active.WriteId], Reads[Active.ReadId]))
         {
-            var children = Sequences[w.SequenceId].ChildrenIds;
-
-
-            nextWrites.AddRange(children.Select());
-
-            var s = 45646;
+            var w = x.Value.Write;
+            var rs = x.Value.Read;
+            result.AddRange(rs.Select(r => new WriteFocusEntry { SequenceId = r.SequenceId, Value = writeTransform(w.Value) }));
         }
-        */
-
-        var rawWrites = Writes[Active.WriteId];
-        var writes = rawWrites
-            .SelectMany(w => Sequences[w.SequenceId].ChildrenIds.Select(cId => new WriteFocusEntry { SequenceId = cId, Value = writeTransform(w.Value) }))
-            .ToList();
 
         _writeIdCounter++;
-        Writes[_writeIdCounter] = writes;
+        Writes[_writeIdCounter] = result;
         Active = new ParsingFocus2 { ReadId = Active.ReadId, WriteId = _writeIdCounter };
-
-
-
-
-
-#if DEBUG
-
-        foreach (var rw in rawWrites)
-        {
-            var children = Sequences[rw.SequenceId].ChildrenIds;
-            var rtfdgs = 345653;
-        }
-        var w2 = Writes[Active.WriteId];
-        var r2 = Reads[Active.ReadId];
-        var ws = GenerateSequencesIntersection(w2, r2);
-        var opt = new JsonSerializerOptions();
-        opt.WriteIndented = false;
-        var rr = $"[{r2.Select(x => x.SequenceId + "_" + JsonSerializer.Serialize(x.Value.V, opt)).Join(", ")}]";
-        var ww = $"[{w2.Select(x => x.SequenceId + "_" + JsonSerializer.Serialize(x.Value.V, opt)).Join(", ")}]";
-
-        var wf = $"{ws.Select(
-            x => $"[{x.Value.Read.Select(y => JsonSerializer.Serialize(y.Value.V, opt)).Join(", ")}]"
-        ).Join("\n")}";
-
-        var s = 345345;
-#endif
-
-
-
     }
 
 }
