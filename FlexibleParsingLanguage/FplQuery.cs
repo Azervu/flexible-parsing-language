@@ -83,13 +83,16 @@ public class FplQuery
                 string at = null;
                 if (ex.StackTrace != null)
                 {
-                    foreach (var l in ex.StackTrace.Split(Environment.NewLine))
+                    var lines = ex.StackTrace.Split(Environment.NewLine);
+                    for (var i = 0; i < lines.Length; i++)
                     {
-                        if (l.Contains("FlexibleParsingLanguage"))
-                        {
-                            at = l;
-                            break;
-                        }
+                        var l = lines[i];
+                        if (!l.Contains("FlexibleParsingLanguage"))
+                            continue;
+                        at = "\n" + l;
+                        if (i + 1 < lines.Length)
+                            at += "\n" + lines[i + 1];
+                        break;
                     }
                 }
 

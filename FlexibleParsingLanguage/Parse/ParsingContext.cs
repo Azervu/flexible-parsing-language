@@ -42,7 +42,7 @@ internal partial class ParsingContext
         Focus.WriteFlatten((writeParent) =>
         {
             var w = WritingModule.BlankArray();
-            WritingModule.Append(writeParent, w);
+            WritingModule.Append(writeParent.V, w);
             return new ValueWrapper(w);
         });
     }

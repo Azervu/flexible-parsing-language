@@ -50,6 +50,7 @@ public class JsonParsingTest
         new object[] { "Simple Header Test", "{'k': 'v'}", "k:h", "{'h':'v'}" },
 
         new object[] { "Foreach Test", "{'a': 1, 'b': 2, 'c': 3}", "*:*:h", "[{'h':1},{'h':2},{'h':3}]" },
+        new object[] { "Interupted Foreach", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]", "*:**", "[['a11','a12','a21','a22'],['b11','b12','b21','b22']]" },
 
         new object[] { "Group Accessor Test", "{'a': { 'b': { 'weirdKey': 'v' } }, 'm': 'weirdKey'}", "a.b.($m):h", "{'h':'v'}" },
 
@@ -71,6 +72,9 @@ public class JsonParsingTest
         new object[] { "Name operator test", "{'a': 1, 'b': 2, 'c': 3}", "*:*{@~:n}:v", "[{'n':'a','v':1},{'n':'b','v':2},{'n':'c','v':3}]" },
         new object[] { "Multi Foreach", "[[[[1,2,3],[11,12,13]],[[21,22,23],[31,42,53]]],[[[99]]]]", "****", "[1,2,3,11,12,13,21,22,23,31,42,53,99]" },
         new object[] { "Interupted Multi Foreach", "[[[[1,2,3],[11,12,13]],[[21,22,23],[31,42,53]]],[[[99]]]]", "**:***", "[[1,2,3,11,12,13],[21,22,23,31,42,53],[99]]" },
+
+      
+        //new object[] { "Interupted Multi Foreach2", "[[1,2],[3,4],[5,6]]", "*:*:h*", "[{'h':[1,2]},{}]" },
     };
 
     [TestMethod]

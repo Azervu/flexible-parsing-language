@@ -61,14 +61,14 @@ internal partial struct ParsesOperationType
     internal static void WriteArray(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.WriteAction((m, writeHeader) =>
     {
         var w2 = m.BlankArray();
-        m.Write(writeHeader, acc, w2);
+        m.Write(writeHeader.V, acc, w2);
         return new ValueWrapper(w2);
     });
 
     internal static void WriteArrayInt(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.WriteAction((m, writeHeader) =>
     {
         var w1 = m.BlankArray();
-        m.Write(writeHeader, intAcc, w1);
+        m.Write(writeHeader.V, intAcc, w1);
         return new ValueWrapper(w1);
     });
 
@@ -79,7 +79,7 @@ internal partial struct ParsesOperationType
     internal static void WriteInt(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.WriteAction((m, writeHeader) =>
     {
         var w = context.WritingModule.BlankMap();
-        m.Write(writeHeader, intAcc, w);
+        m.Write(writeHeader.V, intAcc, w);
         return new ValueWrapper(w);
     });
 
