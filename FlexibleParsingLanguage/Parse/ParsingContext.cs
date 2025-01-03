@@ -1,6 +1,4 @@
-﻿using System.Collections;
-
-namespace FlexibleParsingLanguage.Parse;
+﻿namespace FlexibleParsingLanguage.Parse;
 
 internal partial class ParsingContext
 {
@@ -57,36 +55,12 @@ internal partial class ParsingContext
 
     internal static void WriteAddRead(FplQuery parser, ParsingContext context, int intAcc, string acc)
     {
-
-
-
-        /*
-        
-            if (param.Write.V is IDictionary d)
-            {
-                var rng = new Random();
-                d.Add(acc + "_" + rng.Next(99), "***");
-            }
-            else if (param.Write.V is IList l)
-            {
-                l.Add("acc");
-            }
-
-
-
-         */
-
-
-
         context.WriteFromRead((x) => context.TransformReadInner(x.Value), (w) =>
         {
             foreach (var r in w.Read)
                 context.WritingModule.Append(w.Write.V, r.V);
         });
     }
-
-
-
 
     internal void WriteAction(Func<IWritingModule, ValueWrapper, ValueWrapper> writeFunc) => Focus.Write((data) => writeFunc(WritingModule, data));
 
@@ -99,9 +73,4 @@ internal partial class ParsingContext
 
         return new ValueWrapper(v);
     }
-
-
-
-
 }
-

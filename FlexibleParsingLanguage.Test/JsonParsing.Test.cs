@@ -61,8 +61,6 @@ public class JsonParsingTest
         new object[] { "Interupted Foreach C", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]", "***:*", "[['a11'],['a12'],['a21'],['a22'],['b11'],['b12'],['b21'],['b22']]" },
         new object[] { "Interupted Foreach 2C", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]", "***:*:h", "[{'h':'a11'},{'h':'a12'},{'h':'a21'},{'h':'a22'},{'h':'b11'},{'h':'b12'},{'h':'b21'},{'h':'b22'}]" },
 
-
-
         new object[] { "Foreach Header", "[[1,2],[3]]", "**:*:v", "[{'v':1},{'v':2},{'v':3}]"},
 
         new object[] { "Group Accessor Test", "{'a': { 'b': { 'weirdKey': 'v' } }, 'm': 'weirdKey'}", "a.b.($m):h", "{'h':'v'}" },

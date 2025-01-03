@@ -3,21 +3,13 @@
 internal partial class ParsingContext
 {
 
-
     internal void ReadFunc(Func<IReadingModule, object, object> readTransform) => Focus.Read((r) => {
         UpdateReadModule(r);
-
-
 #if DEBUG
         if (r.V == null)
             throw new Exception("Result is null");
 #endif
-
-
         var result = readTransform(ReadingModule, r.V);
-
-
-
         return new KeyValuePair<ValueWrapper, ValueWrapper>(r, new ValueWrapper(result));
     });
 
@@ -38,17 +30,11 @@ internal partial class ParsingContext
         SequenceId = focus.SequenceId
     });
         
-        
-        
-        
-        
     internal void ReadFlatten() => Focus.ReadForeach((r) =>
     {
         UpdateReadModule(r);
         return ReadingModule.Foreach(r.V);
     });
-
-
 
     private ParsingFocusEntry ReadFlattenInner(ParsingFocusEntry focus)
     {

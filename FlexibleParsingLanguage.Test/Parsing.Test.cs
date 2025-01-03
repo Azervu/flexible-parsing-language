@@ -13,10 +13,13 @@ public class Parsing
         new object[] { "ConvertXmlTest", "<a><b1>bbb</b1><b2>bb2</b2></a>", "|xml.a.b2:h1", "{'h1':'bb2'}", null, null },
         new object[] { "ConvertJsonTest", "{'a':{'b1':'bbb','b2':'bb2'}}", "|json.a.b2:h1", "{'h1':'bb2'}", null, null },
 
+        new object[] { "Xml in Json Test", "{'data': ['<a><b>test_a</b></a>', '<a><b>test_b</b></a>']}", "|json.data*|xml.a.b", "['test_a', 'test_b']", null, null },
+
+
 
         //new object[] { "Simple Lookup Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*#id", "['bob','trj']", new List<(string, string)> { ("id", "n53"), ("trj", "a81") }, new List<List<(string, string)>> { } },
 
-        new object[] { "Read Lookup Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*#@id", "['n53','a81']", new List<(string, string)> {("bob", "n53"), ("trj", "a81") }, new List<List<(string, string)>> { } },
+        new object[] { "Read Lookup Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*#(@id)", "['n53','a81']", new List<(string, string)> {("bob", "n53"), ("trj", "a81") }, new List<List<(string, string)>> { } },
 
         /*
         new object[] {

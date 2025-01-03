@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -57,6 +58,14 @@ internal class ParsingFocusData
 
     internal void Load(int id)
     {
+
+#if DEBUG
+        if (!Store.ContainsKey(id))
+        {
+            var s = 345345;
+        }
+#endif
+
         Active = Store[id];
     }
 
@@ -117,8 +126,59 @@ internal class ParsingFocusData
     }
 
 
+
+
+
     internal List<SequenceIntersection> GenerateSequencesIntersection(List<FocusEntry> writes, List<FocusEntry>[] reads)
     {
+
+        var sequenceIntersections = GenerateSequencesIntersection2(
+            writes.Select(x => x.SequenceId).ToList(),
+            reads.Select(x => x.Select(y => y.SequenceId).ToList()).ToArray()
+        );
+
+
+        if (sequenceIntersections.Count != writes.Count)
+            throw new Exception(">>>>>>>>>>>>>> A");
+
+        var result = new List<SequenceIntersection>(sequenceIntersections.Count);
+        for (var i = 0; i < sequenceIntersections.Count; i++)
+        {
+            var w = writes[i];
+            var sequence = sequenceIntersections[i];
+
+            if (reads.Count() != sequence.Intersected.Count())
+                throw new Exception(">>>>>>>>>>>>>> B");
+
+            var intersected = new SequenceIntersection.SequenceIntersectionEntry[sequence.Intersected.Count()];
+            for (var j = 0; j < sequence.Intersected.Count(); j++)
+            {
+                var r = reads[j];
+                var ii = sequence.Intersected[j];
+
+
+                //if (r.Count() != ii.Foci.Count)
+                 //   throw new Exception(">>>>>>>>>>>>>> C");
+
+                intersected[j] = new SequenceIntersection.SequenceIntersectionEntry
+                {
+                    Multiread = ii.Multiread,
+                    Foci = ii.Foci.Select(x => r[x.Index]).ToList(),
+                };
+            }
+
+            result.Add(new SequenceIntersection
+            {
+                SequenceId = sequence.SequenceId,
+                Primary = writes[i],
+                Intersected = intersected
+            });
+        }
+
+        return result;
+
+
+
         var rwSequences = new Dictionary<int, (FocusEntry Write, List<FocusEntry>[] Read)>();
 
         foreach (var w in writes)
@@ -151,9 +211,18 @@ internal class ParsingFocusData
         {
             var r = reads[i];
 
-            foreach (var sg in r.GroupBy(x => x.SequenceId))
+
+
+#if DEBUG
+            if (r.GroupBy(x => x.SequenceId).Any(x => x.Count() > 1))
+                throw new Exception("Multiple sequences");
+#endif
+
+
+
+            foreach (var sg in r)
             {
-                var activeId = sg.Key;
+                var activeId = sg.SequenceId;
                 List<int>? ws = null;
                 while (!writeChildSequences.TryGetValue(activeId, out ws))
                 {
@@ -163,7 +232,7 @@ internal class ParsingFocusData
                 }
                 foreach (var w in ws)
                 {
-                    rwSequences[w].Item2[i].AddRange(sg);
+                    rwSequences[w].Item2[i].Add(sg);
                 }
             }
         }
@@ -201,13 +270,155 @@ internal class ParsingFocusData
 
             return new SequenceIntersection
             {
-                MultiRead = multiRead,
                 SequenceId = x.Key,
                 Primary = x.Value.Write,
                 Intersected = inter.ToArray(),
             };
         }).ToList();
     }
+
+
+
+
+
+    internal List<SequenceIntersection2> GenerateSequencesIntersection2(List<int> primeSequence, List<int>[] secondarySequence)
+    {
+        var rwSequences = new Dictionary<int, (int Prime, List<(int SequenceId, int Index)>[] Secondary)>();
+
+        foreach (var prime in primeSequence)
+        {
+            if (rwSequences.ContainsKey(prime))
+                throw new InvalidOperationException("multiple write heads on same sequence");
+            rwSequences[prime] = (prime, secondarySequence.Select(x => new List<(int SequenceId, int Index)>()).ToArray());
+        }
+
+        Dictionary<int, List<int>> writeChildSequences = new();
+        foreach (var prime in primeSequence)
+        {
+            var activeId = prime;
+            while (activeId >= 0)
+            {
+                if (!writeChildSequences.TryGetValue(activeId, out var values))
+                {
+                    values = [prime];
+                    writeChildSequences.Add(activeId, values);
+                }
+                else
+                {
+                    values.Add(prime);
+                }
+                activeId = Sequences[activeId].ParentId;
+            }
+        }
+
+        for (var i = 0; i < secondarySequence.Length; i++)
+        {
+            var r = secondarySequence[i];
+
+            for (var j = 0; j < r.Count; j++)
+            {
+                var sequentialId = r[j];
+                var activeId = sequentialId;
+                List<int>? ws = null;
+                while (!writeChildSequences.TryGetValue(activeId, out ws))
+                {
+                    activeId = Sequences[activeId].ParentId;
+                    if (activeId < 0)
+                        throw new InvalidOperationException($"read/write missing shared root | writes = [{writeChildSequences.Select(x => x.Key.ToString()).Join(", ")}] | reads = [{r.Select(x => x.ToString()).Join(", ")}]");
+                }
+                foreach (var w in ws)
+                {
+                    rwSequences[w].Secondary[i].Add((sequentialId, j));
+                }
+            }
+
+            /*
+            foreach (var sequentialId in secondarySequence[i])
+            {
+                var activeId = sequentialId;
+                List<int>? ws = null;
+                while (!writeChildSequences.TryGetValue(activeId, out ws))
+                {
+                    activeId = Sequences[activeId].ParentId;
+                    if (activeId < 0)
+                        throw new InvalidOperationException($"read/write missing shared root | writes = [{writeChildSequences.Select(x => x.Key.ToString()).Join(", ")}] | reads = [{r.Select(x => x.ToString()).Join(", ")}]");
+                }
+                foreach (var w in ws)
+                {
+                    rwSequences[w].Secondary[i].Add((sequentialId, i));
+                }
+            }
+            */
+        }
+
+        /*
+         
+                    var secondary = new List<(int SequenceId, int Index)>[secondarySequence.Length];
+            for (var i = 0; i < secondarySequence.Length; i++)
+            {
+                secondary[i] = 
+            }
+
+
+         */
+
+        return primeSequence.Select(sequenceId =>
+        {
+            var sequence = rwSequences[sequenceId];
+            var multiRead = true;
+            var primaryAncestors = new HashSet<int> { };
+            while (sequenceId >= 0)
+            {
+                primaryAncestors.Add(sequenceId);
+                sequenceId = Sequences[sequenceId].ParentId;
+            }
+
+            var inter = sequence.Secondary.Select(x =>
+            {
+                var multiRead = true;
+                if (x.Count > 0)
+                {
+                    var sequences = x.ToHashSet();
+                    if (sequences.Count == 1)
+                        multiRead = !primaryAncestors.Contains(sequences.First().SequenceId);
+#if DEBUG
+                    if (!multiRead && x.Count > 1)
+                        throw new Exception("multiple in same sequence");
+#endif
+                }
+                return new SequenceIntersectionEntry
+                {
+                    Multiread = multiRead,
+                    Foci = x,
+                };
+            });
+
+            return new SequenceIntersection2
+            {
+
+                SequenceId = sequenceId,
+                Intersected = inter.ToArray(),
+            };
+        }).ToList();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     internal void ReadForeach(Func<ValueWrapper, IEnumerable<KeyValuePair<object, object>>> transformAction)
     {
@@ -249,7 +460,25 @@ internal class ParsingFocusData
         Writes[_writeIdCounter] = result;
         Active = new ParsingFocus2 { ReadId = Active.ReadId, WriteId = _writeIdCounter };
     }
+}
 
+
+
+
+
+
+
+internal struct SequenceIntersection2
+{
+    internal int SequenceId { get; set; }
+    internal int PrimeIndex { get; set; }
+    internal SequenceIntersectionEntry[] Intersected { get; set; }
+}
+
+internal struct SequenceIntersectionEntry
+{
+    internal bool Multiread { get; set; }
+    internal List<(int SequenceId, int Index)> Foci { get; set; }
 }
 
 
@@ -261,7 +490,6 @@ internal class ParsingFocusData
 
 internal struct SequenceIntersection
 {
-    internal bool MultiRead { get; set; }
     internal int SequenceId { get; set; }
     internal FocusEntry Primary { get; set; }
     internal SequenceIntersectionEntry[] Intersected { get; set; }
@@ -271,12 +499,6 @@ internal struct SequenceIntersection
         internal List<FocusEntry> Foci { get; set; }
     }
 }
-
-
-
-
-
-
 
 internal struct ParsingFocus2
 {
