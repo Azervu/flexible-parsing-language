@@ -87,17 +87,15 @@ internal class ParsingFocusData
 
     internal void ReadInner(Func<FocusEntry, FocusEntry> transform)
     {
-        var raws = Reads[Active.ReadId];
-        var reads = raws.Select(transform).ToList();
+        NextRead(Reads[Active.ReadId].Select(transform).ToList());
+    }
 
-#if DEBUG
-        if (reads.Count == 0)
-            throw new Exception("ReadInner resulted in no reads");
-#endif
-
+    internal void NextRead(List<FocusEntry> reads)
+    {
         Reads[++_readIdCounter] = reads;
         Active = new ParsingFocus(_readIdCounter, Active.WriteId, Active.ConfigId);
     }
+
 
     internal void ReadForeach(Func<ValueWrapper, IEnumerable<KeyValuePair<object, object>>> transformAction)
     {
@@ -132,6 +130,13 @@ internal class ParsingFocusData
         Active = new ParsingFocus(Active.ReadId, _writeIdCounter, Active.ConfigId);
     }
 
+
+
+
+
+
+
+
     internal List<SequenceIntersection<T, A>> GenerateSequencesIntersection<T, A>(
         List<T> primeValues, List<int> primeSequence,
         List<A> aValues, List<int> aSequence
@@ -141,7 +146,7 @@ internal class ParsingFocusData
 
 #if DEBUG
         if (sequenceIntersections.Count != primeValues.Count)
-            throw new Exception(">>>>>>>>>>>>>> A");
+            throw new Exception("nume prime vs intersection mismatch");
 #endif
 
         var result = new List<SequenceIntersection<T, A>>(sequenceIntersections.Count);
@@ -290,9 +295,7 @@ internal struct ParsingSequence
 {
     internal int ParentId { get; set; }
     internal List<int> ChildrenIds { get; set; } = [];
-
-    public ParsingSequence()
-    {}
+    public ParsingSequence() {}
 }
 
 internal class FocusEntry

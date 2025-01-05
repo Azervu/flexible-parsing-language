@@ -18,33 +18,38 @@ internal static partial class FplOperation
 
     internal static void OperationLookup(FplQuery parser, ParsingContext context, int intAcc, string acc)
     {
-#if DEBUG
-        if (acc == null)
-            throw new Exception("OperationRead null access");
-#endif
-
-        //context.Focus.Active.
-
-        context.ReadFunc((m, readSrc) => m.Parse(readSrc, acc));
+        context.Focus.NextRead(context.Focus.GenerateSequencesIntersectionReadConfig().Select(r =>
+        {
+            return new FocusEntry
+            {
+                Key = new ValueWrapper(acc),
+                Value = new ValueWrapper(r.AVal.Foci[0].Config.Entries[acc]),
+            };
+        }).ToList());
     }
 
     internal static void OperationLookupDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus)
     {
 
-        var ww = context.Focus.Writes[context.Focus.Active.WriteId];
-        var rr = context.Focus.Reads[focus.ReadId];
+        var config = context.Focus.Configs[context.Focus.Active.ConfigId];
+        var read = context.Focus.Reads[focus.ReadId];
         var intersections = context.Focus.GenerateSequencesIntersection(
-            ww, ww.Select(x => x.SequenceId).ToList(),
-            rr, rr.Select(x => x.SequenceId).ToList()
+            read, read.Select(x => x.SequenceId).ToList(),
+            config, config.Select(x => x.SequenceId).ToList()
         );
 
-        foreach (var x in intersections)
+        context.Focus.NextRead(intersections.Select(x =>
         {
-            foreach (var r in x.AVal.Foci)
+            var acc = x.Primary.Value.V.ToString();
+
+            var c = x.AVal.Foci[0];
+
+            return new FocusEntry
             {
-                context.ReadFunc((m, readSrc) => m.Parse(readSrc, r.Value.V.ToString()));
-            }
-        }
+                Key = new ValueWrapper(acc),
+                Value = new ValueWrapper(c.Config.Entries[acc]),
+            };
+        }).ToList());
     }
 }
 

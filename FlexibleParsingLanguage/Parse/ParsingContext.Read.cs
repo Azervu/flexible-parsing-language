@@ -40,7 +40,7 @@ internal partial class ParsingContext
         Focus.LoadRead(Compiler.Compiler.RootId);
     }
 
-    private void UpdateReadModule(ValueWrapper obj)
+    internal void UpdateReadModule(ValueWrapper obj)
     {
         var t = obj.V?.GetType() ?? typeof(void);
         if (t != _activeType)
@@ -49,4 +49,6 @@ internal partial class ParsingContext
             ReadingModule = _modules.LookupModule(t);
         }
     }
+
+
 }

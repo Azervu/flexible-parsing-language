@@ -24,11 +24,25 @@ internal static class ParsingFocusDataExtension
         var w = data.Configs[data.Active.ConfigId];
         var r = data.Reads[data.Active.ReadId];
 
-        return data.GenerateSequencesIntersection<ConfigEntry, FocusEntry>(
+        return data.GenerateSequencesIntersection(
             w, w.Select(x => x.SequenceId).ToList(),
             r, r.Select(x => x.SequenceId).ToList()
         );
     }
+
+    internal static List<SequenceIntersection<FocusEntry, ConfigEntry>> GenerateSequencesIntersectionReadConfig(this ParsingFocusData data)
+    {
+        var p = data.Reads[data.Active.ReadId];
+        var a = data.Configs[data.Active.ConfigId];
+
+        return data.GenerateSequencesIntersection(
+            p, p.Select(x => x.SequenceId).ToList(),
+            a, a.Select(x => x.SequenceId).ToList()
+        );
+    }
+
+
+
 
     internal static void WriteFromRead(this ParsingFocusData data, Func<FocusEntry, ValueWrapper> extractRead, Action<WriteParam> action)
     {
@@ -40,7 +54,7 @@ internal static class ParsingFocusDataExtension
 
             if (read.Foci.Count == 0)
                 throw new Exception("no reads in sequence");
-            var p = new WriteParam(read.Foci.Select(extractRead).ToList(), write.Value, read.Multiread);
+            var p = new WriteParam(read.Foci.Select(extractRead).ToList(), rw.Primary.Value, read.Multiread);
             action(p);
         }
     }

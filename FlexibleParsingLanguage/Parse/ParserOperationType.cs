@@ -98,7 +98,13 @@ internal partial struct ParsesOperationType
         }
     }
 
-    internal static void Function(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ReadTransformValue(parser._converter[acc].Convert);
+    internal static void Function(FplQuery parser, ParsingContext context, int intAcc, string acc) {
+
+        var c = parser._converter[acc];
+
+        context.ReadTransformValue(c.Convert);
+    }
+
 
     internal static void ParamLiteral(FplQuery parser, ParsingContext context, int intAcc, string acc) => throw new NotImplementedException("Lookup");
 
