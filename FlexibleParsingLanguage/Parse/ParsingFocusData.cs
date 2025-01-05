@@ -155,7 +155,6 @@ internal class ParsingFocusData
             var sequence = sequenceIntersections[i];
             result.Add(new SequenceIntersection<T, A>
             {
-                SequenceId = sequence.SequenceId,
                 Primary = primeValues[i],
                 AVal = new SequenceIntersectionEntry<A>(sequence.Intersected[0], aValues)
             });
@@ -210,6 +209,11 @@ internal class ParsingFocusData
                 List<int>? ws = null;
                 while (!writeChildSequences.TryGetValue(activeId, out ws))
                 {
+                    if (!Sequences.ContainsKey(activeId))
+                    {
+                        var s = 345435;
+                    }
+
                     activeId = Sequences[activeId].ParentId;
                     if (activeId < 0)
                         throw new InvalidOperationException($"read/write missing shared root | writes = [{writeChildSequences.Select(x => x.Key.ToString()).Join(", ")}] | reads = [{r.Select(x => x.ToString()).Join(", ")}]");
@@ -259,7 +263,6 @@ internal class ParsingFocusData
 
 internal struct SequenceIntersection<T, A>
 {
-    internal int SequenceId { get; set; }
     internal T Primary { get; set; }
     internal SequenceIntersectionEntry<A> AVal { get; set; }
 }

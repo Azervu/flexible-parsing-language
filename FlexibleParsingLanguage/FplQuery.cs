@@ -80,18 +80,16 @@ public class FplQuery
             catch (Exception ex)
             {
 
-                string at = null;
+                string at = string.Empty;
                 if (ex.StackTrace != null)
                 {
                     var lines = ex.StackTrace.Split(Environment.NewLine);
                     for (var i = 0; i < lines.Length; i++)
                     {
-                        var l = lines[i];
-                        if (!l.Contains("FlexibleParsingLanguage"))
+                        if (!lines[i].Contains("FlexibleParsingLanguage"))
                             continue;
-                        at = "\n" + l;
-                        if (i + 1 < lines.Length)
-                            at += "\n" + lines[i + 1];
+                        for (; i < lines.Length; i++)
+                            at += "\n" + lines[i];
                         break;
                     }
                 }

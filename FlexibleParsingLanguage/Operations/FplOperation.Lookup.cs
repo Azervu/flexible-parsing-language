@@ -41,13 +41,15 @@ internal static partial class FplOperation
         context.Focus.NextRead(intersections.Select(x =>
         {
             var acc = x.Primary.Value.V.ToString();
-
             var c = x.AVal.Foci[0];
+
+            var v = c.Config.Entries[acc].Value;
 
             return new FocusEntry
             {
+                SequenceId = x.Primary.SequenceId,
                 Key = new ValueWrapper(acc),
-                Value = new ValueWrapper(c.Config.Entries[acc]),
+                Value = new ValueWrapper(v),
             };
         }).ToList());
     }
