@@ -99,10 +99,14 @@ internal partial struct ParsesOperationType
     }
 
     internal static void Function(FplQuery parser, ParsingContext context, int intAcc, string acc) {
-
         var c = parser._converter[acc];
-
-        context.ReadTransformValue(c.Convert);
+        context.ReadTransformValue((object raw) =>
+        {
+            context.UpdateReadModule(new ValueWrapper(raw));
+            if (context.ReadingModule != null)
+                raw = context.ReadingModule.ExtractValue(raw);
+            return c.Convert(raw);
+        });
     }
 
 
