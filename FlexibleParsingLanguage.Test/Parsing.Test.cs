@@ -38,7 +38,6 @@ public class Parsing
         */
     };
 
-
     [TestMethod]
     [DynamicData(nameof(SimpleQueries))]
     public void SimpleParserTest(string name, string payload, string query, string expected, List<(string, string)> config, List<List<(string, string)>> configEntries)

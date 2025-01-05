@@ -12,9 +12,9 @@ namespace FlexibleParsingLanguage.Operations;
 internal static partial class FplOperation
 {
 
-    internal static readonly OpConfig Lookup = new OpConfig("#", OpSequenceType.RightInput | OpSequenceType.LeftInput, (p, op) => CompileAccessorOperation(p, op, OperationLookup));
+    internal static readonly OpConfig Lookup = new OpConfig("#", OpSequenceType.RightInput | OpSequenceType.LeftInput, (p, op) => CompileAccessorOperation(p, op, OperationLookup, OperationLookupDynamic));
 
-    internal static readonly OpConfig ChangeLookupContext = new OpConfig("##", OpSequenceType.RightInput | OpSequenceType.LeftInput, CompileLookup);
+    //internal static readonly OpConfig ChangeLookupContext = new OpConfig("##", OpSequenceType.RightInput | OpSequenceType.LeftInput, CompileLookup);
 
     internal static void OperationLookup(FplQuery parser, ParsingContext context, int intAcc, string acc)
     {
@@ -23,49 +23,29 @@ internal static partial class FplOperation
             throw new Exception("OperationRead null access");
 #endif
 
+        //context.Focus.Active.
 
         context.ReadFunc((m, readSrc) => m.Parse(readSrc, acc));
     }
 
-    private static IEnumerable<ParseOperation> CompileLookup(ParseData parser, RawOp op)
+    internal static void OperationLookupDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus)
     {
-        if (op.Input.Count != 2)
-            throw new QueryException(op, $"{op.Input.Count} params | read takes 2");
 
-        foreach (var x in FplOperation.EnsureLoaded(parser, op))
-            yield return x;
+        var ww = context.Focus.Writes[context.Focus.Active.WriteId];
+        var rr = context.Focus.Reads[focus.ReadId];
+        var intersections = context.Focus.GenerateSequencesIntersection(
+            ww, ww.Select(x => x.SequenceId).ToList(),
+            rr, rr.Select(x => x.SequenceId).ToList()
+        );
 
-        var input = op.Input[0];
-        var accessor = op.Input[1];
-
-        var inputType = OpCompileType.ReadObject;
-
-        if (parser.ReadInput.TryGetValue(op.Input[0].Id, out var v))
-            inputType = v.Type;
-
-        if (accessor.Accessor == null)
+        foreach (var x in intersections)
         {
-            var sdf = 345354;
+            foreach (var r in x.AVal.Foci)
+            {
+                context.ReadFunc((m, readSrc) => m.Parse(readSrc, r.Value.V.ToString()));
+            }
         }
-
-        switch (inputType)
-        {
-            case OpCompileType.ReadObject:
-                yield return new ParseOperation(OperationRead, accessor.Accessor);
-                break;
-            case OpCompileType.ReadArray:
-                yield return new ParseOperation(OperationRead, accessor.Accessor);
-                break;
-        }
-
-        parser.ActiveId = op.Id;
-        parser.LoadedId = op.Id;
-
-        foreach (var x in FplOperation.EnsureSaved(parser, op))
-            yield return x;
     }
-
-
 }
 
 

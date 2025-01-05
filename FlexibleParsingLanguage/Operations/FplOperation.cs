@@ -28,7 +28,7 @@ internal static partial class FplOperation
                     WriteForeach,
                     Param,
                     Lookup,
-                    ChangeLookupContext,
+                    //ChangeLookupContext,
 
                     new OpConfig(":$", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(ParsesOperationType.WriteRoot)])),
                     new OpConfig("|", OpSequenceType.LeftInput | OpSequenceType.RightInput, (p, o) => CompileSaveUtil(p, o, 2, [new ParseOperation(ParsesOperationType.Function, o.Input[1].Accessor)])),
@@ -67,10 +67,38 @@ internal static partial class FplOperation
     }
 
 
+    private static IEnumerable<ParseOperation> CompileAccessorOperation(ParseData parser, RawOp op, Action<FplQuery, ParsingContext, int, string> accessorAction, Action<FplQuery, ParsingContext, ParsingFocus> dynamicAccessorAction)
+    {
+        if (op.Input.Count != 2)
+            throw new QueryException(op, $"{op.Input.Count} params | read takes 2");
+
+        foreach (var x in EnsureLoaded(parser, op))
+            yield return x;
+
+        var input = op.Input[0];
+        var accessor = op.Input[1];
+
+        if (accessor.Accessor != null)
+            yield return new ParseOperation(accessorAction, accessor.Accessor);
+        else
+            yield return new ParseOperation((q, c, i, a) => dynamicAccessorAction(q, c, c.Focus.Store[i]), accessor.Id);
+
+        parser.ActiveId = op.Id;
+        parser.LoadedId = op.Id;
+
+        foreach (var x in EnsureSaved(parser, op))
+            yield return x;
+    }
+
+    
 
 
 
-    private static IEnumerable<ParseOperation> CompileAccessorOperation(ParseData parser, RawOp op, Action<FplQuery, ParsingContext, int, string> accessorAction)
+
+
+    /*
+
+    private static IEnumerable<ParseOperation> CompileAccessorOperationConfig(ParseData parser, RawOp op, Action<FplQuery, ParsingContext, int, string> accessorAction)
     {
         if (op.Input.Count != 2)
             throw new QueryException(op, $"{op.Input.Count} params | read takes 2");
@@ -87,8 +115,7 @@ internal static partial class FplOperation
         }
         else
         {
-
-            yield return new ParseOperation((p, c, i, a) => OperationReadDynamic(p, c, i, a, accessorAction), accessor.Id);
+            yield return new ParseOperation((p, c, i, a) => OperationReadDynamicConfig(p, c, i, a, accessorAction), accessor.Id);
         }
 
         parser.ActiveId = op.Id;
@@ -98,11 +125,12 @@ internal static partial class FplOperation
             yield return x;
     }
 
-
-    internal static void OperationReadDynamic(FplQuery parser, ParsingContext context, int intAcc, string acc, Action<FplQuery, ParsingContext, int, string> accessorAction)
+    internal static void OperationReadDynamicConfig(FplQuery parser, ParsingContext context, int intAcc, string acc, Action<FplQuery, ParsingContext, int, string> accessorAction)
     {
-        var readId = context.Focus.Store[intAcc].ReadId;
-        var intersections = context.Focus.GenerateSequencesIntersection(context.Focus.Writes[context.Focus.Active.WriteId], [context.Focus.Reads[readId]]);
+        var config = context.Focus.Configs[context.Focus.Store[intAcc].ConfigId];
+
+
+        var intersections = context.Focus.GenerateSequencesIntersection(context.Focus.Writes[context.Focus.Active.WriteId], [context.Focus.Reads[config]]);
         foreach (var x in intersections)
         {
             foreach (var a in x.Intersected)
@@ -114,6 +142,19 @@ internal static partial class FplOperation
             }
         }
     }
+
+    */
+
+
+
+
+
+
+
+
+
+
+
 
 
 

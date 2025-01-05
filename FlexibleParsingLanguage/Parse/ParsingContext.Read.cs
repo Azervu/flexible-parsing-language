@@ -13,7 +13,6 @@ internal partial class ParsingContext
         return new KeyValuePair<ValueWrapper, ValueWrapper>(r, new ValueWrapper(result));
     });
 
-
     internal void ReadTransform(Func<FocusEntry, FocusEntry> readTransform) => Focus.ReadInner(readTransform);
 
     internal void ReadTransformValue(Func<object, object> readTransform) => ReadTransform((focus) => new FocusEntry
@@ -36,44 +35,10 @@ internal partial class ParsingContext
         return ReadingModule.Foreach(r.V);
     });
 
-    private ParsingFocusEntry ReadFlattenInner(ParsingFocusEntry focus)
-    {
-        var innerResult = new List<ParsingFocusRead>();
-        foreach (var read in focus.Reads)
-        {
-            UpdateReadModule(new ValueWrapper(read.Read));
-            foreach (var (k, v) in ReadingModule.Foreach(read.Read))
-                innerResult.Add(new ParsingFocusRead
-                {
-                    Config = read.Config,
-                    Key = k,
-                    Read = v,
-                });
-
-        }
-        return new ParsingFocusEntry
-        {
-            Reads = innerResult,
-            MultiRead = true,
-            Write = focus.Write,
-        };
-    }
-
-
-
-
-
-
-
-
-
-
     internal void ToRootRead()
     {
         Focus.LoadRead(Compiler.Compiler.RootId);
     }
-
-
 
     private void UpdateReadModule(ValueWrapper obj)
     {
@@ -84,12 +49,4 @@ internal partial class ParsingContext
             ReadingModule = _modules.LookupModule(t);
         }
     }
-
-    private ParsingFocusRead TransformRead(ParsingFocusRead raw) => new ParsingFocusRead
-    {
-        Read = TransformReadInner(new ValueWrapper(raw.Read)),
-        Key = raw.Key,
-        Config = raw.Config,
-    };
-
 }
