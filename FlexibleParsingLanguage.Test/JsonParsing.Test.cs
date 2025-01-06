@@ -46,6 +46,8 @@ public class JsonParsingTest
 
     public static IEnumerable<object[]> SimpleJsonQueries => new List<object[]>
     {
+
+
         new object[] { "Simple Test", "{'k': 'v'}", "k", "['v']" },
         new object[] { "Simple Header Test", "{'k': 'v'}", "k:h", "{'h':'v'}" },
         new object[] { "Foreach Test", "{'a': 1, 'b': 2, 'c': 3}", "*:*:h", "[{'h':1},{'h':2},{'h':3}]" },
@@ -65,6 +67,9 @@ public class JsonParsingTest
 
         new object[] { "Group Accessor Test", "{'a': { 'b': { 'weirdKey': 'v' } }, 'm': 'weirdKey'}", "a.b.($m):h", "{'h':'v'}" },
 
+        new object[] { "Root vs Param Test A", "[{'n': 'a', 'v':1},{'n': 'b', 'v':2}]", "*:*{$*n:nn}v:w", "[{'nn':['a','b'],'w':1},{'nn':['a','b'],'w':2}]"},
+        new object[] { "Root vs Param Test B", "[{'n': 'a', 'v':1},{'n': 'b', 'v':2}]", "*:*{@n:nn}v:w", "[{'nn':'a','w':1},{'nn':'b','w':2}]"},
+
         new object[] { "Simple branch test", "{'k': {'ka': 'va', 'kb': 'vb'}}", "k{@ka:ha}kb:hb", "{'ha':'va','hb':'vb'}" },
         new object[] { "Unbranch test", "{'a': {'f':1, 'f2': 11}, 'b': {'f':2, 'f2': 12}, 'c': {'f':3, 'f2': 13}}", "*:*{@f:fh}f2:fh2", "[{'fh':1,'fh2':11},{'fh':2,'fh2':12},{'fh':3,'fh2':13}]" },
 
@@ -72,7 +77,6 @@ public class JsonParsingTest
         new object[] { "Write Root Test", "{'k1': {'k2': 1, 'k3': 2}}", "k1:o1{@k2:o2}k3:$:o3", "{'o1':{'o2':1},'o3':2}"},
 
         new object[] { "Header Branching Test A", "[[1,2,3], [4, 5], [6, 8]]", "*:h1:h2", "{'h1':{'h2':[[1,2,3],[4,5],[6,8]]}}" },
-        //new object[] { "Header Branching Test B", "[[1,2,3], [4, 5], [6, 8]]", "*:h1{:h2}", "{'h1':{'h2':[[1,2,3],[4,5],[6,8]]}}" },
         new object[] { "Header Branching Test C", "[[1,2,3], [4, 5], [6, 8]]", "*:h1:*:h2", "{'h1':[{'h2':[1,2,3]},{'h2':[4,5]},{'h2':[6,8]}]}" },
         new object[] { "Header Branching Test D", "[[1,2,3], [4, 5], [6, 8]]", "*.*:h1:*:h2", "{'h1':[{'h2':1},{'h2':2},{'h2':3},{'h2':4},{'h2':5},{'h2':6},{'h2':8}]}" },
         new object[] { "Header Branching Test E", "[[1,2,3], [4, 5], [6, 8]]", "*:*:a*:*:b", "[{'a':[{'b':1},{'b':2},{'b':3}]},{'a':[{'b':4},{'b':5}]},{'a':[{'b':6},{'b':8}]}]" },
@@ -84,8 +88,6 @@ public class JsonParsingTest
         new object[] { "Multi Foreach", "[[[[1,2,3],[11,12,13]],[[21,22,23],[31,42,53]]],[[[99]]]]", "****", "[1,2,3,11,12,13,21,22,23,31,42,53,99]" },
         new object[] { "Interupted Multi Foreach", "[[[[1,2,3],[11,12,13]],[[21,22,23],[31,42,53]]],[[[99]]]]", "**:***", "[[1,2,3,11,12,13],[21,22,23,31,42,53],[99]]" },
 
-      
-        //new object[] { "Interupted Multi Foreach2", "[[1,2],[3,4],[5,6]]", "*:*:h*", "[{'h':[1,2]},{}]" },
     };
 
     [TestMethod]

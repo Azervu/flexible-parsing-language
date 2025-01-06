@@ -23,6 +23,7 @@ public class FplQuery
     private ModuleHandler _modules;
     private ParsingMetaContext _rootMetaContext;
     private ParserRootConfig _config;
+    private IWritingModule? _writingModule;
     internal Dictionary<string, IConverter> _converter;
 
     private string _rawQuery;
@@ -51,12 +52,16 @@ public class FplQuery
         };
     }
 
-    public static FplQuery Compile(string raw, ParsingMetaContext? configContext = null) => Compiler.Compile(raw, configContext);
+    public static FplQuery Compile(string raw, ParsingMetaContext? configContext = null, IWritingModule? writingModule = null) {
+        var c = Compiler.Compile(raw, configContext);
+        c._writingModule = writingModule;
+        return c;
+    }
 
-    public object Parse(object readRoot)
+    public object Parse(object readRoot, IWritingModule? writingModule = null)
     {
 
-        IWritingModule writer = new CollectionWritingModule();
+        var writer = writingModule ?? _writingModule ?? new CollectionWritingModule();
 
         object? writeRoot = (_config.RootType & OpCompileType.WriteObject) > 0
             ? writer.BlankMap()
