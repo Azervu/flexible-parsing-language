@@ -14,7 +14,7 @@ public class Parsing
         new object[] { "Xml in Json Test", "{'data': ['<a><b>test_a</b></a>', '<a><b>test_b</b></a>']}", "|json.data*|xml.a.b", "['test_a','test_b']", null, null },
         new object[] { "Json in Xml Test", "<data><v>{'a':{'b':'test_a'}}</v><v>{'a':{'b':'test_b'}}</v></data>", "|xml.data*|json.a.b", "['test_a','test_b']", null, null },
         new object[] { "Read Lookup Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*#(@id)", "['n53','a81']", new List<(string, string)> {("bob", "n53"), ("trj", "a81") }, new List<List<(string, string)>> { } },
-
+        new object[] { "Read Lookup Context Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*##id##(@id)#value", "['k678','l63']", new List<(string, string)> { }, new List<List<(string, string)>> { new() { ("id", "bob"), ("value", "k678") }, new() { ("id", "trj"), ("value", "l63") }, } },
 
 
 

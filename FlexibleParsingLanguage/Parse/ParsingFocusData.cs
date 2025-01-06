@@ -130,10 +130,11 @@ internal class ParsingFocusData
         Active = new ParsingFocus(Active.ReadId, _writeIdCounter, Active.ConfigId);
     }
 
-
-
-
-
+    internal void NextConfig(List<ConfigEntry> next)
+    {
+        Configs[++_configIdCounter] = next;
+        Active = new ParsingFocus(Active.ReadId, Active.WriteId, _configIdCounter);
+    }
 
 
 
@@ -288,6 +289,12 @@ internal struct ParsingFocus
     internal int ConfigId { get; private set; }
     internal ParsingFocus(int readId, int writeId, int configId)
     {
+#if DEBUG
+        if (readId == 0 && writeId == 0 && configId == 0)
+            throw new Exception($"read = {readId} | write = {writeId} | config = {configId}");
+#endif
+
+
         WriteId = writeId;
         ReadId = readId;
         ConfigId = configId;

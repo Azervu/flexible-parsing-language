@@ -32,6 +32,9 @@ public class ParsingMetaContext
         var ctx = new ParsingMetaContext() { Entries = new Dictionary<string, ParsingMetaContext>() };
         foreach (var (k, v) in data)
         {
+            if (ctx.Entries.ContainsKey(k))
+                throw new Exception($"Duplicate key in context | key = '{k}' | ctx = [{data.Select(x => $"{x.Key}:{x.Value}").Join(", ")}]");
+
             ctx.Entries.Add(k, new ParsingMetaContext(v));
 
             if (!Entries.TryGetValue(k, out var category))
