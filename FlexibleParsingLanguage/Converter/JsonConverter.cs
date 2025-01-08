@@ -10,13 +10,12 @@ namespace FlexibleParsingLanguage.Converter;
 
 internal class JsonConverter : IConverter
 {
-    public object Convert(object input)
+    public bool Convert(object input, out object result)
     {
         if (input is not string str)
             str = input.ToString();
 
-        var r = JsonSerializer.Deserialize<JsonNode>(str);
-
-        return r;
+        result = JsonSerializer.Deserialize<JsonNode>(str);
+        return true;
     }
 }

@@ -10,13 +10,14 @@ namespace FlexibleParsingLanguage.Converter;
 
 internal class XmlConverter : IConverter
 {
-    public object Convert(object input)
+    public bool Convert(object input, out object result)
     {
         if (input is not string str)
             str = input.ToString();
 
         var xml = new XmlDocument();
         xml.LoadXml(str);
-        return xml;
+        result = xml;
+        return true;
     }
 }

@@ -20,7 +20,6 @@ public interface IReadingModule
 
 public interface IWritingModule
 {
-    public List<Type> HandledTypes { get; }
     public object BlankMap();
     public object BlankArray();
     public void Write(object target, string acc, object? val);
@@ -30,5 +29,5 @@ public interface IWritingModule
 
 public interface IConverter
 {
-    public object Convert(object input);
+    public bool Convert(object value, out object result);
 }

@@ -12,8 +12,6 @@ namespace FlexibleParsingLanguage.Modules;
 
 internal class CollectionWritingModule : IWritingModule
 {
-    public List<Type> HandledTypes { get; } = [typeof(IDictionary), typeof(IList)];
-
     public object BlankArray() => new List<object>();
 
     public object BlankMap() => new Dictionary<string, object>();

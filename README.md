@@ -11,11 +11,14 @@
 | `(` `)`  | Grouping                               |
 | `,`      | Parameter Separator                    |
 | `*`      | Foreach                                |
+| `:*`     | Write Foreach                          |
 | `~`      | Name                                   |
-| `|`      | Transformer                            |
+| `|`      | Function call                          |
 | `#`      | Lookup                                 |
 | `##`     | Change Lookup Context                  |
 | `'`      | Escape                                 |
 | `"`      | Escape                                 |
 | `\`      | Un Escape                              |
 | `@`      | Context at start of current group      |
+| `$`      | Root                                   |
+| `:$`     | Write Root                             |
