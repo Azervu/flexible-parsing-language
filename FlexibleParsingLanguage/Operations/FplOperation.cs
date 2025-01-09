@@ -29,9 +29,9 @@ internal static partial class FplOperation
                     Param,
                     Lookup,
                     ChangeLookupContext,
-
+                    Function,
                     new OpConfig(":$", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(ParsesOperationType.WriteRoot)])),
-                    new OpConfig("|", OpSequenceType.LeftInput | OpSequenceType.RightInput, (p, o) => CompileSaveUtil(p, o, 2, [new ParseOperation(ParsesOperationType.Function, o.Input[1].Accessor)])),
+                    
                     new OpConfig("~", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(ParsesOperationType.ReadName)])),
 
                     new OpConfig("@", OpSequenceType.ParentInput | OpSequenceType.Virtual),

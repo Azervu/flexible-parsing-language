@@ -9,9 +9,6 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal class OpConfig
 {
-
-
-
     internal string Operator { get; set; }
     internal string GroupOperator { get; set; }
 
@@ -23,11 +20,6 @@ internal class OpConfig
 
     internal Func<ParseData, RawOp, int> GetStatusId { get; set; }
     internal Func<ParseData, RawOp, IEnumerable<ParseOperation>> Compile { get; set; }
-
-
-    
-
-
 
     internal OpConfig(string op, OpSequenceType sequenceType, OpCompileType compileType, Func<ParseData, RawOp, IEnumerable<ParseOperation>> compile = null, int rank = -1, string op2 = null)
     {
@@ -72,17 +64,17 @@ internal enum OpSequenceType
     None      = 0b_0000_0000_0000_0000,
     Default   = 0b_0000_0001_0000_0000,
     Root      = 0b_0000_0010_0000_0000,
-    RootParam     = 0b_0000_1000_0000_0000,
+    RootParam = 0b_0000_1000_0000_0000,
 
-    RightInput    = 0b_0000_0000_0000_0001,
+    RightInput  = 0b_0000_0000_0000_0001,
     LeftInput   = 0b_0000_0000_0000_0010,
     ParentInput = 0b_0000_0000_0000_0100,
-    Branching = 0b_0000_0000_0000_1000, //Prefix and Postfix passes through
+    Branching   = 0b_0000_0000_0000_1000, //Prefix and Postfix passes through
 
 
-    Group        = 0b_0000_0000_0001_0000,
-    UnGroup      = 0b_0000_0000_0010_0000,
-    GroupSeparator = 0b_0000_0000_0010_0000,
+    Group          = 0b_0000_0000_0001_0000,
+    UnGroup        = 0b_0000_0000_0010_0000,
+    GroupSeparator = 0b_0000_0000_0100_0000,
 
     Virtual = 0b_0000_0000_1000_0000,
 

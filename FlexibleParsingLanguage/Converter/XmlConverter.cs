@@ -8,16 +8,15 @@ using System.Xml;
 
 namespace FlexibleParsingLanguage.Converter;
 
-internal class XmlConverter : IConverter
+internal class XmlConverter : IConverterFunction
 {
-    public bool Convert(object input, out object result)
+    public object Convert(object input)
     {
         if (input is not string str)
             str = input.ToString();
 
         var xml = new XmlDocument();
         xml.LoadXml(str);
-        result = xml;
-        return true;
+        return xml;
     }
 }

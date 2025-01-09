@@ -125,65 +125,6 @@ internal partial class Compiler
         }
 
         ops = ops.Where(x => !x.Type.SequenceType.All(OpSequenceType.UnGroup)).ToList();
-
-
-        /*
-#if DEBUG
-        return;
-
-        var ssss = entries.Select(x =>
-        {
-            var t = data.Ops[x].ToString();
-            if (data.GroupParents.TryGetValue(x, out var v))
-                t += " -> " + data.GroupParents[x]
-; return t;
-        }).Join("\n");
-
-
-
-        Action<int, int> pg = null;
-
-        var log = new StringBuilder();
-        var printGroup = (int depth, int id) =>
-        {
-
-
-
-            log.Append("\n");
-            log.Append(new string(' ', depth * 4));
-
-            if (depth > 10)
-            {
-                log.Append("***");
-                return;
-            }
-
-            var op = data.Ops[id];
-            log.Append(op.ToString());
-            if (data.GroupChildren.TryGetValue(id, out var g))
-            {
-                foreach (var e in g)
-                {
-                    pg(depth + 1, e);
-                }
-            }
-
-        };
-        pg = printGroup;
-
-        foreach (var id in data.GroupChildren.Where(x => !data.GroupParents.ContainsKey(x.Key)))
-        {
-            printGroup(0, id.Key);
-        }
-
-        var ss = log.ToString();
-
-        var s = 3455;
-
-#endif
-        */
-
-
     }
 
     private void SequenceAffixes(SequenceProccessData data, ref List<RawOp> ops)
@@ -506,7 +447,7 @@ internal partial class Compiler
         var outOps = new List<RawOp>(ops.Count);
         foreach (var op in ops)
         {
-            if ((op.Type.SequenceType & (OpSequenceType.Virtual | OpSequenceType.UnGroup)) > 0)
+            if ((op.Type.SequenceType & (OpSequenceType.Virtual | OpSequenceType.UnGroup | OpSequenceType.GroupSeparator)) > 0)
                 continue;
 
             /*

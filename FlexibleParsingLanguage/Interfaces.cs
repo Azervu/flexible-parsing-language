@@ -27,7 +27,12 @@ public interface IWritingModule
     public void Append(object target, object? val);
 }
 
-public interface IConverter
+public interface IConverterFunction
 {
-    public bool Convert(object value, out object result);
+    public object Convert(object value);
+}
+
+public interface IFilterFunction
+{
+    public bool Filter(object value);
 }

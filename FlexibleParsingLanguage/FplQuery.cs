@@ -24,7 +24,11 @@ public class FplQuery
     private ParsingMetaContext _rootMetaContext;
     private ParserRootConfig _config;
     private IWritingModule? _writingModule;
-    internal Dictionary<string, IConverter> _converter;
+    internal Dictionary<string, IConverterFunction> _converter;
+
+    internal Dictionary<string, IFilterFunction> _filters;
+
+
 
     private string _rawQuery;
 
@@ -45,10 +49,15 @@ public class FplQuery
             new XmlParsingModule(),
         ]);
 
-        _converter = new Dictionary<string, IConverter>
+        _converter = new Dictionary<string, IConverterFunction>
         {
             { "json", new JsonConverter() },
             { "xml", new XmlConverter() }
+        };
+
+        _filters = new Dictionary<string, IFilterFunction>
+        {
+
         };
     }
 

@@ -8,14 +8,12 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Converter;
 
-internal class JsonConverter : IConverter
+internal class JsonConverter : IConverterFunction
 {
-    public bool Convert(object input, out object result)
+    public object Convert(object input)
     {
         if (input is not string str)
             str = input.ToString();
-
-        result = JsonSerializer.Deserialize<JsonNode>(str);
-        return true;
+        return JsonSerializer.Deserialize<JsonNode>(str);
     }
 }
