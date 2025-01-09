@@ -11,7 +11,7 @@ namespace FlexibleParsingLanguage.Operations;
 internal partial class FplOperation
 {
 
-    internal static readonly OpConfig Function = new OpConfig("|", OpSequenceType.LeftInput | OpSequenceType.RightInput, (p, o) => CompileSaveUtil(p, o, 2, [new ParseOperation(OperationFunction, o.Input[1].Accessor)]))
+    internal static readonly OpConfig Function = new OpConfig("|", OpSequenceType.LeftInput | OpSequenceType.RightInput | OpSequenceType.OptionalExtraInput, (p, o) => CompileSaveUtil(p, o, 2, [new ParseOperation(OperationFunction, o.Input[1].Accessor)]))
     {
         CompileType = OpCompileType.ReadArray,
     };

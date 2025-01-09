@@ -124,7 +124,10 @@ internal partial class Compiler
             }
         }
 
+
         ops = ops.Where(x => !x.Type.SequenceType.All(OpSequenceType.UnGroup)).ToList();
+
+        //ops = ops.Where(x => !x.Type.SequenceType.Any(OpSequenceType.UnGroup | OpSequenceType.GroupSeparator)).ToList();
     }
 
     private void SequenceAffixes(SequenceProccessData data, ref List<RawOp> ops)

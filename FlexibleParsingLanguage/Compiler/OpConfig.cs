@@ -65,8 +65,10 @@ internal enum OpSequenceType
     Default   = 0b_0000_0001_0000_0000,
     Root      = 0b_0000_0010_0000_0000,
     RootParam = 0b_0000_1000_0000_0000,
+    OptionalExtraInput = 0b_0000_0100_0000_0000,
 
-    RightInput  = 0b_0000_0000_0000_0001,
+
+    RightInput = 0b_0000_0000_0000_0001,
     LeftInput   = 0b_0000_0000_0000_0010,
     ParentInput = 0b_0000_0000_0000_0100,
     Branching   = 0b_0000_0000_0000_1000, //Prefix and Postfix passes through
@@ -75,8 +77,7 @@ internal enum OpSequenceType
     Group          = 0b_0000_0000_0001_0000,
     UnGroup        = 0b_0000_0000_0010_0000,
     GroupSeparator = 0b_0000_0000_0100_0000,
-
-    Virtual = 0b_0000_0000_1000_0000,
+    Virtual        = 0b_0000_0000_1000_0000,
 
     Literal    = 0b_0001_0000_0000_0000,
     Unescape   = 0b_0010_0000_0000_0000,
