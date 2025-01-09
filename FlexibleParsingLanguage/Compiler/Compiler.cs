@@ -1,4 +1,7 @@
-﻿using FlexibleParsingLanguage.Operations;
+﻿using FlexibleParsingLanguage.Converter;
+using FlexibleParsingLanguage.Functions;
+using FlexibleParsingLanguage.Modules;
+using FlexibleParsingLanguage.Operations;
 using FlexibleParsingLanguage.Parse;
 
 namespace FlexibleParsingLanguage.Compiler;
@@ -20,8 +23,31 @@ internal partial class Compiler
 
     private Dictionary<string, OpConfig?> Operators = new();
 
+
+    private Dictionary<string, IConverterFunction> _converter;
+    private Dictionary<string, IFilterFunction_String> _filters;
+    private ModuleHandler _modules;
+
     internal Compiler(List<OpConfig> ops)
     {
+
+        _modules = new ModuleHandler([
+            new CollectionParsingModule(),
+            new JsonParsingModule(),
+            new XmlParsingModule(),
+        ]);
+
+        _converter = new Dictionary<string, IConverterFunction>
+        {
+            { "json", new JsonConverter() },
+            { "xml", new XmlConverter() }
+        };
+
+        _filters = new Dictionary<string, IFilterFunction_String>
+        {
+            { "regex", new RegexFilter() }
+        };
+
         Ops = ops;
         foreach (var op in ops)
         {

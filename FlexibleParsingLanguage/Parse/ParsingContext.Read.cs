@@ -31,8 +31,8 @@ internal partial class ParsingContext
         
     internal void ReadFlatten() => Focus.ReadForeach((r) =>
     {
-        UpdateReadModule(r);
-        return ReadingModule.Foreach(r.V);
+        UpdateReadModule(r.Value);
+        return ReadingModule.Foreach(r.Value.V);
     });
 
     internal void ToRootRead()

@@ -32,7 +32,7 @@ public interface IConverterFunction
     public object Convert(object value);
 }
 
-public interface IFilterFunction
+public interface IFilterFunction_String
 {
-    public bool Filter(object value);
+    public bool Filter(object value, string acc);
 }

@@ -3,6 +3,7 @@ using FlexibleParsingLanguage.Parse;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,34 +12,51 @@ namespace FlexibleParsingLanguage.Operations;
 internal partial class FplOperation
 {
 
-    internal static readonly OpConfig Function = new OpConfig("|", OpSequenceType.LeftInput | OpSequenceType.RightInput | OpSequenceType.OptionalExtraInput, (p, o) => CompileSaveUtil(p, o, 2, [new ParseOperation(OperationFunction, o.Input[1].Accessor)]))
+    internal static readonly OpConfig Function = new OpConfig("|", OpSequenceType.LeftInput | OpSequenceType.RightInput | OpSequenceType.OptionalExtraInput, (p, o) => CompileFunction(p, o))
     {
         CompileType = OpCompileType.ReadArray,
     };
 
 
-    internal static void OperationFunction(FplQuery parser, ParsingContext context, int intAcc, string acc)
+    private static IEnumerable<ParseOperation> CompileFunction(ParseData parser, RawOp op)
     {
 
-        if (parser._converter.TryGetValue(acc, out var c))
+        if (op.Input.Count < 2)
+            throw new QueryException(op, $"function withouth name");
+
+        var acc = op.Input[1].Accessor;
+
+        if (parser.Filters.TryGetValue(acc, out var f))
         {
-
-
-            context.ReadTransformValue((w) =>
-            {
-                context.UpdateReadModule(new ValueWrapper(w));
-                object raw;
-                if (context.ReadingModule != null)
-                    raw = context.ReadingModule.ExtractValue(w);
-                else
-                    raw = w;
-                return c.Convert(raw);
-            });
-            return;
+            if (op.Input.Count != 3 || op.Input[2].Accessor == null)
+                throw new QueryException(op, $"filter missing input");
+            return CompileSaveUtil(parser, op, -1, [new ParseOperation((q, c, i, a) => OperationFunctionFilter(q, c, i, a, f), op.Input[2].Accessor)]);
         }
 
-        throw new NotImplementedException($"function does not exists {acc}");
+        if (parser.Converter.TryGetValue(acc, out var converter))
+            return CompileSaveUtil(parser, op, 2, [new ParseOperation((q, c, i, a) => OperationFunctionConvert(q, c, i, a, converter))]);
 
+
+        throw new QueryException(op, $"unknown function '{acc}'");
+    }
+
+
+    internal static void OperationFunctionFilter(FplQuery parser, ParsingContext context, int intAcc, string acc, IFilterFunction_String filter)
+    {
+        context.Focus.ReadForeach((w) =>
+        {
+            context.UpdateReadModule(w.Value);
+            object raw;
+            if (context.ReadingModule != null)
+                raw = context.ReadingModule.ExtractValue(w.Value.V);
+            else
+                raw = w.Value.V;
+
+            if (filter.Filter(raw, acc))
+                return [new KeyValuePair<object, object>(w.Key.V, w.Value.V)];
+
+            return [];
+        });
         /*
         if (parser._filters.TryGetValue(acc, out var f))
         {
@@ -63,5 +81,19 @@ internal partial class FplOperation
         }
         */
 
+    }
+
+    internal static void OperationFunctionConvert(FplQuery parser, ParsingContext context, int intAcc, string acc, IConverterFunction converter)
+    {
+        context.ReadTransformValue((w) =>
+        {
+            context.UpdateReadModule(new ValueWrapper(w));
+            object raw;
+            if (context.ReadingModule != null)
+                raw = context.ReadingModule.ExtractValue(w);
+            else
+                raw = w;
+            return converter.Convert(raw);
+        });
     }
 }

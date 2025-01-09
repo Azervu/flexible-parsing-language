@@ -97,12 +97,12 @@ internal class ParsingFocusData
     }
 
 
-    internal void ReadForeach(Func<ValueWrapper, IEnumerable<KeyValuePair<object, object>>> transformAction)
+    internal void ReadForeach(Func<FocusEntry, IEnumerable<KeyValuePair<object, object>>> transformAction)
     {
         var result = new List<FocusEntry>();
         foreach (var r in Reads[Active.ReadId])
         {
-            foreach (var kv in transformAction(r.Value))
+            foreach (var kv in transformAction(r))
             {
                 _sequenceIdCounter++;
                 result.Add(new FocusEntry

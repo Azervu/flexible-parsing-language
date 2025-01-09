@@ -22,3 +22,15 @@
 | `@`      | Context at start of current group      |
 | `$`      | Root                                   |
 | `:$`     | Write Root                             |
+
+
+## function example
+
+payload
+['apple', 'troll', 'pear', 'bear']
+
+query
+|json*|regex('apple|bear')
+
+result
+['apple','bear']

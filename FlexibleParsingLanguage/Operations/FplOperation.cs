@@ -295,13 +295,8 @@ internal static partial class FplOperation
 
         throw new QueryException(op, $"Indirect accessor not supported yet");
 
-
-
-
-
         /*
         var stored = ctx.Store[i];
-
 
         var max = Math.Max(stored.Count, ctx.Focus.Count);
 
@@ -312,29 +307,17 @@ internal static partial class FplOperation
             throw new QueryException(op, $"num entries mismatch, must be equal or one of them must be | Focus = {ctx.Focus.Count} |  {stored.Count}");
 
         var results = new List<ParsingFocusEntry>();
-        
-
+       
 
         for (var index = 0; i < max; i++)
         {
             var a = stored[index];
             var b = ctx.Focus[index];
-
-
-
-
             var reads = b.Reads;
-
             a.Reads
         }
-
-
-
-
-
         ctx.Focus = results;
         */
-
     }
 
     internal static IEnumerable<ParseOperation> EnsureLoaded(ParseData parser, RawOp op)
@@ -355,12 +338,8 @@ internal static partial class FplOperation
         if (inputId < 0 || inputId == parser.LoadedId)
             yield break;
 
-
-
-
         parser.ActiveId = inputId;
         parser.LoadedId = inputId;
-
 
         if (inputId == Compiler.Compiler.RootId)
             yield return new ParseOperation(RootParamOperation);
@@ -371,9 +350,6 @@ internal static partial class FplOperation
 
     internal static IEnumerable<ParseOperation> EnsureSaved(ParseData parser, RawOp op)
     {
-        //if (op.Output.Count <= 1)
-        //    yield break;
-
         var id = op.Type.GetStatusId != null
             ? op.Type.GetStatusId(parser, op)
             : op.Id;
@@ -435,7 +411,7 @@ internal static partial class FplOperation
     */
     private static IEnumerable<ParseOperation> CompileSaveUtil(ParseData parser, RawOp op, int numInput, IEnumerable<ParseOperation> pos)
     {
-        if (op.Input.Count != numInput)
+        if (numInput >= 0 && op.Input.Count != numInput)
             throw new QueryException(op, $"{op.Input.Count} inputs, takes {numInput}");
 
         var id = op.GetStatusId(parser);

@@ -1,5 +1,6 @@
 ﻿using FlexibleParsingLanguage.Compiler;
 using FlexibleParsingLanguage.Converter;
+using FlexibleParsingLanguage.Functions;
 using FlexibleParsingLanguage.Modules;
 using FlexibleParsingLanguage.Operations;
 using FlexibleParsingLanguage.Parse;
@@ -20,22 +21,18 @@ public class FplQuery
     }
 
     private List<ParseOperation> _operations;
-    private ModuleHandler _modules;
+    
     private ParsingMetaContext _rootMetaContext;
     private ParserRootConfig _config;
     private IWritingModule? _writingModule;
-    internal Dictionary<string, IConverterFunction> _converter;
-
-    internal Dictionary<string, IFilterFunction> _filters;
-
-
-
+    private ModuleHandler _modules;
     private string _rawQuery;
 
     internal FplQuery(
         List<ParseOperation> operations,
         ParsingMetaContext rootMetaContext,
         ParserRootConfig config,
+        ModuleHandler modules,
         string rawQuery
     )
     {
@@ -43,22 +40,7 @@ public class FplQuery
         _config = config;
         _rootMetaContext = rootMetaContext;
         _operations = operations;
-        _modules = new ModuleHandler([
-            new CollectionParsingModule(),
-            new JsonParsingModule(),
-            new XmlParsingModule(),
-        ]);
-
-        _converter = new Dictionary<string, IConverterFunction>
-        {
-            { "json", new JsonConverter() },
-            { "xml", new XmlConverter() }
-        };
-
-        _filters = new Dictionary<string, IFilterFunction>
-        {
-
-        };
+        _modules = modules;
     }
 
     public static FplQuery Compile(string raw, ParsingMetaContext? configContext = null, IWritingModule? writingModule = null) {

@@ -77,10 +77,10 @@ internal partial class Compiler
 
         var parseData = new ParseData
         {
+            Filters = _filters,
+            Converter = _converter,
             ActiveId = RootId,
             LoadedId = RootId,
-            Ops = [],
-            OpsMap = new Dictionary<(int LastOp, ParseOperation[]), int> {},
 
             ReadInput = readInput,
             WriteInput = writeInput,
@@ -117,7 +117,7 @@ internal partial class Compiler
 
         var outOps = compilesOps.SelectMany(x => x.Ops).ToList();
 
-        return new FplQuery(outOps, configContext, new ParserRootConfig { RootType = rootType }, query);
+        return new FplQuery(outOps, configContext, new ParserRootConfig { RootType = rootType }, _modules, query);
     }
 
 }

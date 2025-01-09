@@ -4,8 +4,9 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal class ParseData
 {
-    internal List<(int, ParseOperation)> Ops { get; set; }
-    internal Dictionary<(int LastOp, ParseOperation[]), int> OpsMap { get; set; }
+    internal Dictionary<string, IConverterFunction> Converter { get; set; }
+    internal Dictionary<string, IFilterFunction_String> Filters { get; set; }
+
     internal int LoadedId { get; set; }
     internal int ActiveId { get; set; }
 
