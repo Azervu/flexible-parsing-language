@@ -21,6 +21,7 @@ internal class RawOp
     internal bool Prefixed { get; set; }
     internal bool PostFixed { get; set; }
 
+    internal bool OptFixed { get; set; }
 
     internal bool IsPrefix()
     {
@@ -37,6 +38,16 @@ internal class RawOp
 
         return false;
     }
+
+
+    internal bool IsOptFix()
+    {
+        if (Type.SequenceType.All(OpSequenceType.OptionalExtraInput) && !OptFixed)
+            return true;
+
+        return false;
+    }
+
 
     internal List<RawOp> Input = new List<RawOp>();
 

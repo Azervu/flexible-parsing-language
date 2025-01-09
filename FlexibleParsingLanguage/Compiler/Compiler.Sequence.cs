@@ -46,7 +46,15 @@ internal partial class Compiler
         var data = new SequenceProccessData();
         data.Ops = ops.ToDictionary(x => x.Id, x => x);
 
+#if DEBUG
+        var a = ops.Select(x => $"({x.Id,2}/{x.CharIndex,2}){(string.IsNullOrEmpty(x.Accessor) ? x.Type.Operator : $"'{x.Accessor}'"),5}").Join("\n");
+#endif
+
         GroupOps(data, ref ops);
+
+#if DEBUG
+        var b = ops.Select(x => $"({x.Id,2}/{x.CharIndex,2}){(string.IsNullOrEmpty(x.Accessor) ? x.Type.Operator : $"'{x.Accessor}'"),5}").Join("\n");
+#endif
         SequenceAffixes(data, ref ops);
 
 
@@ -125,9 +133,9 @@ internal partial class Compiler
         }
 
 
-        ops = ops.Where(x => !x.Type.SequenceType.All(OpSequenceType.UnGroup)).ToList();
+        //ops = ops.Where(x => !x.Type.SequenceType.All(OpSequenceType.UnGroup)).ToList();
 
-        //ops = ops.Where(x => !x.Type.SequenceType.Any(OpSequenceType.UnGroup | OpSequenceType.GroupSeparator)).ToList();
+        ops = ops.Where(x => !x.Type.SequenceType.Any(OpSequenceType.UnGroup | OpSequenceType.GroupSeparator)).ToList();
     }
 
     private void SequenceAffixes(SequenceProccessData data, ref List<RawOp> ops)
@@ -169,8 +177,11 @@ internal partial class Compiler
 
         var post = op.IsPostfix();
         var pre = op.IsPrefix();
+        var opt = op.IsOptFix();
 
-        if (!post && !pre)
+
+
+        if (!post && !pre && !opt)
             return;
 
         var parentId = x.ParentId;
@@ -199,7 +210,7 @@ internal partial class Compiler
 
             if (targetIndex != -1)
             {
-                AddInput(data, parentChildren, targetIndex, op, false);
+                AddInput(data, parentChildren, targetIndex, op, 1);
             }
             else if (parent.Type.SequenceType.All(OpSequenceType.Branching | OpSequenceType.LeftInput))
             {
@@ -221,7 +232,6 @@ internal partial class Compiler
             if (index == -1)
                 throw new QueryException(op, $"Index not found in ({parentId}, {x.Index}) [{parentChildren.Select(x => x.ToString()).Join(", ")}]");
 
-
             for (var i = index + 1; i < parentChildren.Count; i++)
             {
                 var candidate = data.Ops[parentChildren[i]];
@@ -234,7 +244,7 @@ internal partial class Compiler
 
             if (targetIndex != -1)
             {
-                AddInput(data, parentChildren, targetIndex, op, true);
+                AddInput(data, parentChildren, targetIndex, op, 2);
             }
             else if (parent.Type.SequenceType.All(OpSequenceType.Branching | OpSequenceType.RightInput))
             {
@@ -246,11 +256,43 @@ internal partial class Compiler
                 throw new QueryException(op, $"Prefix operator lacks input");
             }
         }
+
+
+
+        if (opt)
+        {
+            RawOp? target = null;
+            var targetIndex = -1;
+            var index = parentChildren.IndexOf(op.Id);
+            if (index >= 0)
+            {
+                for (var i = index + 1; i < parentChildren.Count; i++)
+                {
+                    var candidate = data.Ops[parentChildren[i]];
+                    if (candidate.Type.SequenceType.All(OpSequenceType.Branching))
+                        continue;
+
+                    if (!candidate.Type.SequenceType.All(OpSequenceType.Group))
+                        break;
+
+                    target = candidate;
+                    targetIndex = i;
+                    break;
+                }
+            }
+
+
+            if (targetIndex != -1)
+            {
+                AddInput(data, parentChildren, targetIndex, op, 3);
+            }
+
+        }
     }
 
 
 
-    private void AddInput(SequenceProccessData data, List<int> sourceChildren, int sourceIndex, RawOp target, bool prefix)
+    private void AddInput(SequenceProccessData data, List<int> sourceChildren, int sourceIndex, RawOp target, int prefixIndex)
     {
 
         var id = sourceChildren[sourceIndex];
@@ -258,10 +300,11 @@ internal partial class Compiler
 
         if (target.Type.SequenceType.All(OpSequenceType.Branching))
         {
-            if (prefix)
-                target.RightInput.Add(op);
-            else
+            if (prefixIndex == 1)
                 target.LeftInput.Add(op);
+            else
+                target.RightInput.Add(op);
+
             return;
         }
 
@@ -281,18 +324,29 @@ internal partial class Compiler
 
         var tg = targetChildren[0];
 
-        if (prefix)
+
+        switch (prefixIndex)
         {
-            tg.Add(id);
-            target.Prefixed = true;
-            target.RightInput.Add(op);
+
+            case 1:
+                tg.Insert(0, id);
+                target.PostFixed = true;
+                target.LeftInput.Add(op);
+                break;
+            case 2:
+                tg.Add(id);
+                target.Prefixed = true;
+                target.RightInput.Add(op);
+                break;
+            case 3:
+                tg.Add(id);
+                target.OptFixed = true;
+                target.RightInput.Add(op);
+                break;
         }
-        else
-        {
-            tg.Insert(0, id);
-            target.PostFixed = true;
-            target.LeftInput.Add(op);
-        }
+
+
+
     }
 
 

@@ -13,8 +13,11 @@ public class TokenizerTest
         new object[] {"Chain", "a.b#cc2.d", "1.($,'a')  2.(1,'b')  3#(2,'cc2')  4.(3,'d')  5{(4)"},
         new object[] {"Redundancies", "$b.#c{@.d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)"},
         new object[] {"Non redundant", "b#c{@d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)" },
+
+
+        new object[] {"EscapeSimple", "a'ee\\'e'", "1.($,'a')  2.(1,'ee\\'e')  3{(2)"},
+
         new object[] {"Escape", "a.b'ee\\'e'c.d", "1.($,'a')  2.(1,'b')  3.(2,'ee\\'e')  4.(3,'c')  5.(4,'d')  6{(5)"},
-        new object[] {"Branch Simple", "a{@b}c", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)"},
         new object[] {"Branch Multi", "a{@b}{@c}d", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)  6.(1,'d')  7{(6)"},
         new object[] {"Branch Root", "a{$b}c", "1.($,'a')  2.($,'b')  3{(2)  4.(1,'c')  5{(4)"},
         new object[] {"Branch Header", "a{@b1:h2}b2:h1", "1.($,'a')  2.(1,'b1')  3:(2,'h2')  4{(3)  5.(1,'b2')  6:(5,'h1')  7{(6)"},
@@ -30,7 +33,7 @@ public class TokenizerTest
 
         new object[] { "Write Foreach", "a:$b", "1.($,'a')  2:$(1)  3.(2,'b')  4{(3)" },
 
-        new object[] { "Functions", "|with_param('a > b','a <> b')a|withouth_param", "1.($,'a')  2:$(1)  3.(2,'b')  4{(3)" },
+        new object[] { "Functions", "|with_param('a > b','a <> b')a|withouth_param.b", "1|($,'with_param','a > b','a <> b')  2.(1,'a')  3|(2,'withouth_param')  4.(3,'b')  5{(4)" },
     };
 
     public static IEnumerable<object[]> InvalidQueries => new List<object[]>

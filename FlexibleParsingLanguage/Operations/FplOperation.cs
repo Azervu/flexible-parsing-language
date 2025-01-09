@@ -35,8 +35,8 @@ internal static partial class FplOperation
                     new OpConfig("~", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(ParsesOperationType.ReadName)])),
 
                     new OpConfig("@", OpSequenceType.ParentInput | OpSequenceType.Virtual),
-                    new OpConfig("\"", OpSequenceType.Literal, null, -1, "\""),
-                    new OpConfig("'", OpSequenceType.Literal, null, -1, "\'"),
+                    new OpConfig("\"", OpSequenceType.Literal | OpSequenceType.Accessor, null, -1, "\""),
+                    new OpConfig("'", OpSequenceType.Literal | OpSequenceType.Accessor, null, -1, "\'"),
                     new OpConfig("\\", OpSequenceType.Unescape, null, -1),
 
                     new OpConfig(",", OpSequenceType.GroupSeparator),

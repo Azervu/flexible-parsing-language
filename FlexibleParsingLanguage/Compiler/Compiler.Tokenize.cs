@@ -99,7 +99,7 @@ internal partial class Compiler
             var checkString = string.Empty;
             var escaped = false;
             var unescaped = false;
-
+            opStart = i - 1;
             for (; i < raw.Length; i++)
             {
                 var c = raw[i].ToString();
@@ -138,7 +138,7 @@ internal partial class Compiler
                 }, "Escape operator not ended");
             searchedIndex = i + 1;
 
-            yield return new Token(escapedString, searchedIndex);
+            yield return new Token(escapedString, opStart);
         }
     }
 }

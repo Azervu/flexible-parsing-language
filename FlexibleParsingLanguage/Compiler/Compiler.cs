@@ -89,7 +89,7 @@ internal partial class Compiler
 
 #if DEBUG
             var tt = tokens.Select(x => $"{x.Op?.Operator ?? ($"'{x.Accessor}'")}").Join("\n");
-            var t = ops.Select(x => $"({x.Id,2}){(string.IsNullOrEmpty(x.Accessor) ? x.Type.Operator : $"'{x.Accessor}'"),5}").Join("\n");
+            var t = ops.Select(x => $"({x.Id,2}:{x.CharIndex,2}){(string.IsNullOrEmpty(x.Accessor) ? x.Type.Operator : $"'{x.Accessor}'"),5}").Join("\n");
 #endif
 
             Sequence(ref ops);
@@ -97,9 +97,12 @@ internal partial class Compiler
 
             foreach (var op in ops)
             {
+                /*
                 if (op.Type != FplOperation.Accessor && op.Accessor != null)
                     throw new InvalidOperationException("Accessor on non-accessor operation");
+                */
             }
+            
 
             foreach (var op in ops)
             {
@@ -136,9 +139,21 @@ internal partial class Compiler
 
         var idCounter = RootId + 1;
         bool checkedRoot = false;
+
         RawOp? op = null;
-        foreach (var t in tokens)
-        {
+
+        var skipDefaultOperator = false;
+
+
+        var it = tokens.GetEnumerator();
+
+
+        while (it.MoveNext()) {
+            var t = it.Current;
+
+
+            //RawOp? acc = null;
+
             RawOp? accessor = null;
             if (t.Op == null || t.Op.SequenceType.All(OpSequenceType.Accessor))
             {
@@ -150,13 +165,15 @@ internal partial class Compiler
                     Accessor = t.Accessor,
                 };
 
+
+
                 if (op != null && !op.Type.SequenceType.All(OpSequenceType.RightInput))
                 {
                     ops.Add(op);
                     op = null;
                 }
 
-                if (op == null)
+                if (op == null && !skipDefaultOperator)
                 {
                     op = new RawOp
                     {
@@ -169,7 +186,11 @@ internal partial class Compiler
             else
             {
                 if (t.Op == DefaultOp)
+                {
+                    skipDefaultOperator = false;
                     continue;
+                }
+                 
 
                 if (op != null && op.Type != DefaultOp)
                     ops.Add(op);
@@ -196,14 +217,30 @@ internal partial class Compiler
                     });
                 }
             }
+
+
             if (accessor != null)
             {
-                ops.Add(op);
+                if (op != null)
+                {
+                    ops.Add(op);
+                    skipDefaultOperator = op.Type.SequenceType.All(OpSequenceType.OptionalExtraInput);
+                }
+
                 ops.Add(accessor);
                 op = null;
                 accessor = null;
             }
+            else
+            {
+                skipDefaultOperator = false;
+            }
+
+            if (t.Op != null && t.Op.SequenceType.Any(OpSequenceType.GroupSeparator | OpSequenceType.Group))
+                skipDefaultOperator = true;
         }
+
+
 
         if (op != null)
             ops.Add(op);
