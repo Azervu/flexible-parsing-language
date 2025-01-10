@@ -2,35 +2,102 @@
 
 # Flexible Parsing Language
 
+FPL is intended as a robust and extensible parsing language that comes with XML and JSON support.
+Supports custom read and write modules as well as conversion and filter functions
+The syntaxt is similar to Json path where applicable
 
 | Operator | Description                            |
 |:---------|:---------------------------------------|
 | `.`      | Operator Separator / Read              |
 | `:`      | Write                                  |
-| `{` `}`  | Branching                              |
-| `(` `)`  | Grouping                               |
-| `,`      | Parameter Separator                    |
+| `{` `}`  | Write Branching Group Operator         |
+| `(` `)`  | Parameter Grouping                     |
+| `,`      | Group Separator                        |
 | `*`      | Foreach                                |
-| `:*`     | Write Foreach                          |
+| `:*`     | Write Foreach                          | 
 | `~`      | Name                                   |
-| `|`      | Function call                          |
+| `|`      | Function call                          | 
 | `#`      | Lookup                                 |
 | `##`     | Change Lookup Context                  |
-| `'`      | Escape                                 |
-| `"`      | Escape                                 |
-| `\`      | Un Escape                              |
+| `'` `"`  | Literal Operators                      | 
+| `\`      | Escape Literal                         |
 | `@`      | Context at start of current group      |
-| `$`      | Root                                   |
-| `:$`     | Write Root                             |
+| `$`      | Set read cursor to Root                |
+| `:$`     | Set write cursor to Root               |
 
 
-## function example
 
-payload
-['apple', 'troll', 'pear', 'bear']
+new object[] { "Simple branch test", "{'k': {'ka': 'va', 'kb': 'vb'}}", "k{@ka:ha}kb:hb", "{'ha':'va','hb':'vb'}" },
 
-query
-|json*|regex('apple|bear')
 
-result
-['apple','bear']
+
+## Foreach Example
+### Payload
+[[["a","b"],["c","d"]],[["e","f"],["g","h"]]]
+
+| Query     | Result                                     |
+|:----------|:-------------------------------------------|
+| `***`     | ["a","b","c","d","e","f","g","h"]          |
+| `*:***`   | [["a","b","c","d"],["e","f","g","h"]]      |
+| `**:**`   | [["a","b"],["c","d"],["e","f"],["g","h"]]  |
+| `**:*:h*` | [{"h":["a","b"]},{"h":["c","d"]},{"h":["e","f"]},{"h":["g","h"]}]  |
+
+
+## Branching Example
+
+
+### Payload
+[{"k1":1, "k2": 11}, {"k1":2, "k2": 12}, {"k1":3, "k2": 13}]
+
+### Query
+\*:\*{@k1:h1}k2:h2
+
+### Result
+[{"h1":1,"h2":11},{"h1":2,"h2":12},{"h1":3,"h2":13}]
+
+## Literal Example
+
+### Payload
+{"* *": ["a", {"2" : "b"}, "c"]}
+
+### Query
+"'* *'.1.'2'"
+
+### Result
+["b"]
+
+## Escape Example
+
+### Payload
+{"> <": ["a", {"2" : "b"}, "c"]}
+
+### Query
+"'> <'.1.'2'"
+
+### Result
+["b"]
+
+## Function Example
+
+### Payload
+"[\"<a>apple</a>\", \"<a>troll</a>\", \"<a>pear</a>\", \"<a>bear</a>\"]"
+
+### Query
+"|json*|regex('apple|bear')|xml.a"
+
+### Result
+["apple", "bear"]
+
+
+## Root Example
+
+### Payload
+{"a": { "b": { "t28": "v" } }, "metadata": {"idkey": "t28"}}
+
+### Query
+"a.b($metadata.idkey)"
+
+### Result
+['v']
+
+## Custom Read Module Example
