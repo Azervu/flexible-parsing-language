@@ -12,9 +12,9 @@ namespace FlexibleParsingLanguage.Operations;
 internal static partial class FplOperation
 {
 
-    internal static readonly OpConfig Lookup = new OpConfig("#", OpSequenceType.RightInput | OpSequenceType.LeftInput, (p, op) => CompileAccessorOperation(p, op, OperationLookup, OperationLookupDynamic));
+    internal static readonly OpConfig Lookup = new OpConfig("#", OpSequenceType.RightInput | OpSequenceType.LeftInput, (p, op) => CompileAccessorOperation(p, op, OperationLookup, null, OperationLookupDynamic));
 
-    internal static readonly OpConfig ChangeLookupContext = new OpConfig("##", OpSequenceType.RightInput | OpSequenceType.LeftInput, (p, op) => CompileAccessorOperation(p, op, OperationLookupChange, OperationLookupChangeDynamic));
+    internal static readonly OpConfig ChangeLookupContext = new OpConfig("##", OpSequenceType.RightInput | OpSequenceType.LeftInput, (p, op) => CompileAccessorOperation(p, op, OperationLookupChange, null, OperationLookupChangeDynamic));
 
     internal static void OperationLookup(FplQuery parser, ParsingContext context, int intAcc, string acc)
     {
@@ -37,6 +37,29 @@ internal static partial class FplOperation
             };
         }).ToList());
     }
+
+    internal static void OperationLookupInt(FplQuery parser, ParsingContext context, int intAcc, string acc)
+    {
+        context.Focus.NextRead(context.Focus.GenerateSequencesIntersectionReadConfig().Select(r =>
+        {
+
+#if DEBUG
+            if (r.AVal.Foci.Count != 1)
+                throw new Exception("TODO handle multi read per config");
+#endif
+
+
+            var read = r.AVal.Foci[0];
+            var a = intAcc.ToString();
+            return new FocusEntry
+            {
+                Key = new ValueWrapper(a),
+                Value = new ValueWrapper(read.Config.Entries[a].Value),
+                SequenceId = read.SequenceId,
+            };
+        }).ToList());
+    }
+
 
     internal static void OperationLookupDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus)
     {

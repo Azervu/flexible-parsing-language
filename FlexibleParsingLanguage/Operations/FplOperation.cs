@@ -67,7 +67,7 @@ internal static partial class FplOperation
     }
 
 
-    private static IEnumerable<ParseOperation> CompileAccessorOperation(ParseData parser, RawOp op, Action<FplQuery, ParsingContext, int, string> accessorAction, Action<FplQuery, ParsingContext, ParsingFocus> dynamicAccessorAction)
+    private static IEnumerable<ParseOperation> CompileAccessorOperation(ParseData parser, RawOp op, Action<FplQuery, ParsingContext, int, string> accessorAction, Action<FplQuery, ParsingContext, int, string>? intAccessorAction, Action<FplQuery, ParsingContext, ParsingFocus> dynamicAccessorAction)
     {
         if (op.Input.Count != 2)
             throw new QueryException(op, $"{op.Input.Count} params | read takes 2");
@@ -78,10 +78,22 @@ internal static partial class FplOperation
         var input = op.Input[0];
         var accessor = op.Input[1];
 
-        if (accessor.Accessor != null)
-            yield return new ParseOperation(accessorAction, accessor.Accessor);
-        else
+
+
+        if (accessor.Accessor == null)
             yield return new ParseOperation((q, c, i, a) => dynamicAccessorAction(q, c, c.Focus.Store[i]), accessor.Id);
+        else if (accessor.Type.SequenceType.All(OpSequenceType.Literal))
+            yield return new ParseOperation(accessorAction, accessor.Accessor);
+        else if (intAccessorAction != null && int.TryParse(accessor.Accessor, out var intAcc))
+            yield return new ParseOperation(intAccessorAction, intAcc);
+        else
+            yield return new ParseOperation(accessorAction, accessor.Accessor);
+
+
+
+
+
+
 
         parser.ActiveId = op.Id;
         parser.LoadedId = op.Id;

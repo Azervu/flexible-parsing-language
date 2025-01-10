@@ -4,7 +4,6 @@ namespace FlexibleParsingLanguage.Functions;
 
 internal class RegexFilter : IFilterFunction_String
 {
-    //TODO make pre compiled filter
     public bool Filter(object value, string acc)
     {
         if (value is not string s)

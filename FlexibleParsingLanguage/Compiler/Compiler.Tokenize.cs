@@ -19,8 +19,9 @@ internal partial class Compiler
             Index = i;
         }
 
-        internal Token(string accessor, int i)
+        internal Token(OpConfig? op, string accessor, int i)
         {
+            Op = op;
             Accessor = accessor;
             Index = i;
         }
@@ -72,7 +73,7 @@ internal partial class Compiler
 
                     if (accessor != string.Empty)
                     {
-                        yield return new Token(accessor, accessorIndex);
+                        yield return new Token(null, accessor, accessorIndex);
                         accessor = string.Empty;
                         accessorIndex = -1;
                         searchedIndex = candidateIndex;
@@ -81,7 +82,7 @@ internal partial class Compiler
             }
 
             if (accessor != string.Empty)
-                yield return new Token(accessor, accessorIndex);
+                yield return new Token(null, accessor, accessorIndex);
 
             if (op == null)
                 continue;
@@ -138,7 +139,7 @@ internal partial class Compiler
                 }, "Escape operator not ended");
             searchedIndex = i + 1;
 
-            yield return new Token(escapedString, opStart);
+            yield return new Token(op, escapedString, opStart);
         }
     }
 }

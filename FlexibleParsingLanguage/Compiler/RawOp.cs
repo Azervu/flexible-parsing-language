@@ -86,8 +86,7 @@ internal class RawOp
             l.Append('(');
             l.Append(input.Select(x => {
                 if (x.IsSimple())
-                    return (string.IsNullOrEmpty(x.Type.Operator) ? $"'{x.Accessor.Replace("'", "\\'")}'" : x.Type.Operator);
-
+                    return (string.IsNullOrEmpty(x.Accessor) ? x.Type.Operator : $"'{x.Accessor.Replace("'", "\\'")}'");
                 return x.Id.ToString();
             }).Join(","));
             l.Append(")");

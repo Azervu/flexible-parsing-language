@@ -23,6 +23,9 @@ public class JsonParsingTest
 
     public static IEnumerable<object[]> JsonQueries => new List<object[]>
     {
+
+
+
         new object[] { "Single Query With Header", "{ \"k\": \"test_v\" }", "k:h", "{\"h\":\"test_v\"}" },
         new object[] { "Single Query", "{ \"k\": \"test_v\" }", "k", "[\"test_v\"]" },
         new object[] { "Key Only", "{ \"k\" : \"v\" }", "k", "[\"v\"]" },
@@ -51,7 +54,7 @@ public class JsonParsingTest
         new object[] { "Simple Test", "{'k': 'v'}", "k", "['v']" },
         new object[] { "Simple Header Test", "{'k': 'v'}", "k:h", "{'h':'v'}" },
         new object[] { "Foreach Test", "{'a': 1, 'b': 2, 'c': 3}", "*:*:h", "[{'h':1},{'h':2},{'h':3}]" },
-
+        new object[] { "Numeric Query", "['a', {'2':'b'}, 'c']", "1'2'", "['b']" },
         new object[] { "Foreach 1A", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]", "*", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]" },
         new object[] { "Foreach 1B", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]", "**", "[['a11','a12'],['a21','a22'],['b11','b12'],['b21','b22']]" },
         new object[] { "Foreach 1C", "[[['a11','a12'],['a21','a22']],[['b11','b12'],['b21','b22']]]", "***", "['a11','a12','a21','a22','b11','b12','b21','b22']" },

@@ -158,7 +158,7 @@ internal partial class Compiler
         var ops = new List<RawOp>(tokens.Count) {
             new RawOp {
                 Id = RootGroupId,
-                CharIndex = -1,
+                CharIndex = 0,
                 Type = RootOperator,
             },
         };
@@ -266,8 +266,6 @@ internal partial class Compiler
                 skipDefaultOperator = true;
         }
 
-
-
         if (op != null)
             ops.Add(op);
 
@@ -276,7 +274,7 @@ internal partial class Compiler
             ops.Add(new RawOp
             {
                 Id = idCounter++,
-                CharIndex = -1,
+                CharIndex = 0,
                 Type = Operators[RootOperator.GroupOperator],
             });
         };
