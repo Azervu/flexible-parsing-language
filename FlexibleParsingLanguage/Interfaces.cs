@@ -15,9 +15,6 @@ public interface IReadingModule
     public object ExtractValue(object? val);
 }
 
-
-
-
 public interface IWritingModule
 {
     public object BlankMap();
@@ -29,10 +26,13 @@ public interface IWritingModule
 
 public interface IConverterFunction
 {
+    public string Name { get; }
     public object Convert(object value);
 }
 
-public interface IFilterFunction_String
+public interface IFilterFunction
 {
-    public bool Filter(object value, string acc);
+    public string Name { get; }
+    public Type[] ParameterTypes { get; }
+    public bool Filter(object value, object[] param);
 }

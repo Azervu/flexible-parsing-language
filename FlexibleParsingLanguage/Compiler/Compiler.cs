@@ -24,9 +24,20 @@ internal partial class Compiler
     private Dictionary<string, OpConfig?> Operators = new();
 
 
-    private Dictionary<string, IConverterFunction> _converter;
-    private Dictionary<string, IFilterFunction_String> _filters;
+    private Dictionary<string, IConverterFunction> _converter = new Dictionary<string, IConverterFunction>();
+    private Dictionary<string, IFilterFunction> _filters = new Dictionary<string, IFilterFunction>();
     private ModuleHandler _modules;
+
+    public void RegisterFilter(IFilterFunction filter)
+    {
+        _filters.Add(filter.Name, filter);
+    }
+
+    public void RegisterConverter(IConverterFunction converter)
+    {
+        _converter.Add(converter.Name, converter);
+    }
+
 
     internal Compiler(List<OpConfig> ops)
     {
@@ -37,16 +48,10 @@ internal partial class Compiler
             new XmlParsingModule(),
         ]);
 
-        _converter = new Dictionary<string, IConverterFunction>
-        {
-            { "json", new JsonConverter() },
-            { "xml", new XmlConverter() }
-        };
+        RegisterConverter(new XmlConverter());
+        RegisterConverter(new JsonConverter());
+        RegisterFilter(new RegexFilter());
 
-        _filters = new Dictionary<string, IFilterFunction_String>
-        {
-            { "regex", new RegexFilter() }
-        };
 
         Ops = ops;
         foreach (var op in ops)

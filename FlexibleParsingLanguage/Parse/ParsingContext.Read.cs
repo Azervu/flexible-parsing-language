@@ -35,11 +35,6 @@ internal partial class ParsingContext
         return ReadingModule.Foreach(r.Value.V);
     });
 
-    internal void ToRootRead()
-    {
-        Focus.LoadRead(Compiler.Compiler.RootId);
-    }
-
     internal void UpdateReadModule(ValueWrapper obj)
     {
         var t = obj.V?.GetType() ?? typeof(void);

@@ -21,27 +21,43 @@ internal partial class FplOperation
     private static IEnumerable<ParseOperation> CompileFunction(ParseData parser, RawOp op)
     {
 
-        if (op.Input.Count < 2)
+        if (op.Input.Count < 2 || string.IsNullOrWhiteSpace(op.Input[1].Accessor))
             throw new QueryException(op, $"function withouth name");
 
         var acc = op.Input[1].Accessor;
 
         if (parser.Filters.TryGetValue(acc, out var f))
-        {
-            if (op.Input.Count != 3 || op.Input[2].Accessor == null)
-                throw new QueryException(op, $"filter missing input");
-            return CompileSaveUtil(parser, op, -1, [new ParseOperation((q, c, i, a) => OperationFunctionFilter(q, c, i, a, f), op.Input[2].Accessor)]);
-        }
+            return HandleFilter(parser, op, f);
 
         if (parser.Converter.TryGetValue(acc, out var converter))
             return CompileSaveUtil(parser, op, 2, [new ParseOperation((q, c, i, a) => OperationFunctionConvert(q, c, i, a, converter))]);
-
 
         throw new QueryException(op, $"unknown function '{acc}'");
     }
 
 
-    internal static void OperationFunctionFilter(FplQuery parser, ParsingContext context, int intAcc, string acc, IFilterFunction_String filter)
+    private static IEnumerable<ParseOperation> HandleFilter(ParseData parser, RawOp op, IFilterFunction func)
+    {
+        if (op.Input.Count != 3 || op.Input[2].Accessor == null)
+            throw new QueryException(op, $"filter missing input");
+
+        var sequences = new List<string>();
+
+        for (var i = 2; i < op.Input.Count; i++)
+        {
+            var o = op.Input[i];
+
+            if (o.Accessor == null)
+                throw new QueryException(op, $"dynamic parameter not yet supported");
+
+            sequences.Add(o.Accessor);
+        }
+
+        return CompileSaveUtil(parser, op, -1, [new ParseOperation((q, c, i, a) => OperationFunctionFilter(q, c, i, a, func), op.Input[2].Accessor)]);
+    }
+
+
+    internal static void OperationFunctionFilter(FplQuery parser, ParsingContext context, int intAcc, string acc, IFilterFunction filter)
     {
         context.Focus.ReadForeach((w) =>
         {
@@ -52,7 +68,7 @@ internal partial class FplOperation
             else
                 raw = w.Value.V;
 
-            if (filter.Filter(raw, acc))
+            if (filter.Filter(raw, [acc]))
                 return [new KeyValuePair<object, object>(w.Key.V, w.Value.V)];
 
             return [];

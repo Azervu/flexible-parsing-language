@@ -27,10 +27,10 @@ internal static partial class FplOperation
                     Write,
                     WriteForeach,
                     Param,
+                    WriteParam,
                     Lookup,
                     ChangeLookupContext,
                     Function,
-                    new OpConfig(":$", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(ParsesOperationType.WriteRoot)])),
                     
                     new OpConfig("~", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(ParsesOperationType.ReadName)])),
 
@@ -354,7 +354,7 @@ internal static partial class FplOperation
         parser.LoadedId = inputId;
 
         if (inputId == Compiler.Compiler.RootId)
-            yield return new ParseOperation(RootParamOperation);
+            yield return new ParseOperation(ReadParamOperation);
         else
             yield return new ParseOperation(ParsesOperationType.Load, inputId);
     }

@@ -10,6 +10,8 @@ namespace FlexibleParsingLanguage.Converter;
 
 internal class JsonConverter : IConverterFunction
 {
+    public string Name => "json";
+
     public object Convert(object input)
     {
         if (input is not string str)

@@ -136,8 +136,6 @@ internal class ParsingFocusData
         Active = new ParsingFocus(Active.ReadId, Active.WriteId, _configIdCounter);
     }
 
-
-
     internal List<SequenceIntersection<T, A>> GenerateSequencesIntersection<T, A>(
         List<T> primeValues, List<int> primeSequence,
         List<A> aValues, List<int> aSequence
@@ -169,7 +167,7 @@ internal class ParsingFocusData
         internal List<(int SequenceId, int Index)> Foci { get; set; }
     }
 
-    private List<(int SequenceId, SequenceIntersectionEntryInner[] Intersected)> GenerateSequencesIntersectionInner(List<int> primeSequence, List<int>[] secondarySequence)
+    internal List<(int SequenceId, SequenceIntersectionEntryInner[] Intersected)> GenerateSequencesIntersectionInner(List<int> primeSequence, List<int>[] secondarySequence)
     {
         var rwSequences = new Dictionary<int, (int Prime, List<(int SequenceId, int Index)>[] Secondary)>();
 

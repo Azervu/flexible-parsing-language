@@ -28,7 +28,7 @@ internal partial struct ParsesOperationType
         return new ValueWrapper(w2);
     });
 
-    internal static void WriteRoot(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.Focus.LoadWrite(Compiler.Compiler.RootId);
+
     internal static void Save(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.Focus.Save(intAcc);
     internal static void Load(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.Focus.Load(intAcc);
     internal static void ReadName(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.ReadName();

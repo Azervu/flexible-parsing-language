@@ -27,9 +27,6 @@ internal static partial class FplOperation {
         context.ReadFunc((m, readSrc) => m.Parse(readSrc, intAcc));
     }
 
-
-
-
     internal static void OperationReadDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus)
     {
 
@@ -46,7 +43,6 @@ internal static partial class FplOperation {
             {
                 context.ReadFunc((m, readSrc) =>
                 {
-
                     switch (r.Value.V)
                     {
                         case byte i:
@@ -60,11 +56,12 @@ internal static partial class FplOperation {
                         default:
                             return m.Parse(readSrc, r.Value.V.ToString());
                     }
-
-
-
                 });
             }
         }
     }
+
+
+
+
 }

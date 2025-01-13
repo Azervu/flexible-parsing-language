@@ -2,10 +2,15 @@
 
 namespace FlexibleParsingLanguage.Functions;
 
-internal class RegexFilter : IFilterFunction_String
+internal class RegexFilter : IFilterFunction
 {
-    public bool Filter(object value, string acc)
+    public string Name => "regex";
+
+    public Type[] ParameterTypes => [typeof(string)];
+
+    public bool Filter(object value, object[] p)
     {
+        var acc = (string)p[0];
         if (value is not string s)
             s = value?.ToString() ?? string.Empty;
 

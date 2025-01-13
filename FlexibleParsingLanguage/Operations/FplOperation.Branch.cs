@@ -39,6 +39,3 @@ internal static partial class FplOperation
         }
     }
 }
-
-
-    //internal static void OperationWrite(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.WriteStringFromRead(acc);
