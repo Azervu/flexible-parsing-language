@@ -10,12 +10,12 @@ namespace FlexibleParsingLanguage;
 
 public class FplQuery
 {
-    private static Compiler.Compiler _compiler { get; set; }
-    internal static Compiler.Compiler Compiler {
+    private static Compiler.FplCompiler _compiler { get; set; }
+    internal static Compiler.FplCompiler Compiler {
         get
         {
             if (_compiler == null)
-                _compiler = new Compiler.Compiler(FplOperation.OpConfigs);
+                _compiler = new Compiler.FplCompiler(FplOperation.OpConfigs);
             return _compiler;
         }
     }

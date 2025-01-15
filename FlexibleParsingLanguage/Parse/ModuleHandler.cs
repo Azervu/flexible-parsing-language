@@ -7,14 +7,19 @@ using System.Threading.Tasks;
 namespace FlexibleParsingLanguage.Parse;
 internal class ModuleHandler
 {
-    private List<(List<Type>, IReadingModule)> _modules;
+    private List<IReadingModule> _modules;
 
     private Dictionary<Type, IReadingModule> _moduleLookup = new Dictionary<Type, IReadingModule>();
 
     internal ModuleHandler(List<IReadingModule> modules)
     {
         modules.Reverse();
-        _modules = modules.Select(x => (x.HandledTypes, x)).ToList();
+        _modules = modules;
+    }
+
+    internal void Register(IReadingModule module)
+    {
+        _modules.Add(module);
     }
 
     public IReadingModule LookupModule(Type t)
@@ -22,9 +27,9 @@ internal class ModuleHandler
         if (_moduleLookup.TryGetValue(t, out var m))
             return m;
 
-        foreach (var (types, m2) in _modules)
+        foreach (var m2 in _modules)
         {
-            foreach (var mt in types)
+            foreach (var mt in m2.HandledTypes)
             {
                 if (mt.IsAssignableFrom(t))
                 {
@@ -33,8 +38,6 @@ internal class ModuleHandler
                 }
             }
         }
-
         return null;
     }
-
 }

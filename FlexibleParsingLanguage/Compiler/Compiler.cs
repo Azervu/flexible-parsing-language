@@ -6,7 +6,7 @@ using FlexibleParsingLanguage.Parse;
 
 namespace FlexibleParsingLanguage.Compiler;
 
-internal partial class Compiler
+public partial class FplCompiler
 {
     internal List<OpConfig> Ops { get; private set; }
 
@@ -39,8 +39,11 @@ internal partial class Compiler
     }
 
 
-    internal Compiler(List<OpConfig> ops)
+    public FplCompiler(List<OpConfig>? ops = null)
     {
+
+        if (ops == null)
+            ops = FplOperation.OpConfigs;
 
         _modules = new ModuleHandler([
             new CollectionParsingModule(),
@@ -96,7 +99,7 @@ internal partial class Compiler
             Operators[op] = config;
     }
 
-    internal FplQuery Compile(string raw, ParsingMetaContext configContext)
+    internal FplQuery Compile(string raw, ParsingMetaContext? configContext = null)
     {
         try
         {

@@ -13,7 +13,7 @@ internal partial class FplOperation
     internal static readonly OpConfig Param = new OpConfig("$", OpSequenceType.RootParam)
     {
         Compile = CompileRootParam,
-        GetStatusId = (data, op) => Compiler.Compiler.RootId,
+        GetStatusId = (data, op) => Compiler.FplCompiler.RootId,
     };
 
     internal static readonly OpConfig WriteParam = new OpConfig(":$", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(WriteRootOperation)]));
@@ -34,7 +34,7 @@ internal partial class FplOperation
         yield return new ParseOperation(ReadParamOperation);
     }
 
-    internal static void ReadParamOperation(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.Focus.LoadRead(Compiler.Compiler.RootId);
+    internal static void ReadParamOperation(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.Focus.LoadRead(Compiler.FplCompiler.RootId);
 
-    internal static void WriteRootOperation(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.Focus.LoadWrite(Compiler.Compiler.RootId);
+    internal static void WriteRootOperation(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.Focus.LoadWrite(Compiler.FplCompiler.RootId);
 }

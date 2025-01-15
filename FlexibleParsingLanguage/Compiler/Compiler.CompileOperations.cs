@@ -9,7 +9,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace FlexibleParsingLanguage.Compiler;
 
-internal partial class Compiler
+public partial class FplCompiler
 {
 
     private void HandleInput(Dictionary<int, (int, OpCompileType)> ctx, Func<RawOp, List<RawOp>> extractTest, RawOp op)

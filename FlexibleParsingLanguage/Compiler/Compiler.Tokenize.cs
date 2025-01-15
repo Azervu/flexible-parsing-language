@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 namespace FlexibleParsingLanguage.Compiler;
 
-internal partial class Compiler
+public partial class FplCompiler
 {
     private struct Token
     {

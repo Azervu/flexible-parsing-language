@@ -14,7 +14,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FlexibleParsingLanguage.Compiler;
 
-internal partial class Compiler
+public partial class FplCompiler
 {
 
     private class SequenceProccessData

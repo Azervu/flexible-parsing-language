@@ -51,7 +51,7 @@ internal class ParsingFocusData
         Active = new ParsingFocus(_writeIdCounter, _readIdCounter, _configIdCounter);
 
         Store = new Dictionary<int, ParsingFocus> {
-            { Compiler.Compiler.RootId, Active }
+            { Compiler.FplCompiler.RootId, Active }
         };
     }
 

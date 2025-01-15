@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Compiler;
 
-internal class OpConfig
+public class OpConfig
 {
     internal string Operator { get; set; }
     internal string GroupOperator { get; set; }

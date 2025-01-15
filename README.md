@@ -100,4 +100,31 @@ new object[] { "Simple branch test", "{'k': {'ka': 'va', 'kb': 'vb'}}", "k{@ka:h
 ### Result
 ['v']
 
-## Custom Read Module Example
+## Custom Converter Example
+
+```c#
+
+class DateTimeParser : IConverterFunction
+{
+    public string Name => "datetime";
+    public object Convert(object value)
+    {
+        if (value is not string raw)
+            raw = value.ToString();
+        return DateTime.Parse(raw).ToUniversalTime();
+    }
+}
+
+public DateTime ParseExample()
+{
+
+    var payload = "{\"data\":\"2024-01-15T20:11:17+01:00\"}";
+    var query = $"|json.data|datetime";
+    var compiler = new FplCompiler();
+    compiler.RegisterConverter(new DateTimeParser());
+    var parser = compiler.Compile(query);
+    var result = parser.Parse(payload);
+
+    return ((List<object>)result)[0];
+}
+```
