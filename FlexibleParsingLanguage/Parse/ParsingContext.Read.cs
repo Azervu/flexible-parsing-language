@@ -9,6 +9,12 @@ internal partial class ParsingContext
         if (r.V == null)
             throw new Exception("Result is null");
 #endif
+
+        if (ReadingModule == null)
+        {
+            throw new Exception($"No reading module for type = '{r.V?.GetType().Name ?? "null"}'");
+        }
+
         var result = readTransform(ReadingModule, r.V);
         return new KeyValuePair<ValueWrapper, ValueWrapper>(r, new ValueWrapper(result));
     });

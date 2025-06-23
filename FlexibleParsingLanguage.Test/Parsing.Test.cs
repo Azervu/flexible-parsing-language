@@ -16,6 +16,7 @@ public class Parsing
 
         new object[] { "Regex Filter Test", "['<a>apple</a>', '<a>troll</a>', '<a>pear</a>', '<a>bear</a>']", "|json*|regex('apple|bear')|xml.a", "['apple','bear']", null, null },
 
+        new object[] { "Recursive Filter Test", "{'v': ['apple', 'troll', 'pear', 'bear'], 'm': 'aaa'}", "|json.v*|regex('apple|bear')", "['apple','bear']", null, null },
 
 
 
