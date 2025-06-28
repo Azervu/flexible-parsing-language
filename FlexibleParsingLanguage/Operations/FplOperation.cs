@@ -32,7 +32,7 @@ internal static partial class FplOperation
                     ChangeLookupContext,
                     Function,
                     
-                    new OpConfig("~", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(ParsesOperationType.ReadName)])),
+                    new OpConfig("~", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(o, ParsesOperationType.ReadName)])),
 
                     new OpConfig("@", OpSequenceType.ParentInput | OpSequenceType.Virtual),
                     new OpConfig("\"", OpSequenceType.Literal | OpSequenceType.Accessor, null, -1, "\""),
@@ -49,7 +49,7 @@ internal static partial class FplOperation
 
     internal static readonly OpConfig Accessor = new OpConfig(null, OpSequenceType.Accessor, null, 99);
 
-    internal static IEnumerable<ParseOperation> CompileTransformOperation(ParseData parser, RawOp op, Action<FplQuery, ParsingContext, int, string> opAction)
+    internal static IEnumerable<ParseOperation> CompileTransformOperation(ParseData parser, RawOp op, Action<FplQuery, ParsingContext, ParseOperationData> opAction)
     {
         if (op.Input.Count < 1)
             throw new QueryException(op, $"{op.Input.Count} params | read takes 2");
@@ -57,17 +57,20 @@ internal static partial class FplOperation
         foreach (var x in EnsureLoaded(parser, op))
             yield return x;
 
-        yield return new ParseOperation(opAction);
+        yield return new ParseOperation(op, opAction);
 
-        parser.ActiveId = op.Id;
-        parser.LoadedId = op.Id;
+        parser.LoadedId[0] = op.Id;
 
         foreach (var x in EnsureSaved(parser, op))
             yield return x;
     }
 
 
-    private static IEnumerable<ParseOperation> CompileAccessorOperation(ParseData parser, RawOp op, Action<FplQuery, ParsingContext, int, string> accessorAction, Action<FplQuery, ParsingContext, int, string>? intAccessorAction, Action<FplQuery, ParsingContext, ParsingFocus> dynamicAccessorAction)
+    private static IEnumerable<ParseOperation> CompileAccessorOperation(
+        ParseData parser, RawOp op, Action<FplQuery, ParsingContext, ParseOperationData> accessorAction,
+        Action<FplQuery, ParsingContext, ParseOperationData>? intAccessorAction,
+        Action<FplQuery, ParsingContext, ParsingFocus, ParseOperationData> dynamicAccessorAction
+    )
     {
         if (op.Input.Count != 2)
             throw new QueryException(op, $"{op.Input.Count} params | read takes 2");
@@ -81,22 +84,16 @@ internal static partial class FplOperation
 
 
         if (accessor.Accessor == null)
-            yield return new ParseOperation((q, c, i, a) => dynamicAccessorAction(q, c, c.Focus.Store[i]), accessor.Id);
+            yield return new ParseOperation(op, (q, c, data) => dynamicAccessorAction(q, c, c.Focus.Store[data.IntAcc], data), accessor.Id);
         else if (accessor.Type.SequenceType.All(OpSequenceType.Literal))
-            yield return new ParseOperation(accessorAction, accessor.Accessor);
+            yield return new ParseOperation(op, accessorAction, accessor.Accessor);
         else if (intAccessorAction != null && int.TryParse(accessor.Accessor, out var intAcc))
-            yield return new ParseOperation(intAccessorAction, intAcc);
+            yield return new ParseOperation(op, intAccessorAction, intAcc);
         else
-            yield return new ParseOperation(accessorAction, accessor.Accessor);
+            yield return new ParseOperation(op, accessorAction, accessor.Accessor);
 
 
-
-
-
-
-
-        parser.ActiveId = op.Id;
-        parser.LoadedId = op.Id;
+        parser.LoadedId[0] = op.Id;
 
         foreach (var x in EnsureSaved(parser, op))
             yield return x;
@@ -285,23 +282,22 @@ internal static partial class FplOperation
 
         if (accessor.Accessor != null)
         {
-            yield return new ParseOperation((query, ctx, i, s) => ctx.ReadFunc((m, src) => transform(m, src, accessor.Accessor)));
+            yield return new ParseOperation(op, (query, ctx, d) => ctx.ReadFunc(op.Id, (m, src) => transform(m, src, accessor.Accessor)));
         }
         else
         {
             var aId = accessor.GetStatusId(parser);
-            yield return new ParseOperation((q, c, i, s) => OperationStringReadLoadAccessor(op, q, c, i, s, transform));
+            yield return new ParseOperation(op, (q, c, d) => OperationStringReadLoadAccessor(op, q, c, d, transform));
         }
 
-        parser.ActiveId = op.Id;
-        parser.LoadedId = op.Id;
+        parser.LoadedId[0] = op.Id;
 
         foreach (var x in EnsureSaved(parser, op))
             yield return x;
     }
 
 
-    private static void OperationStringReadLoadAccessor(RawOp op, FplQuery query, ParsingContext ctx, int i, string s, Func<IReadingModule, object, string, object> transform)
+    private static void OperationStringReadLoadAccessor(RawOp op, FplQuery query, ParsingContext ctx, ParseOperationData d, Func<IReadingModule, object, string, object> transform)
     {
 
 
@@ -332,6 +328,22 @@ internal static partial class FplOperation
         */
     }
 
+
+    internal static (IEnumerable<ParseOperation>, List<int>) MultiEnsureLoaded(ParseData parser, List<int> ids)
+    {
+        foreach (var inputId in ids)
+        {
+            if (!parser.LoadRedirect.TryGetValue(inputId, out var id2))
+                id2 = inputId;
+
+
+
+        }
+
+        return (null, null);
+    }
+
+
     internal static IEnumerable<ParseOperation> EnsureLoaded(ParseData parser, RawOp op)
     {
         var inputId = -1;
@@ -347,16 +359,15 @@ internal static partial class FplOperation
         if (parser.LoadRedirect.TryGetValue(inputId, out var id2))
             inputId = id2;
 
-        if (inputId < 0 || inputId == parser.LoadedId)
+        if (inputId < 0 || inputId == parser.LoadedId[0])
             yield break;
 
-        parser.ActiveId = inputId;
-        parser.LoadedId = inputId;
+        parser.LoadedId[0] = inputId;
 
         if (inputId == Compiler.FplCompiler.RootId)
-            yield return new ParseOperation(ReadParamOperation);
+            yield return new ParseOperation(op, ReadParamOperation);
         else
-            yield return new ParseOperation(ParsesOperationType.Load, inputId);
+            yield return new ParseOperation(op, ParsesOperationType.Load, inputId);
     }
 
 
@@ -369,7 +380,7 @@ internal static partial class FplOperation
         if (id == Compiler.FplCompiler.RootId)
             yield break;
 
-        yield return new ParseOperation(ParsesOperationType.Save, id);
+        yield return new ParseOperation(op, ParsesOperationType.Save, id);
     }
 
 
@@ -434,8 +445,7 @@ internal static partial class FplOperation
         foreach (var po in pos)
             yield return po;
 
-        parser.ActiveId = id;
-        parser.LoadedId = id;
+        parser.LoadedId[0] = id;
 
         foreach (var x in FplOperation.EnsureSaved(parser, op))
             yield return x;

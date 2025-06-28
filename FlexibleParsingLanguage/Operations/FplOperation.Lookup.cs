@@ -16,9 +16,9 @@ internal static partial class FplOperation
 
     internal static readonly OpConfig ChangeLookupContext = new OpConfig("##", OpSequenceType.RightInput | OpSequenceType.LeftInput, (p, op) => CompileAccessorOperation(p, op, OperationLookupChange, null, OperationLookupChangeDynamic));
 
-    internal static void OperationLookup(FplQuery parser, ParsingContext context, int intAcc, string acc)
+    internal static void OperationLookup(FplQuery parser, ParsingContext context, ParseOperationData d)
     {
-        context.Focus.NextRead(context.Focus.GenerateSequencesIntersectionReadConfig().Select(r =>
+        context.Focus.NextRead(d.Id, context.Focus.GenerateSequencesIntersectionReadConfig().Select(r =>
         {
 
 #if DEBUG
@@ -31,16 +31,16 @@ internal static partial class FplOperation
 
             return new FocusEntry
             {
-                Key = new ValueWrapper(acc),
-                Value = new ValueWrapper(read.Config.Entries[acc].Value),
+                Key = new ValueWrapper(d.StringAcc),
+                Value = new ValueWrapper(read.Config.Entries[d.StringAcc].Value),
                 SequenceId = read.SequenceId,
             };
         }).ToList());
     }
 
-    internal static void OperationLookupInt(FplQuery parser, ParsingContext context, int intAcc, string acc)
+    internal static void OperationLookupInt(FplQuery parser, ParsingContext context, ParseOperationData d)
     {
-        context.Focus.NextRead(context.Focus.GenerateSequencesIntersectionReadConfig().Select(r =>
+        context.Focus.NextRead(d.Id, context.Focus.GenerateSequencesIntersectionReadConfig().Select(r =>
         {
 
 #if DEBUG
@@ -50,7 +50,7 @@ internal static partial class FplOperation
 
 
             var read = r.AVal.Foci[0];
-            var a = intAcc.ToString();
+            var a = d.IntAcc.ToString();
             return new FocusEntry
             {
                 Key = new ValueWrapper(a),
@@ -61,7 +61,7 @@ internal static partial class FplOperation
     }
 
 
-    internal static void OperationLookupDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus)
+    internal static void OperationLookupDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus, ParseOperationData d)
     {
 
         var config = context.Focus.Configs[context.Focus.Active.ConfigId];
@@ -71,7 +71,7 @@ internal static partial class FplOperation
             config, config.Select(x => x.SequenceId).ToList()
         );
 
-        context.Focus.NextRead(intersections.Select(x =>
+        context.Focus.NextRead(d.Id, intersections.Select(x =>
         {
             var acc = x.Primary.Value.V.ToString();
             var c = x.AVal.Foci[0];
@@ -91,14 +91,14 @@ internal static partial class FplOperation
 
 
 
-    internal static void OperationLookupChange(FplQuery parser, ParsingContext context, int intAcc, string acc)
+    internal static void OperationLookupChange(FplQuery parser, ParsingContext context, ParseOperationData d)
     {
-        context.Focus.NextConfig(
+        context.Focus.NextConfig(d.Id,
             context.Focus
             .Configs[context.Focus.Active.ConfigId]
             .Select(r =>
             {
-                if (!r.Config.Entries.TryGetValue(acc, out var c))
+                if (!r.Config.Entries.TryGetValue(d.StringAcc, out var c))
                     c = r.Config;
 
                 return new ConfigEntry(c, r.SequenceId);
@@ -106,7 +106,7 @@ internal static partial class FplOperation
         );
     }
 
-    internal static void OperationLookupChangeDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus)
+    internal static void OperationLookupChangeDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus, ParseOperationData d)
     {
 
         var config = context.Focus.Configs[context.Focus.Active.ConfigId];
@@ -117,7 +117,7 @@ internal static partial class FplOperation
         );
 
 
-        context.Focus.NextConfig(intersections.Select(x =>
+        context.Focus.NextConfig(d.Id, intersections.Select(x =>
         {
             var acc = x.Primary.Value.V.ToString();
             var c = x.AVal.Foci[0].Config;

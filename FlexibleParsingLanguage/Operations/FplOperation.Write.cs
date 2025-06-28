@@ -47,16 +47,15 @@ internal static partial class FplOperation
         switch (writeType)
         {
             case OpCompileType.WriteObject:
-                yield return new ParseOperation(ParsesOperationType.Write, accessor.Accessor);
+                yield return new ParseOperation(op, ParsesOperationType.Write, accessor.Accessor);
                 break;
             case OpCompileType.WriteArray:
 
-                yield return new ParseOperation(ParsesOperationType.WriteArray, accessor.Accessor);
+                yield return new ParseOperation(op, ParsesOperationType.WriteArray, accessor.Accessor);
                 break;
         }
 
-        parser.ActiveId = op.Id;
-        parser.LoadedId = op.Id;
+        parser.LoadedId[0] = op.Id;
 
         foreach (var x in FplOperation.EnsureSaved(parser, op))
             yield return x;
@@ -83,20 +82,19 @@ internal static partial class FplOperation
         {
             case OpCompileType.Branch:
                 parser.ProccessedMetaData[writeId] = op;
-                yield return new ParseOperation(ParsesOperationType.WriteFlatten, 2);
+                yield return new ParseOperation(op, ParsesOperationType.WriteFlatten, 2);
 
                 break;
             case OpCompileType.WriteObject:
-                yield return new ParseOperation(ParsesOperationType.WriteFlatten, 1);
+                yield return new ParseOperation(op, ParsesOperationType.WriteFlatten, 1);
                 break;
             case OpCompileType.WriteArray:
 
-                yield return new ParseOperation(ParsesOperationType.WriteFlatten, 2);
+                yield return new ParseOperation(op, ParsesOperationType.WriteFlatten, 2);
                 break;
         }
 
-        parser.ActiveId = op.Id;
-        parser.LoadedId = op.Id;
+        parser.LoadedId[0] = op.Id;
 
         foreach (var x in FplOperation.EnsureSaved(parser, op))
             yield return x;

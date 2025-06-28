@@ -1,8 +1,10 @@
-﻿using System;
+﻿using FlexibleParsingLanguage.Compiler;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -13,9 +15,6 @@ namespace FlexibleParsingLanguage.Parse;
 internal class ParsingFocusData
 {
     private int _sequenceIdCounter = 1;
-    private int _readIdCounter = 1;
-    private int _writeIdCounter = 1;
-    private int _configIdCounter = 1;
 
     internal Dictionary<int, ParsingFocus> Store { get; set; }
 
@@ -35,20 +34,20 @@ internal class ParsingFocusData
 
         Reads = new Dictionary<int, List<FocusEntry>>
         {
-            { _readIdCounter, [ new FocusEntry { Value = new ValueWrapper(readRoot), SequenceId = _sequenceIdCounter } ] }
+            { 1, [ new FocusEntry { Value = new ValueWrapper(readRoot), SequenceId = _sequenceIdCounter } ] }
         };
 
         Writes = new Dictionary<int, List<FocusEntry>>
         {
-            { _writeIdCounter, [ new FocusEntry { Value = new ValueWrapper(writeRoot), SequenceId = _sequenceIdCounter } ] }
+            { 1, [ new FocusEntry { Value = new ValueWrapper(writeRoot), SequenceId = _sequenceIdCounter } ] }
         };
 
         Configs = new Dictionary<int, List<ConfigEntry>>
         {
-            { _configIdCounter, [new ConfigEntry(parsingConfig, _sequenceIdCounter) ] }
+            { 1, [new ConfigEntry(parsingConfig, _sequenceIdCounter) ] }
         };
 
-        Active = new ParsingFocus(_writeIdCounter, _readIdCounter, _configIdCounter);
+        Active = new ParsingFocus(1, 1, 1);
 
         Store = new Dictionary<int, ParsingFocus> {
             { Compiler.FplCompiler.RootId, Active }
@@ -78,26 +77,28 @@ internal class ParsingFocusData
         Active = new ParsingFocus(Active.ReadId, writeId, Active.ConfigId);
     }
 
-    internal void Read(Func<ValueWrapper, KeyValuePair<ValueWrapper, ValueWrapper>> transform) => ReadInner(x =>
+    internal void Read(int opId, Func<ValueWrapper, KeyValuePair<ValueWrapper, ValueWrapper>> transform) => ReadInner(opId, x =>
     {
         var kv = transform(x.Value);
         return new FocusEntry { Key = kv.Key, Value = kv.Value, SequenceId = x.SequenceId, };
     });
 
 
-    internal void ReadInner(Func<FocusEntry, FocusEntry> transform)
+    internal void ReadInner(int opId, Func<FocusEntry, FocusEntry> transform)
     {
-        NextRead(Reads[Active.ReadId].Select(transform).ToList());
+        NextRead(opId, Reads[Active.ReadId].Select(transform).ToList());
     }
 
-    internal void NextRead(List<FocusEntry> reads)
+    internal void NextRead(int opId, List<FocusEntry> reads)
     {
-        Reads[++_readIdCounter] = reads;
-        Active = new ParsingFocus(_readIdCounter, Active.WriteId, Active.ConfigId);
+
+
+        Reads[opId] = reads;
+        Active = new ParsingFocus(opId, Active.WriteId, Active.ConfigId);
     }
 
 
-    internal void ReadForeach(Func<FocusEntry, IEnumerable<KeyValuePair<object, object>>> transformAction)
+    internal void ReadForeach(int opId, Func<FocusEntry, IEnumerable<KeyValuePair<object, object>>> transformAction)
     {
         var result = new List<FocusEntry>();
         foreach (var r in Reads[Active.ReadId])
@@ -116,24 +117,23 @@ internal class ParsingFocusData
             }
         }
 
-        _readIdCounter++;
-        Reads[_readIdCounter] = result;
-        Active = new ParsingFocus(_readIdCounter, Active.WriteId, Active.ConfigId);
+        Reads[opId] = result;
+        Active = new ParsingFocus(opId, Active.WriteId, Active.ConfigId);
     }
 
-    internal void Write(Func<ValueWrapper, ValueWrapper> transform) =>
-        NextWrite(Writes[Active.WriteId].Select((x) => new FocusEntry { Value = transform(x.Value), SequenceId = x.SequenceId }).ToList());
+    internal void Write(int opId, Func<ValueWrapper, ValueWrapper> transform) =>
+        NextWrite(opId, Writes[Active.WriteId].Select((x) => new FocusEntry { Value = transform(x.Value), SequenceId = x.SequenceId }).ToList());
         
-    internal void NextWrite(List<FocusEntry> next)
+    internal void NextWrite(int opId, List<FocusEntry> next)
     {
-        Writes[++_writeIdCounter] = next;
-        Active = new ParsingFocus(Active.ReadId, _writeIdCounter, Active.ConfigId);
+        Writes[opId] = next;
+        Active = new ParsingFocus(Active.ReadId, opId, Active.ConfigId);
     }
 
-    internal void NextConfig(List<ConfigEntry> next)
+    internal void NextConfig(int opId, List<ConfigEntry> next)
     {
-        Configs[++_configIdCounter] = next;
-        Active = new ParsingFocus(Active.ReadId, Active.WriteId, _configIdCounter);
+        Configs[opId] = next;
+        Active = new ParsingFocus(Active.ReadId, Active.WriteId, opId);
     }
 
     internal List<SequenceIntersection<T, A>> GenerateSequencesIntersection<T, A>(

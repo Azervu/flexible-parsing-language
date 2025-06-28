@@ -79,9 +79,7 @@ public partial class FplCompiler
         {
             Filters = _filters,
             Converter = _converter,
-            ActiveId = RootId,
-            LoadedId = RootId,
-
+            LoadedId = [RootId],
             ReadInput = readInput,
             WriteInput = writeInput,
             ReadOutput = readOutput,

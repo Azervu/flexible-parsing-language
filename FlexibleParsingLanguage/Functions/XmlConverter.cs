@@ -13,7 +13,7 @@ internal class XmlConverter : IConverterFunction
 {
     public string Name => "xml";
 
-    public object Convert(object input)
+    public object Convert(object input, object[] param)
     {
         if (input is not string str)
             str = input.ToString();

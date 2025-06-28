@@ -13,21 +13,21 @@ internal static partial class FplOperation {
 
     internal static readonly OpConfig Read = new OpConfig(".", OpSequenceType.RightInput | OpSequenceType.LeftInput | OpSequenceType.Default, (p, op) => CompileAccessorOperation(p, op, OperationRead, OperationReadInt, OperationReadDynamic));
 
-    internal static void OperationRead(FplQuery parser, ParsingContext context, int intAcc, string acc)
+    internal static void OperationRead(FplQuery parser, ParsingContext context, ParseOperationData d)
     {
 #if DEBUG
-        if (acc == null)
+        if (d.StringAcc == null)
             throw new Exception("OperationRead null access");
 #endif
-        context.ReadFunc((m, readSrc) => m.Parse(readSrc, acc));
+        context.ReadFunc(d.Id, (m, readSrc) => m.Parse(readSrc, d.StringAcc));
     }
 
-    internal static void OperationReadInt(FplQuery parser, ParsingContext context, int intAcc, string acc)
+    internal static void OperationReadInt(FplQuery parser, ParsingContext context, ParseOperationData d)
     {
-        context.ReadFunc((m, readSrc) => m.Parse(readSrc, intAcc));
+        context.ReadFunc(d.Id, (m, readSrc) => m.Parse(readSrc, d.IntAcc));
     }
 
-    internal static void OperationReadDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus)
+    internal static void OperationReadDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus, ParseOperationData d)
     {
 
         var ww = context.Focus.Writes[context.Focus.Active.WriteId];
@@ -41,7 +41,7 @@ internal static partial class FplOperation {
         {
             foreach (var r in x.AVal.Foci)
             {
-                context.ReadFunc((m, readSrc) =>
+                context.ReadFunc(d.Id, (m, readSrc) =>
                 {
                     switch (r.Value.V)
                     {

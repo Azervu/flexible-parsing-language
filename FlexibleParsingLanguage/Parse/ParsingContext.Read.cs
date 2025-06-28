@@ -1,9 +1,11 @@
-﻿namespace FlexibleParsingLanguage.Parse;
+﻿using FlexibleParsingLanguage.Compiler;
+
+namespace FlexibleParsingLanguage.Parse;
 
 internal partial class ParsingContext
 {
 
-    internal void ReadFunc(Func<IReadingModule, object, object> readTransform) => Focus.Read((r) => {
+    internal void ReadFunc(int opId, Func<IReadingModule, object, object> readTransform) => Focus.Read(opId, (r) => {
         UpdateReadModule(r);
 #if DEBUG
         if (r.V == null)
@@ -19,23 +21,23 @@ internal partial class ParsingContext
         return new KeyValuePair<ValueWrapper, ValueWrapper>(r, new ValueWrapper(result));
     });
 
-    internal void ReadTransform(Func<FocusEntry, FocusEntry> readTransform) => Focus.ReadInner(readTransform);
+    internal void ReadTransform(int opId, Func<FocusEntry, FocusEntry> readTransform) => Focus.ReadInner(opId, readTransform);
 
-    internal void ReadTransformValue(Func<object, object> readTransform) => ReadTransform((focus) => new FocusEntry
+    internal void ReadTransformValue(int opId, Func<object, object> readTransform) => ReadTransform(opId, (focus) => new FocusEntry
     {
         Key = focus.Key, //TODO test focus.Value)
         Value = new ValueWrapper(readTransform(focus.Value.V)),
         SequenceId = focus.SequenceId
     });
 
-    internal void ReadName() => ReadTransform((focus) => new FocusEntry
+    internal void ReadName(int opId) => ReadTransform(opId, (focus) => new FocusEntry
     {
         Key = focus.Key,
         Value = focus.Key,
         SequenceId = focus.SequenceId
     });
         
-    internal void ReadFlatten() => Focus.ReadForeach((r) =>
+    internal void ReadFlatten(int opId) => Focus.ReadForeach(opId, (r) =>
     {
         UpdateReadModule(r.Value);
         return ReadingModule.Foreach(r.Value.V);

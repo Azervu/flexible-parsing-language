@@ -65,7 +65,7 @@ public class FplQuery
         {
             try
             {
-                o.Op(this, ctx, o.IntAcc, o.StringAcc);
+                o.Op(this, ctx, o.Data);
             }
             catch (QueryException ex)
             {

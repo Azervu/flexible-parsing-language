@@ -16,7 +16,7 @@ internal partial class FplOperation
         GetStatusId = (data, op) => Compiler.FplCompiler.RootId,
     };
 
-    internal static readonly OpConfig WriteParam = new OpConfig(":$", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(WriteRootOperation)]));
+    internal static readonly OpConfig WriteParam = new OpConfig(":$", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(o, WriteRootOperation)]));
 
     private static IEnumerable<ParseOperation> CompileRootParam(ParseData parser, RawOp op)
     {
@@ -25,16 +25,15 @@ internal partial class FplOperation
 
         var id = op.Type.GetStatusId(parser, op);
 
-        if (parser.LoadedId == id)
+        if (parser.LoadedId[0] == id)
             yield break;
 
-        parser.ActiveId = id;
-        parser.LoadedId = id;
+        parser.LoadedId[0] = id;
 
-        yield return new ParseOperation(ReadParamOperation);
+        yield return new ParseOperation(op, ReadParamOperation);
     }
 
-    internal static void ReadParamOperation(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.Focus.LoadRead(Compiler.FplCompiler.RootId);
+    internal static void ReadParamOperation(FplQuery parser, ParsingContext context, ParseOperationData d) => context.Focus.LoadRead(Compiler.FplCompiler.RootId);
 
-    internal static void WriteRootOperation(FplQuery parser, ParsingContext context, int intAcc, string acc) => context.Focus.LoadWrite(Compiler.FplCompiler.RootId);
+    internal static void WriteRootOperation(FplQuery parser, ParsingContext context, ParseOperationData d) => context.Focus.LoadWrite(Compiler.FplCompiler.RootId);
 }

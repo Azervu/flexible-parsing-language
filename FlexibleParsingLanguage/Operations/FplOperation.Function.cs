@@ -24,13 +24,33 @@ internal partial class FplOperation
         if (op.Input.Count < 2 || string.IsNullOrWhiteSpace(op.Input[1].Accessor))
             throw new QueryException(op, $"function withouth name");
 
+
+
+
+        for (var i = 2; i < op.Input.Count; i++)
+        {
+            var x = op.Input[i];
+
+            var inputId = x.Type.GetStatusId != null
+                ? x.Type.GetStatusId(parser, x)
+                : x.Id;
+
+ 
+
+        }
+
+
+
         var acc = op.Input[1].Accessor;
 
         if (parser.Filters.TryGetValue(acc, out var f))
             return HandleFilter(parser, op, f);
 
+
+
+
         if (parser.Converter.TryGetValue(acc, out var converter))
-            return CompileSaveUtil(parser, op, 2, [new ParseOperation((q, c, i, a) => OperationFunctionConvert(q, c, i, a, converter))]);
+            return CompileSaveUtil(parser, op, 2, [new ParseOperation(op, (q, c, d) => OperationFunctionConvert(q, c, d, converter))]);
 
         throw new QueryException(op, $"unknown function '{acc}'");
     }
@@ -53,13 +73,13 @@ internal partial class FplOperation
             sequences.Add(o.Accessor);
         }
 
-        return CompileSaveUtil(parser, op, -1, [new ParseOperation((q, c, i, a) => OperationFunctionFilter(q, c, i, a, func), op.Input[2].Accessor)]);
+        return CompileSaveUtil(parser, op, -1, [new ParseOperation(op, (q, c, d) => OperationFunctionFilter(op.Id, q, c, d, func), op.Input[2].Accessor)]);
     }
 
 
-    internal static void OperationFunctionFilter(FplQuery parser, ParsingContext context, int intAcc, string acc, IFilterFunction filter)
+    internal static void OperationFunctionFilter(int opId, FplQuery parser, ParsingContext context, ParseOperationData d, IFilterFunction filter)
     {
-        context.Focus.ReadForeach((w) =>
+        context.Focus.ReadForeach(opId, (w) =>
         {
             context.UpdateReadModule(w.Value);
             object raw;
@@ -68,7 +88,7 @@ internal partial class FplOperation
             else
                 raw = w.Value.V;
 
-            if (filter.Filter(raw, [acc]))
+            if (filter.Filter(raw, [d.StringAcc]))
                 return [new KeyValuePair<object, object>(w.Key.V, w.Value.V)];
 
             return [];
@@ -99,9 +119,9 @@ internal partial class FplOperation
 
     }
 
-    internal static void OperationFunctionConvert(FplQuery parser, ParsingContext context, int intAcc, string acc, IConverterFunction converter)
+    internal static void OperationFunctionConvert(FplQuery parser, ParsingContext context, ParseOperationData d, IConverterFunction converter)
     {
-        context.ReadTransformValue((w) =>
+        context.ReadTransformValue(d.Id, (w) =>
         {
             context.UpdateReadModule(new ValueWrapper(w));
             object raw;
@@ -109,7 +129,8 @@ internal partial class FplOperation
                 raw = context.ReadingModule.ExtractValue(w);
             else
                 raw = w;
-            return converter.Convert(raw);
+
+            return converter.Convert(raw, []);
         });
     }
 }

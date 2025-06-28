@@ -27,7 +27,7 @@ public interface IWritingModule
 public interface IConverterFunction
 {
     public string Name { get; }
-    public object Convert(object value);
+    public object Convert(object value, object[] param);
 }
 
 public interface IFilterFunction

@@ -18,7 +18,7 @@ public class CustomFunctionTest
     {
         public string Name => "datetime";
 
-        public object Convert(object value)
+        public object Convert(object value, object[] param)
         {
             if (value is not string raw)
                 raw = value.ToString();
@@ -31,24 +31,23 @@ public class CustomFunctionTest
     {
         public string Name => "dejson";
 
-        public object Convert(object value)
+        public object Convert(object value, object[] param)
         {
             return System.Text.Json.JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
         }
     }
 
-    class JsoniserParser : IConverterFunction
-    {
-        public string Name => "json2";
 
-        public object Convert(object value)
+    class Concatenater : IConverterFunction
+    {
+        public string Name => "concat";
+
+        public object Convert(object value, object[] param)
         {
-            if (value is not string raw)
-                raw = value.ToString();
-            var x = JsonSerializer.Deserialize<JsonNode>(raw, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            return x;
+            return value.ToString() + param.Select(x => x.ToString()).Concat();
         }
     }
+
 
     [TestMethod]
     public void RecursiveFunctionTest()
@@ -57,7 +56,6 @@ public class CustomFunctionTest
         var query = $"|json|dejson|json.aaa";
 
         var compiler = new FplCompiler();
-        compiler.RegisterConverter(new JsoniserParser());
         compiler.RegisterConverter(new DeJsoniserParser());
         var parser = compiler.Compile(query);
         var result = parser.Parse(payload);
@@ -77,4 +75,19 @@ public class CustomFunctionTest
         var result = parser.Parse(payload);
         Assert.AreEqual(DateTime.Parse("2024-01-15T19:11:17+00:00").ToUniversalTime(), ((List<object>)result)[0]);
     }
+
+    /*
+    [TestMethod]
+    public void MultiParamTest()
+    {
+        var payload = "{\"ak\":\"ab\", \"bk\":\"bv\"}";
+        var query = $"|json|concat(ak,bk)";
+        var compiler = new FplCompiler();
+        compiler.RegisterConverter(new Concatenater());
+        var parser = compiler.Compile(query);
+        var result = parser.Parse(payload);
+        Assert.AreEqual("avbv", ((List<object>)result)[0].ToString());
+    }
+    */
+
 }

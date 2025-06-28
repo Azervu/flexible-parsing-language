@@ -60,9 +60,9 @@ internal static class ParsingFocusDataExtension
     }
 
 
-    internal static void WriteFlatten(this ParsingFocusData data, Func<ValueWrapper, ValueWrapper> writeTransform)
+    internal static void WriteFlatten(this ParsingFocusData data, int opId, Func<ValueWrapper, ValueWrapper> writeTransform)
     {
-        data.NextWrite(
+        data.NextWrite(opId,
             data.GenerateSequencesIntersectionWriteRead()
             .SelectMany(x => x.AVal.Foci.Select(r => new FocusEntry { SequenceId = r.SequenceId, Value = writeTransform(x.Primary.Value) }))
             .ToList()

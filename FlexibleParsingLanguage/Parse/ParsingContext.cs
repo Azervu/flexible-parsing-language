@@ -21,9 +21,9 @@ internal partial class ParsingContext
         WritingModule = writingModule;
     }
 
-    internal void WriteFlatten()
+    internal void WriteFlatten(int opId)
     {
-        Focus.WriteFlatten((writeParent) =>
+        Focus.WriteFlatten(opId, (writeParent) =>
         {
             var w = WritingModule.BlankMap();
             WritingModule.Append(writeParent.V, w);
@@ -31,9 +31,9 @@ internal partial class ParsingContext
         });
     }
 
-    internal void WriteFlattenArray()
+    internal void WriteFlattenArray(int opId)
     {
-        Focus.WriteFlatten((writeParent) =>
+        Focus.WriteFlatten(opId, (writeParent) =>
         {
             var w = WritingModule.BlankArray();
             WritingModule.Append(writeParent.V, w);
@@ -53,7 +53,7 @@ internal partial class ParsingContext
 
     internal void WriteFromRead(Func<FocusEntry, ValueWrapper> readFunc, Action<WriteParam> writeAction) => Focus.WriteFromRead(readFunc, writeAction);
 
-    internal static void WriteAddRead(FplQuery parser, ParsingContext context, int intAcc, string acc)
+    internal static void WriteAddRead(FplQuery parser, ParsingContext context, ParseOperationData d)
     {
         context.WriteFromRead((x) => context.TransformReadInner(x.Value), (w) =>
         {
@@ -62,7 +62,7 @@ internal partial class ParsingContext
         });
     }
 
-    internal void WriteAction(Func<IWritingModule, ValueWrapper, ValueWrapper> writeFunc) => Focus.Write((data) => writeFunc(WritingModule, data));
+    internal void WriteAction(int opId, Func<IWritingModule, ValueWrapper, ValueWrapper> writeFunc) => Focus.Write(opId, (data) => writeFunc(WritingModule, data));
 
     internal ValueWrapper TransformReadInner(ValueWrapper raw)
     {
