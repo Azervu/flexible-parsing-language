@@ -16,7 +16,7 @@ The syntaxt is similar to Json path where applicable
 | `*`      | Foreach                                |
 | `:*`     | Write Foreach                          | 
 | `~`      | Name                                   |
-| `|`      | Function call                          | 
+| `\|`      | Function call                          | 
 | `#`      | Lookup                                 |
 | `##`     | Change Lookup Context                  |
 | `'` `"`  | Literal Operators                      | 
