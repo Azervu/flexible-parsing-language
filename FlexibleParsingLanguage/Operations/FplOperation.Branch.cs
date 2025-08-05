@@ -10,10 +10,9 @@ namespace FlexibleParsingLanguage.Operations;
 
 internal static partial class FplOperation
 {
-    internal static readonly OpConfig Branch = new OpConfig("{", OpSequenceType.Root | OpSequenceType.Group | OpSequenceType.Branching | OpSequenceType.LeftInput, CompileBranch, 100, "}")
+    internal static readonly OpConfig Branch = new OpConfig("{", OpSequenceType.Root | OpSequenceType.Group | OpSequenceType.Branching | OpSequenceType.LeftInput, CompileBranch, "}")
     {
         CompileType = OpCompileType.Branch,
-        CompileRank = 100
     };
 
     private static IEnumerable<ParseOperation> CompileBranch(ParseData parser, RawOp op)

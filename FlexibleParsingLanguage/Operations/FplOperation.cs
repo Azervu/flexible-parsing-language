@@ -31,23 +31,25 @@ internal static partial class FplOperation
                     Lookup,
                     ChangeLookupContext,
                     Function,
-                    
-                    new OpConfig("~", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(o, ParsesOperationType.ReadName)])),
 
-                    new OpConfig("@", OpSequenceType.ParentInput | OpSequenceType.Virtual),
-                    new OpConfig("\"", OpSequenceType.Literal | OpSequenceType.Accessor, null, -1, "\""),
-                    new OpConfig("'", OpSequenceType.Literal | OpSequenceType.Accessor, null, -1, "\'"),
-                    new OpConfig("\\", OpSequenceType.Unescape, null, -1),
+                    SetVariable,
+                    AccessVariable,
+
+
+                    new OpConfig("~", OpSequenceType.LeftInput, (p, o) => CompileSaveUtil(p, o, 1, [new ParseOperation(o, ParsesOperationType.ReadName)])),
+                    new OpConfig("\"", OpSequenceType.Literal | OpSequenceType.Accessor, null, "\""),
+                    new OpConfig("'", OpSequenceType.Literal | OpSequenceType.Accessor, null, "\'"),
+                    new OpConfig("\\", OpSequenceType.Unescape, null),
 
                     new OpConfig(",", OpSequenceType.GroupSeparator),
-                    new OpConfig("(", OpSequenceType.Group | OpSequenceType.Virtual | OpSequenceType.Accessor, null, 100, ")"),
+                    new OpConfig("(", OpSequenceType.Group | OpSequenceType.Virtual | OpSequenceType.Accessor, null, ")"),
                 ];
             }
             return _opConfigs;
         }
     }
 
-    internal static readonly OpConfig Accessor = new OpConfig(null, OpSequenceType.Accessor, null, 99);
+    internal static readonly OpConfig Accessor = new OpConfig(null, OpSequenceType.Accessor, null);
 
     internal static IEnumerable<ParseOperation> CompileTransformOperation(ParseData parser, RawOp op, Action<FplQuery, ParsingContext, ParseOperationData> opAction)
     {
@@ -65,11 +67,12 @@ internal static partial class FplOperation
             yield return x;
     }
 
-
     private static IEnumerable<ParseOperation> CompileAccessorOperation(
-        ParseData parser, RawOp op, Action<FplQuery, ParsingContext, ParseOperationData> accessorAction,
+        ParseData parser,
+        RawOp op,
+        Action<FplQuery, ParsingContext, ParseOperationData> accessorAction,
         Action<FplQuery, ParsingContext, ParseOperationData>? intAccessorAction,
-        Action<FplQuery, ParsingContext, ParsingFocus, ParseOperationData> dynamicAccessorAction
+        Action<FplQuery, ParsingContext, ParsingNode, ParseOperationData> dynamicAccessorAction
     )
     {
         if (op.Input.Count != 2)

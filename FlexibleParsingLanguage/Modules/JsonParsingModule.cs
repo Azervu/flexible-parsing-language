@@ -18,7 +18,7 @@ public class JsonParsingModule : IReadingModule
         if (raw is not JsonObject n)
         {
 #if DEBUG
-            throw new Exception($"tried to string access {raw?.GetType().FullName ?? "null"} ");
+            throw new Exception($"tried to string access | Acc={acc} | Type = ({raw?.GetType().FullName ?? "null"}) | Raw = '{raw.ToString()}' ");
 #endif
             return null;
         }

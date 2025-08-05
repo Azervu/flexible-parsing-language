@@ -6,50 +6,46 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FlexibleParsingLanguage.Parse;
 
 internal class ParsingFocusData
 {
-    private int _sequenceIdCounter = 1;
+    internal int SequenceIdCounter = 1;
 
-    internal Dictionary<int, ParsingFocus> Store { get; set; }
+    internal Dictionary<int, ParsingNode> Store { get; set; }
 
-    internal Dictionary<int, ParsingSequence> Sequences { get; set; } // childId to parent id
+    internal Dictionary<int, ParsingSequence> Sequences { get; private set; } // childId to parent id
 
     internal Dictionary<int, List<FocusEntry>> Reads { get; set; }
     internal Dictionary<int, List<FocusEntry>> Writes { get; set; }
     internal Dictionary<int, List<ConfigEntry>> Configs { get; set; }
 
-    internal ParsingFocus Active { get; set; }
+    internal ParsingNode Active { get; set; }
 
     internal ParsingFocusData(ParsingMetaContext parsingConfig, object readRoot, object writeRoot)
     {
         Sequences = new Dictionary<int, ParsingSequence> {
-            { _sequenceIdCounter, new ParsingSequence { ParentId = -1 } }
+            { SequenceIdCounter, new ParsingSequence { ParentId = -1 } }
         };
 
         Reads = new Dictionary<int, List<FocusEntry>>
         {
-            { 1, [ new FocusEntry { Value = new ValueWrapper(readRoot), SequenceId = _sequenceIdCounter } ] }
+            { 1, [ new FocusEntry { Value = new ValueWrapper(readRoot), SequenceId = SequenceIdCounter } ] }
         };
 
         Writes = new Dictionary<int, List<FocusEntry>>
         {
-            { 1, [ new FocusEntry { Value = new ValueWrapper(writeRoot), SequenceId = _sequenceIdCounter } ] }
+            { 1, [ new FocusEntry { Value = new ValueWrapper(writeRoot), SequenceId = SequenceIdCounter } ] }
         };
 
         Configs = new Dictionary<int, List<ConfigEntry>>
         {
-            { 1, [new ConfigEntry(parsingConfig, _sequenceIdCounter) ] }
+            { 1, [new ConfigEntry(parsingConfig, SequenceIdCounter) ] }
         };
 
-        Active = new ParsingFocus(1, 1, 1);
-
-        Store = new Dictionary<int, ParsingFocus> {
+        Active = new ParsingNode(1, 1, 1);
+        Store = new Dictionary<int, ParsingNode> {
             { Compiler.FplCompiler.RootId, Active }
         };
     }
@@ -68,13 +64,13 @@ internal class ParsingFocusData
     internal void LoadRead(int id)
     {
         var readId = Store[id].ReadId;
-        Active = new ParsingFocus(readId, Active.WriteId, Active.ConfigId);
+        Active = new ParsingNode(readId, Active.WriteId, Active.ConfigId);
     }
 
     internal void LoadWrite(int id)
     {
         var writeId = Store[id].WriteId;
-        Active = new ParsingFocus(Active.ReadId, writeId, Active.ConfigId);
+        Active = new ParsingNode(Active.ReadId, writeId, Active.ConfigId);
     }
 
     internal void Read(int opId, Func<ValueWrapper, KeyValuePair<ValueWrapper, ValueWrapper>> transform) => ReadInner(opId, x =>
@@ -83,7 +79,6 @@ internal class ParsingFocusData
         return new FocusEntry { Key = kv.Key, Value = kv.Value, SequenceId = x.SequenceId, };
     });
 
-
     internal void ReadInner(int opId, Func<FocusEntry, FocusEntry> transform)
     {
         NextRead(opId, Reads[Active.ReadId].Select(transform).ToList());
@@ -91,10 +86,8 @@ internal class ParsingFocusData
 
     internal void NextRead(int opId, List<FocusEntry> reads)
     {
-
-
         Reads[opId] = reads;
-        Active = new ParsingFocus(opId, Active.WriteId, Active.ConfigId);
+        Active = new ParsingNode(opId, Active.WriteId, Active.ConfigId);
     }
 
 
@@ -105,20 +98,129 @@ internal class ParsingFocusData
         {
             foreach (var kv in transformAction(r))
             {
-                _sequenceIdCounter++;
+                SequenceIdCounter++;
                 result.Add(new FocusEntry
                 {
                     Key = new ValueWrapper(kv.Key),
                     Value = new ValueWrapper(kv.Value),
-                    SequenceId = _sequenceIdCounter
+                    SequenceId = SequenceIdCounter
                 });
-                Sequences[r.SequenceId].ChildrenIds.Add(_sequenceIdCounter);
-                Sequences[_sequenceIdCounter] = new ParsingSequence { ParentId = r.SequenceId };
+                Sequences[r.SequenceId].ChildrenIds.Add(SequenceIdCounter);
+                Sequences[SequenceIdCounter] = new ParsingSequence { ParentId = r.SequenceId };
+            }
+        }
+        Reads[opId] = result;
+        Active = new ParsingNode(opId, Active.WriteId, Active.ConfigId);
+    }
+
+    internal void ReadMultiParamForeach(int opId, List<CompiledParameter> parameters, Func<FocusEntry, object[], IEnumerable<KeyValuePair<object, object>>> transformAction)
+    {
+        var primaryFocus = Reads[Active.ReadId];
+        var primarySequences = primaryFocus
+            .Select(x => x.SequenceId)
+            .ToList();
+
+        var secondarySequences = new List<List<int>>();
+        var secondaryFocuses = new List<(int, List<FocusEntry>)>();
+        var outParameters = new List<object>(parameters.Count());
+        var allLiteral = true;
+        for (var i = 0; i < parameters.Count; i++)
+        {
+            var p = parameters[i];
+            if (p.IsLiteral)
+            {
+                outParameters.Add(p.Accessor);
+                continue;
+            }
+
+            allLiteral = false;
+            outParameters.Add(null);
+            var node = Store[p.Id];
+            var secFocus = Reads[node.ReadId];
+
+            secondarySequences.Add(secFocus.Select(x => x.SequenceId).ToList());
+            secondaryFocuses.Add((i, secFocus));
+        }
+
+        List<FocusEntry> result;
+
+        if (allLiteral)
+        {
+            var secondaryData = outParameters.ToArray();
+            result = new List<FocusEntry>(primaryFocus.Count());
+            foreach (var primary in primaryFocus)
+            {
+                foreach (var kv in transformAction.Invoke(primary, secondaryData))
+                {
+                    SequenceIdCounter++;
+                    Sequences[SequenceIdCounter] = new ParsingSequence
+                    {
+                        ParentId = primary.SequenceId,
+                    };
+                    result.Add(new FocusEntry
+                    {
+                        Key = new ValueWrapper(kv.Key),
+                        Value = new ValueWrapper(kv.Value),
+                        SequenceId = SequenceIdCounter
+                    });
+                }
+            }
+        }
+        else
+        {
+            var sequenceIntersection = GenerateSequencesIntersectionInner(primarySequences, secondarySequences.ToArray());
+
+            result = new List<FocusEntry>(sequenceIntersection.Count());
+            for (var i = 0; i < sequenceIntersection.Count(); i++)
+            {
+                var (sequenceId, sequenceParameters) = sequenceIntersection[i];
+                if (sequenceId == -1)
+                    throw new Exception("SequenceId parent = -1");
+
+                var primaryFocusEntry = primaryFocus[i];
+                var secondaryData = outParameters.ToArray();
+
+                for (var intersectionIndex = 0; intersectionIndex < secondaryFocuses.Count; intersectionIndex++)
+                {
+
+                    var squenceParam = sequenceParameters[intersectionIndex];
+                    
+                    var (paramIndex, focus) = secondaryFocuses[intersectionIndex];
+
+                    if (squenceParam.Multiread)
+                        secondaryData[paramIndex] = focus[0].Value.V;
+                    else
+                       secondaryData[paramIndex] = focus.Select(x => x.Value.V).ToList();
+                }
+
+                foreach (var kv in transformAction.Invoke(primaryFocusEntry, secondaryData))
+                {
+                    SequenceIdCounter++;
+                    var focus = new FocusEntry
+                    {
+                        Key = new ValueWrapper(kv.Key),
+                        Value = new ValueWrapper(kv.Value),
+                        SequenceId = SequenceIdCounter
+                    };
+
+                    Sequences[SequenceIdCounter] = new ParsingSequence
+                    {
+                        ParentId = sequenceId,
+                    };
+
+                    result.Add(focus);
+                }
+
             }
         }
 
         Reads[opId] = result;
-        Active = new ParsingFocus(opId, Active.WriteId, Active.ConfigId);
+        Active = new ParsingNode(opId, Active.WriteId, Active.ConfigId);
+
+#if DEBUG
+        var l = DebugString();
+        this.ValidateTree();
+#endif
     }
 
     internal void Write(int opId, Func<ValueWrapper, ValueWrapper> transform) =>
@@ -127,13 +229,13 @@ internal class ParsingFocusData
     internal void NextWrite(int opId, List<FocusEntry> next)
     {
         Writes[opId] = next;
-        Active = new ParsingFocus(Active.ReadId, opId, Active.ConfigId);
+        Active = new ParsingNode(Active.ReadId, opId, Active.ConfigId);
     }
 
     internal void NextConfig(int opId, List<ConfigEntry> next)
     {
         Configs[opId] = next;
-        Active = new ParsingFocus(Active.ReadId, Active.WriteId, opId);
+        Active = new ParsingNode(Active.ReadId, Active.WriteId, opId);
     }
 
     internal List<SequenceIntersection<T, A>> GenerateSequencesIntersection<T, A>(
@@ -141,6 +243,7 @@ internal class ParsingFocusData
         List<A> aValues, List<int> aSequence
         )
     {
+
         var sequenceIntersections = GenerateSequencesIntersectionInner(primeSequence, [aSequence]);
 
 #if DEBUG
@@ -169,8 +272,23 @@ internal class ParsingFocusData
 
     internal List<(int SequenceId, SequenceIntersectionEntryInner[] Intersected)> GenerateSequencesIntersectionInner(List<int> primeSequence, List<int>[] secondarySequence)
     {
-        var rwSequences = new Dictionary<int, (int Prime, List<(int SequenceId, int Index)>[] Secondary)>();
+#if DEBUG
+        foreach (var parameter in secondarySequence)
+        {
+            foreach (var s in parameter)
+            {
+                var parentId = s;
+                while (Sequences.TryGetValue(parentId, out var x))
+                {
+                    parentId = x.ParentId;
+                }
+                if (parentId > 0)
+                    throw new InvalidOperationException($"Sequence {parentId} missing");
+            }
+        }
+#endif
 
+        var rwSequences = new Dictionary<int, (int Prime, List<(int SequenceId, int Index)>[] Secondary)>();
         foreach (var prime in primeSequence)
         {
             if (rwSequences.ContainsKey(prime))
@@ -182,7 +300,7 @@ internal class ParsingFocusData
         foreach (var prime in primeSequence)
         {
             var activeId = prime;
-            while (activeId >= 0)
+            while (Sequences.ContainsKey(activeId))
             {
                 if (!writeChildSequences.TryGetValue(activeId, out var values))
                 {
@@ -208,14 +326,15 @@ internal class ParsingFocusData
                 List<int>? ws = null;
                 while (!writeChildSequences.TryGetValue(activeId, out ws))
                 {
+#if DEBUG
                     if (!Sequences.ContainsKey(activeId))
-                    {
-                        var s = 345435;
-                    }
+                        throw new InvalidOperationException($"Sequence missing | {activeId} | [{Sequences.Select(x => x.Key.ToString()).Join(", ")}]");
+#endif
 
                     activeId = Sequences[activeId].ParentId;
                     if (activeId < 0)
                         throw new InvalidOperationException($"read/write missing shared root | writes = [{writeChildSequences.Select(x => x.Key.ToString()).Join(", ")}] | reads = [{r.Select(x => x.ToString()).Join(", ")}]");
+                
                 }
                 foreach (var w in ws)
                 {
@@ -226,13 +345,16 @@ internal class ParsingFocusData
 
         return primeSequence.Select(sequenceId =>
         {
+
             var sequence = rwSequences[sequenceId];
-            var multiRead = true;
             var primaryAncestors = new HashSet<int> { };
-            while (sequenceId >= 0)
+
+            var sequenceId2 = sequenceId;
+
+            while (sequenceId2 >= 0)
             {
-                primaryAncestors.Add(sequenceId);
-                sequenceId = Sequences[sequenceId].ParentId;
+                primaryAncestors.Add(sequenceId2);
+                sequenceId2 = Sequences[sequenceId2].ParentId;
             }
 
             var inter = sequence.Secondary.Select(x =>
@@ -258,6 +380,68 @@ internal class ParsingFocusData
             return (sequenceId, inter.ToArray());
         }).ToList();
     }
+
+
+#if DEBUG
+
+    internal string DebugString()
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine($"Writes = [{string.Join(", ", Writes.Select(x => x.Key.ToString()))}]");
+        sb.AppendLine($"Sequences = [{string.Join(", ", Sequences.Select(x => x.Key.ToString()))}]");
+
+        foreach (var r in Reads)
+            sb.AppendLine($"Read({r.Key}) = [{string.Join(", ", r.Value.Select(x => x.SequenceId.ToString()))}]");
+
+        return sb.ToString();
+    }
+
+    internal void ValidateTree()
+    {
+        //return;
+
+        var roots = new Dictionary<int, int>();
+        var handledIds = new HashSet<int>();
+        var rootChildren = new HashSet<int>();
+
+        var directRootChildren = new HashSet<int>();
+        foreach (var kv in Sequences)
+        {
+            if (kv.Value.ParentId < 0)
+                directRootChildren.Add(kv.Key);
+            else if (!Sequences.ContainsKey(kv.Value.ParentId))
+                throw new Exception($"Sequence does not exist {kv.Value.ParentId}");
+        }
+
+        if (directRootChildren.Count > 1)
+            throw new Exception($"Multiple roots [{directRootChildren.Select(x => x.ToString()).Join(", ")}]");
+
+
+        if (roots.Count > 1)
+            throw new Exception($"Multiple roots found in parsing tree: {roots.Count} | {roots.Select(x => x.ToString()).Join(", ")}");
+        var debug = roots.Select(x => x.ToString()).Join("\n");
+
+        foreach (var r in Reads)
+        {
+            foreach (var r2 in r.Value)
+            {
+                if (!Sequences.ContainsKey(r2.SequenceId))
+                    throw new Exception($"Missing Sequence {r2.SequenceId} From Read");
+            }
+        }
+
+        foreach (var w in Writes)
+        {
+            foreach (var w2 in w.Value)
+            {
+                if (!Sequences.ContainsKey(w2.SequenceId))
+                    throw new Exception($"Missing Sequence {w2.SequenceId} From Write");
+            }
+        }
+    }
+#endif
+
 }
 
 internal struct SequenceIntersection<T, A>
@@ -280,12 +464,12 @@ internal struct SequenceIntersectionEntry<T>
 }
 
 
-internal struct ParsingFocus
+internal struct ParsingNode
 {
     internal int WriteId { get; private set; }
     internal int ReadId { get; private set; }
     internal int ConfigId { get; private set; }
-    internal ParsingFocus(int readId, int writeId, int configId)
+    internal ParsingNode(int readId, int writeId, int configId)
     {
 #if DEBUG
         if (readId == 0 && writeId == 0 && configId == 0)
@@ -297,6 +481,38 @@ internal struct ParsingFocus
         ReadId = readId;
         ConfigId = configId;
     }
+}
+
+internal struct CompiledParameter
+{
+    internal bool IsLiteral { get; set; }
+    internal int Id { get; set; }
+    internal string Accessor { get; set; }
+
+    internal CompiledParameter(bool isLiteral, int id, string accessor)
+    {
+        IsLiteral = isLiteral;
+        Id = id;
+        Accessor = accessor;
+    }
+
+    internal static List<CompiledParameter> CompileParameters(ParseData parser, RawOp op)
+    {
+        var parameters = new List<CompiledParameter>();
+        for (var i = 2; i < op.Input.Count; i++)
+        {
+            var x = op.Input[i];
+            if ((x.Type.SequenceType & OpSequenceType.Literal) > 0)
+                parameters.Add(new CompiledParameter(true, x.Id, x.Accessor));
+            else if (x.Type.GetStatusId == null)
+                parameters.Add(new CompiledParameter(false, x.Id, x.Accessor));
+            else
+                parameters.Add(new CompiledParameter(false, x.Type.GetStatusId(parser, x), x.Accessor));
+        }
+        return parameters;
+    }
+
+
 }
 
 internal struct ParsingSequence

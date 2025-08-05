@@ -16,31 +16,6 @@ namespace FlexibleParsingLanguage.Compiler;
 
 public partial class FplCompiler
 {
-
-    private class SequenceProccessData
-    {
-        internal Dictionary<int, RawOp> Ops { get; set; }
-
-        internal Dictionary<int, (int ParentId, int Index)> GroupParents { get; set; } = new Dictionary<int, (int ParentId, int Index)>();
-        internal Dictionary<int, List<List<int>>> GroupChildren { get; set; } = new Dictionary<int, List<List<int>>>();
-
-
-        internal Dictionary<int, (int ParentId, int Index)> AffixParents { get; set; } = new Dictionary<int, (int ParentId, int Index)>();
-        internal Dictionary<int, List<List<int>>> AffixChildren { get; set; } = new Dictionary<int, List<List<int>>>();
-
-
-        internal int GetAffixIndex(RawOp op)
-        {
-            var (parentId, groupIndex) = AffixParents[op.Id];
-            var children = AffixChildren[parentId][groupIndex];
-            var i = children.IndexOf(op.Id);
-            if (i >= 0)
-                return i;
-            throw new QueryException(op, $"Index not found in ({parentId}, {groupIndex}) [{children.Select(x => x.ToString()).Join(", ")}]");
-        }
-    }
-
-
     internal void Sequence(ref List<RawOp> ops)
     {
         var data = new SequenceProccessData();
@@ -57,7 +32,6 @@ public partial class FplCompiler
 #endif
         SequenceAffixes(data, ref ops);
 
-
         foreach (var op in ops)
         {
             foreach (var op2 in op.GetRawInput())
@@ -65,8 +39,9 @@ public partial class FplCompiler
         }
 
         RemapGroupInputHierarchy(data, ref ops);
-        foreach (var op in ops.Where(x => x.Type.SequenceType.All(OpSequenceType.ParentInput)))
-            AddParentInput(data, op);
+
+        foreach (var op in ops.Where(x => x.Type.Sequence != null))
+            op.Type.Sequence(data, op);
 
         foreach (var op in ops)
         {
@@ -74,7 +49,7 @@ public partial class FplCompiler
             {
                 op.LeftInput.Clear();
 
-                foreach (var children in data.AffixChildren[op.Id])
+                foreach (var children in data.Ops[op.Id].AffixChildren)
                 {
                     for (int i = children.Count - 1; i >= 0; i--)
                     {
@@ -115,12 +90,12 @@ public partial class FplCompiler
                 if (op.Type.SequenceType.All(OpSequenceType.GroupSeparator))
                 {
                     stack[stack.Count - 1] = (parentId, i + 1);
-                    data.GroupChildren[parentId].Add([]);
+                    data.Ops[parentId].GroupChildren.Add([]);
                     continue;
                 }
 
 
-                var group = data.GroupChildren[parentId][i];
+                var group = data.Ops[parentId].GroupChildren[i];
                 data.GroupParents[op.Id] = (parentId, i);
                 group.Add(op.Id);
             }
@@ -128,12 +103,9 @@ public partial class FplCompiler
             if (op.Type.SequenceType.All(OpSequenceType.Group))
             {
                 stack.Add((op.Id, 0));
-                data.GroupChildren.Add(op.Id, [[]]);
+                data.Ops[op.Id].GroupChildren = [[]];
             }
         }
-
-
-        //ops = ops.Where(x => !x.Type.SequenceType.All(OpSequenceType.UnGroup)).ToList();
 
         ops = ops.Where(x => !x.Type.SequenceType.Any(OpSequenceType.UnGroup | OpSequenceType.GroupSeparator)).ToList();
     }
@@ -148,10 +120,12 @@ public partial class FplCompiler
         for (var i = 0; i < ops.Count; i++)
             ordered.Add((ops[i], i));
 
-        ordered.OrderByDescending(x => x.Item1.Type.Rank).ThenBy(x => x.Item2);
+        //ordered = ordered.OrderByDescending(x => x.Item1.Type.Rank).ThenBy(x => x.Item2).ToList();
 
         data.AffixParents = data.GroupParents.ToDictionary(x => x.Key, x => x.Value);
-        data.AffixChildren = data.GroupChildren.ToDictionary(x => x.Key, x => x.Value.ToList());
+
+        foreach (var op in data.Ops.Where(x => x.Value.GroupChildren.Count > 0))
+            op.Value.AffixChildren = op.Value.GroupChildren.ToList();
 
         foreach (var op in ordered)
         {
@@ -181,13 +155,12 @@ public partial class FplCompiler
 
 
 
-        if (!post && !pre && !opt)
+        if (!post && !pre && !opt && !op.Type.SequenceType.All(OpSequenceType.Named))
             return;
 
         var parentId = x.ParentId;
         var parent = data.Ops[parentId];
-        var parentChildren = data.AffixChildren[parentId][x.Index];
-
+        var parentChildren = parent.AffixChildren[x.Index];
 
         if (post)
         {
@@ -203,6 +176,7 @@ public partial class FplCompiler
                 var candidate = data.Ops[parentChildren[i]];
                 if (candidate.Type.SequenceType.All(OpSequenceType.Branching))
                     continue;
+
                 target = candidate;
                 targetIndex = i;
                 break;
@@ -237,6 +211,12 @@ public partial class FplCompiler
                 var candidate = data.Ops[parentChildren[i]];
                 if (candidate.Type.SequenceType.All(OpSequenceType.Branching))
                     continue;
+
+                if (!candidate.Type.SequenceType.All(OpSequenceType.Accessor))
+                {
+                    targetIndex = -2;
+                    break;
+                }
                 target = candidate;
                 targetIndex = i;
                 break;
@@ -310,11 +290,8 @@ public partial class FplCompiler
 
         sourceChildren.RemoveAt(sourceIndex);
 
-        if (!data.AffixChildren.TryGetValue(target.Id, out var targetChildren))
-        {
-            targetChildren = [];
-            data.AffixChildren[target.Id] = targetChildren;
-        }
+        var targetChildren = data.Ops[target.Id].AffixChildren;
+
         data.AffixParents[id] = (target.Id, 0);
 
         if (targetChildren.Count == 0)
@@ -347,17 +324,6 @@ public partial class FplCompiler
 
 
 
-    }
-
-
-    private void AddParentInput(SequenceProccessData data, RawOp op)
-    {
-        RawOp? ctx = null;
-        var (ancestorId, i) = data.GroupParents[op.Id];
-        var ancestor = data.Ops[ancestorId];
-
-        if (ancestor.LeftInput.Count >= 0)
-            op.LeftInput.Add(ancestor.LeftInput[0]);
     }
 
     private void RemapGroupInputHierarchy(SequenceProccessData data, ref List<RawOp> ops)
@@ -444,9 +410,21 @@ public partial class FplCompiler
         {
             var op = ops[i];
 
+
+            if (op.Type.SequenceType.All(OpSequenceType.VirtualInput))
+            {
+
+                var c = ((int)OpSequenceType.VirtualInput) % ((int)op.Type.SequenceType); 
+                var a = (int)op.Type.SequenceType;
+                var b = (int)OpSequenceType.VirtualInput;
+
+
+                removes.Add(i);
+                continue;
+            }
+
             if (!op.Type.SequenceType.All(OpSequenceType.Virtual))
                 continue;
-
 
             var inputs = op.GetRawInput().ToList();
 

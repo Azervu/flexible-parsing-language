@@ -27,7 +27,7 @@ internal static partial class FplOperation {
         context.ReadFunc(d.Id, (m, readSrc) => m.Parse(readSrc, d.IntAcc));
     }
 
-    internal static void OperationReadDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus, ParseOperationData d)
+    internal static void OperationReadDynamic(FplQuery parser, ParsingContext context, ParsingNode focus, ParseOperationData d)
     {
 
         var ww = context.Focus.Writes[context.Focus.Active.WriteId];

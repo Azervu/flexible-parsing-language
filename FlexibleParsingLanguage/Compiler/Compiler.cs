@@ -3,6 +3,7 @@ using FlexibleParsingLanguage.Functions;
 using FlexibleParsingLanguage.Modules;
 using FlexibleParsingLanguage.Operations;
 using FlexibleParsingLanguage.Parse;
+using System.Text;
 
 namespace FlexibleParsingLanguage.Compiler;
 
@@ -64,7 +65,7 @@ public partial class FplCompiler
             if (op.GroupOperator != null)
             {
                 var op2 = op.GroupOperator.ToString();
-                HandleConfigEntry(op2, new OpConfig(op2, OpSequenceType.UnGroup, null, -100));
+                HandleConfigEntry(op2, new OpConfig(op2, OpSequenceType.UnGroup, null));
             }
 
             if (op.SequenceType.All(OpSequenceType.Default))
@@ -128,19 +129,55 @@ public partial class FplCompiler
 
             Sequence(ref ops);
 
-
-            foreach (var op in ops)
+#if DEBUG
+            var debugLog = new StringBuilder();
+            foreach (var o in ops)
             {
-                /*
-                if (op.Type != FplOperation.Accessor && op.Accessor != null)
-                    throw new InvalidOperationException("Accessor on non-accessor operation");
-                */
+                if (o.Type.SequenceType.All(OpSequenceType.Accessor))
+                    continue;
+
+                debugLog.Append($"{o.Id}({o.Type.Operator}");
+                if (o.Accessor != null)
+                    debugLog.Append($"  {o.Accessor}");
+                debugLog.Append(")");
+                debugLog.Append($": ");
+
+                if (o.LeftInput.Count() > 0)
+                    debugLog.Append($"Left = [{o.LeftInput.Select(x => {
+                        if (x.Type.SequenceType.All(OpSequenceType.Accessor))
+                            return x.Accessor;
+                        return x.Id.ToString();
+                    }).Join(",")}] | ");
+
+                if (o.RightInput.Count() > 0)
+                    debugLog.Append($"Right = [{o.RightInput.Select(x => {
+                        if (x.Type.SequenceType.All(OpSequenceType.Accessor))
+                            return x.Accessor;
+                        return x.Id.ToString();
+                    }).Join(",")}] | ");
+
+                if (o.GroupChildren.Count > 0)
+                    debugLog.Append($"GroupChildren = [{o.GroupChildren.Select(x => $"[{x.Select(y => y.ToString()).Join(",")}]").Join(",")}] |");
+
+                if (o.AffixChildren.Count > 0)
+                    debugLog.Append($"AffixChildren = [{o.AffixChildren.Select(x => $"[{x.Select(y => y.ToString()).Join(",")}]").Join(",")}] |");
+
+                debugLog.Append("\n");
             }
-            
+            var dl = debugLog.ToString();
+
+#endif
+
+
+
+
+
+
+
 
             foreach (var op in ops)
             {
-                if (op.Output.Any())
+                if (op.Output.Count != 0)
                     op.Output.Clear();
             }
 
@@ -181,9 +218,111 @@ public partial class FplCompiler
 
         var it = tokens.GetEnumerator();
 
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var name = string.Empty;
+            var t = tokens[i];
+
+            if (t.Op != null && t.Op.SequenceType.All(OpSequenceType.Named) && i + 1 < tokens.Count)
+            {
+                var t2 = tokens[i + 1];
+                if (t2.Op == null)
+                {
+                    i++;
+                    name = t2.Accessor;
+                }
+            }
+
+            RawOp? accessor = null;
+            if (t.Op == null || t.Op.SequenceType.All(OpSequenceType.Accessor))
+            {
+                accessor = new RawOp
+                {
+                    Id = idCounter++,
+                    CharIndex = t.Index,
+                    Type = t.Op ?? FplOperation.Accessor,
+                    Accessor = t.Accessor,
+                };
+
+                if (op != null && !op.Type.SequenceType.All(OpSequenceType.RightInput))
+                {
+                    ops.Add(op);
+                    op = null;
+                }
+
+                if (op == null && !skipDefaultOperator)
+                {
+                    op = new RawOp
+                    {
+                        Id = idCounter++,
+                        CharIndex = t.Index,
+                        Type = DefaultOp,
+                    };
+                }
+            }
+            else
+            {
+                if (t.Op == DefaultOp)
+                {
+                    skipDefaultOperator = false;
+                    continue;
+                }
+
+
+                if (op != null && op.Type != DefaultOp)
+                    ops.Add(op);
+
+                op = new RawOp
+                {
+                    Id = idCounter++,
+                    CharIndex = t.Index,
+                    Type = t.Op,
+                    Name = name,
+                };
+            }
+
+
+            if (!checkedRoot)
+            {
+                checkedRoot = true;
+                if (op.Type.SequenceType.All(OpSequenceType.LeftInput))
+                {
+                    ops.Add(new RawOp
+                    {
+                        Id = idCounter++,
+                        CharIndex = t.Index,
+                        Type = ParamOperator,
+                    });
+                }
+            }
+
+            if (accessor != null)
+            {
+                if (op != null)
+                {
+                    ops.Add(op);
+                    skipDefaultOperator = op.Type.SequenceType.All(OpSequenceType.OptionalExtraInput);
+                }
+                ops.Add(accessor);
+                op = null;
+                accessor = null;
+            }
+            else
+            {
+                skipDefaultOperator = false;
+            }
+
+            if (t.Op != null && t.Op.SequenceType.Any(OpSequenceType.GroupSeparator | OpSequenceType.Group))
+                skipDefaultOperator = true;
+        }
+
+
+
+        /*
 
         while (it.MoveNext()) {
             var t = it.Current;
+
 
 
             //RawOp? acc = null;
@@ -199,9 +338,7 @@ public partial class FplCompiler
                     Accessor = t.Accessor,
                 };
 
-
-
-                if (op != null && !op.Type.SequenceType.All(OpSequenceType.RightInput))
+                if (op != null && !op.Type.SequenceType.Any(OpSequenceType.RightInput))
                 {
                     ops.Add(op);
                     op = null;
@@ -260,7 +397,6 @@ public partial class FplCompiler
                     ops.Add(op);
                     skipDefaultOperator = op.Type.SequenceType.All(OpSequenceType.OptionalExtraInput);
                 }
-
                 ops.Add(accessor);
                 op = null;
                 accessor = null;
@@ -272,7 +408,9 @@ public partial class FplCompiler
 
             if (t.Op != null && t.Op.SequenceType.Any(OpSequenceType.GroupSeparator | OpSequenceType.Group))
                 skipDefaultOperator = true;
+
         }
+        */
 
         if (op != null)
             ops.Add(op);

@@ -28,7 +28,6 @@ public class QueryException : Exception
 
     public string GenerateMessage()
     {
-
         var log = new StringBuilder(Ops.Count > 0
             ? $" | op = {Ops[0].Type.Operator}{(string.IsNullOrEmpty(Ops[0].Accessor) ? string.Empty : $"'{Ops[0].Accessor}'")} | message = {base.Message}"
             : base.Message

@@ -29,9 +29,7 @@ public class JsonParsingTest
         new object[] { "Foreach Example 3", "[[[\"a\",\"b\"],[\"c\",\"d\"]],[[\"e\",\"f\"],[\"g\",\"h\"]]]", "**:**", "[[\"a\",\"b\"],[\"c\",\"d\"],[\"e\",\"f\"],[\"g\",\"h\"]]" },
         new object[] { "Foreach Example 4", "[[[\"a\",\"b\"],[\"c\",\"d\"]],[[\"e\",\"f\"],[\"g\",\"h\"]]]", "**:*:h*", "[{\"h\":[\"a\",\"b\"]},{\"h\":[\"c\",\"d\"]},{\"h\":[\"e\",\"f\"]},{\"h\":[\"g\",\"h\"]}]" },
 
-        new object[] { "Branch Example", """[{"k1":1, "k2": 11}, {"k1":2, "k2": 12}, {"k1":3, "k2": 13}]""", "*:*{@k1:h1}k2:h2", """[{"h1":1,"h2":11},{"h1":2,"h2":12},{"h1":3,"h2":13}]""" },
-
-
+        new object[] { "Branch Example", """[{"k1":1, "k2": 11}, {"k1":2, "k2": 12}, {"k1":3, "k2": 13}]""", "*:*{@.k1:h1}k2:h2", """[{"h1":1,"h2":11},{"h1":2,"h2":12},{"h1":3,"h2":13}]""" },
 
 
         new object[] { "Single Query With Header", "{ \"k\": \"test_v\" }", "k:h", "{\"h\":\"test_v\"}" },
@@ -41,8 +39,8 @@ public class JsonParsingTest
         new object[] { "Read depth", "{ \"a\": { \"a\": \"value\" }}", "a.a:bb", "{\"bb\":\"value\"}" },
         new object[] { "Write depth", "{ \"aa\": \"value\" }", "aa:b:b", "{\"b\":{\"b\":\"value\"}}" },
 
-        new object[] { "", "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{@k2}k1", "[\"v2\",\"v1\"]" },
-        new object[] { "", "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{@k1:h1}k2:h2", "{\"h1\":\"v1\",\"h2\":\"v2\"}" },
+        new object[] { "", "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{@.k2}k1", "[\"v2\",\"v1\"]" },
+        new object[] { "", "{ \"root\": { \"k1\": \"v1\", \"k2\":\"v2\" }}", "root{@.k1:h1}k2:h2", "{\"h1\":\"v1\",\"h2\":\"v2\"}" },
         new object[] { "", "{ \"root\": [{\"v\": 1}, {\"v\": 2}, {\"v\": 3}]}", "root*v", "[1,2,3]" },
         new object[] { "Foreach Array", "{ \"root\": [{\"v1\": {\"v2\": 1}}, {\"v1\": {\"v2\": 2}}, {\"v1\": {\"v2\": 3}}]}", "root*v1.v2", "[1,2,3]" },
         new object[] { "", "{ \"root\": [{\"v\": [1, 11, 111]}, {\"v\": [2, 22, 222]}, {\"v\": [3, 33, 333]}]}", "root*v*", "[1,11,111,2,22,222,3,33,333]" },
@@ -78,13 +76,13 @@ public class JsonParsingTest
         new object[] { "Group Accessor Test", "{'a': { 'b': { 't28': 'v' } }, 'metadata': {'idkey': 't28'}}", "a.b($metadata.idkey)", "['v']" },
 
         new object[] { "Root vs Param Test A", "[{'n': 'a', 'v':1},{'n': 'b', 'v':2}]", "*:*{$*n:nn}v:w", "[{'nn':['a','b'],'w':1},{'nn':['a','b'],'w':2}]"},
-        new object[] { "Root vs Param Test B", "[{'n': 'a', 'v':1},{'n': 'b', 'v':2}]", "*:*{@n:nn}v:w", "[{'nn':'a','w':1},{'nn':'b','w':2}]"},
+        new object[] { "Root vs Param Test B", "[{'n': 'a', 'v':1},{'n': 'b', 'v':2}]", "*:*{@.n:nn}v:w", "[{'nn':'a','w':1},{'nn':'b','w':2}]"},
 
-        new object[] { "Simple branch test", "{'k': {'ka': 'va', 'kb': 'vb'}}", "k{@ka:ha}kb:hb", "{'ha':'va','hb':'vb'}" },
-        new object[] { "Unbranch test", "{'a': {'f':1, 'f2': 11}, 'b': {'f':2, 'f2': 12}, 'c': {'f':3, 'f2': 13}}", "*:*{@f:fh}f2:fh2", "[{'fh':1,'fh2':11},{'fh':2,'fh2':12},{'fh':3,'fh2':13}]" },
+        new object[] { "Simple branch test", "{'k': {'ka': 'va', 'kb': 'vb'}}", "k{@.ka:ha}kb:hb", "{'ha':'va','hb':'vb'}" },
+        new object[] { "Unbranch test", "{'a': {'f':1, 'f2': 11}, 'b': {'f':2, 'f2': 12}, 'c': {'f':3, 'f2': 13}}", "*:*{@.f:fh}f2:fh2", "[{'fh':1,'fh2':11},{'fh':2,'fh2':12},{'fh':3,'fh2':13}]" },
 
         new object[] { "Read Root Test", "{'name':'nv', 'values':[1,2,3]}", "values*:*{$name:n}:v", "[{'n':'nv','v':1},{'n':'nv','v':2},{'n':'nv','v':3}]"},
-        new object[] { "Write Root Test", "{'k1': {'k2': 1, 'k3': 2}}", "k1:o1{@k2:o2}k3:$:o3", "{'o1':{'o2':1},'o3':2}"},
+        new object[] { "Write Root Test", "{'k1': {'k2': 1, 'k3': 2}}", "k1:o1{@.k2:o2}k3:$:o3", "{'o1':{'o2':1},'o3':2}"},
 
         new object[] { "Header Branching Test A", "[[1,2,3], [4, 5], [6, 8]]", "*:h1:h2", "{'h1':{'h2':[[1,2,3],[4,5],[6,8]]}}" },
         new object[] { "Header Branching Test C", "[[1,2,3], [4, 5], [6, 8]]", "*:h1:*:h2", "{'h1':[{'h2':[1,2,3]},{'h2':[4,5]},{'h2':[6,8]}]}" },

@@ -60,8 +60,7 @@ internal static partial class FplOperation
         }).ToList());
     }
 
-
-    internal static void OperationLookupDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus, ParseOperationData d)
+    internal static void OperationLookupDynamic(FplQuery parser, ParsingContext context, ParsingNode focus, ParseOperationData d)
     {
 
         var config = context.Focus.Configs[context.Focus.Active.ConfigId];
@@ -106,7 +105,7 @@ internal static partial class FplOperation
         );
     }
 
-    internal static void OperationLookupChangeDynamic(FplQuery parser, ParsingContext context, ParsingFocus focus, ParseOperationData d)
+    internal static void OperationLookupChangeDynamic(FplQuery parser, ParsingContext context, ParsingNode focus, ParseOperationData d)
     {
 
         var config = context.Focus.Configs[context.Focus.Active.ConfigId];

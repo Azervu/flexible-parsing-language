@@ -13,17 +13,14 @@ public class Parsing
         new object[] { "ConvertJsonTest", "{'a':{'b1':'bbb','b2':'bb2'}}", "|json.a.b2:h1", "{'h1':'bb2'}", null, null },
         new object[] { "Regex Filter Test", "['apple', 'troll', 'pear', 'bear']", "|json*|regex('apple|bear')", "['apple','bear']", null, null },
 
-
         new object[] { "Regex Filter Test", "['<a>apple</a>', '<a>troll</a>', '<a>pear</a>', '<a>bear</a>']", "|json*|regex('apple|bear')|xml.a", "['apple','bear']", null, null },
 
         new object[] { "Recursive Filter Test", "{'v': ['apple', 'troll', 'pear', 'bear'], 'm': 'aaa'}", "|json.v*|regex('apple|bear')", "['apple','bear']", null, null },
 
-
-
         new object[] { "Xml in Json Test", "{'data': ['<a><b>test_a</b></a>', '<a><b>test_b</b></a>']}", "|json.data*|xml.a.b", "['test_a','test_b']", null, null },
         new object[] { "Json in Xml Test", "<data><v>{'a':{'b':'test_a'}}</v><v>{'a':{'b':'test_b'}}</v></data>", "|xml.data*|json.a.b", "['test_a','test_b']", null, null },
-        new object[] { "Read Lookup Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*#(@id)", "['n53','a81']", new List<(string, string)> {("bob", "n53"), ("trj", "a81") }, new List<List<(string, string)>> { } },
-        new object[] { "Read Lookup Context Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*##id##(@id)#value", "['k678','l63']", new List<(string, string)> { }, new List<List<(string, string)>> { new() { ("id", "bob"), ("value", "k678") }, new() { ("id", "trj"), ("value", "l63") }, } },
+        new object[] { "Read Lookup Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*#(@.id)", "['n53','a81']", new List<(string, string)> {("bob", "n53"), ("trj", "a81") }, new List<List<(string, string)>> { } },
+        new object[] { "Read Lookup Context Test", "[{'id': 'bob'}, {'id': 'trj'}]", "|json*##id##(@.id)#value", "['k678','l63']", new List<(string, string)> { }, new List<List<(string, string)>> { new() { ("id", "bob"), ("value", "k678") }, new() { ("id", "trj"), ("value", "l63") }, } },
 
 
 

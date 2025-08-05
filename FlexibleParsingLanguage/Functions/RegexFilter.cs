@@ -6,8 +6,6 @@ internal class RegexFilter : IFilterFunction
 {
     public string Name => "regex";
 
-    public Type[] ParameterTypes => [typeof(string)];
-
     public bool Filter(object value, object[] p)
     {
         var acc = (string)p[0];

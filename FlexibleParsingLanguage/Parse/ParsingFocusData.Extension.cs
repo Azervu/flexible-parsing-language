@@ -12,7 +12,7 @@ internal static class ParsingFocusDataExtension
     {
         var w = data.Writes[data.Active.WriteId];
         var r = data.Reads[data.Active.ReadId];
-
+        var s = data.Sequences;
         return data.GenerateSequencesIntersection(
             w, w.Select(x => x.SequenceId).ToList(),
             r, r.Select(x => x.SequenceId).ToList()

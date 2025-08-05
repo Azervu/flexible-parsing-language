@@ -33,6 +33,5 @@ public interface IConverterFunction
 public interface IFilterFunction
 {
     public string Name { get; }
-    public Type[] ParameterTypes { get; }
     public bool Filter(object value, object[] param);
 }

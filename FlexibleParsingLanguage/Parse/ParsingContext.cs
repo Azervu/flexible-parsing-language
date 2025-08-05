@@ -1,4 +1,6 @@
-﻿namespace FlexibleParsingLanguage.Parse;
+﻿using System.Text;
+
+namespace FlexibleParsingLanguage.Parse;
 
 internal partial class ParsingContext
 {

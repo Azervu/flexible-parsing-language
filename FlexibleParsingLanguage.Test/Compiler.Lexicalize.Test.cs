@@ -12,21 +12,25 @@ public class TokenizerTest
         new object[] {"Simple Header", "k:v", "1.($,'k')  2:(1,'v')  3{(2)"},
         new object[] {"Chain", "a.b#cc2.d", "1.($,'a')  2.(1,'b')  3#(2,'cc2')  4.(3,'d')  5{(4)"},
         new object[] {"Redundancies", "$b.#c{@.d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)"},
-        new object[] {"Non redundant", "b#c{@d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)" },
+        new object[] {"Non redundant", "b#c{@.d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)" },
 
         new object[] {"EscapeSimple", "a'ee\\'e'", "1.($,'a')  2.(1,'ee\\'e')  3{(2)"},
 
         new object[] {"Escape", "a.b'ee\\'e'c.d", "1.($,'a')  2.(1,'b')  3.(2,'ee\\'e')  4.(3,'c')  5.(4,'d')  6{(5)"},
-        new object[] {"Branch Multi", "a{@b}{@c}d", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)  6.(1,'d')  7{(6)"},
+        new object[] {"Branch Multi", "a{@.b}{@.c}d", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)  6.(1,'d')  7{(6)"},
         new object[] {"Branch Root", "a{$b}c", "1.($,'a')  2.($,'b')  3{(2)  4.(1,'c')  5{(4)"},
-        new object[] {"Branch Header", "a{@b1:h2}b2:h1", "1.($,'a')  2.(1,'b1')  3:(2,'h2')  4{(3)  5.(1,'b2')  6:(5,'h1')  7{(6)"},
-        new object[] {"Branch Complicated", "a{{@b}@c}d{@e}{@f{@g}}", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)  6.(1,'d')  7{(6)  8.(6,'e')  9{(8)  10.(6,'f')  11{(10)  12.(10,'g')  13{(12)"},
 
-        new object[] {"Simple Parameter Group", "a(@b)", "1.($,'a')  2.(1,'b')  3.(1,2)  4{(3)"},
-        new object[] {"Parameter Group", "a#(@b2.c2)b.1", "1.($,'a')  2.(1,'b2')  3.(2,'c2')  4#(1,3)  5.(4,'b')  6.(5,'1')  7{(6)"},
+        new object[] {"Branch Header", "a{@.b1:h2}b2:h1", "1.($,'a')  2.(1,'b1')  3:(2,'h2')  4{(3)  5.(1,'b2')  6:(5,'h1')  7{(6)"},
+
+        new object[] {"Branch Header With Save", "a@@save.b{@save.b1:h2}b2:h1", "1.($,'a')  2.(1,'b')  3.(1,'b1')  4:(3,'h2')  5{(4)  6.(2,'b2')  7:(6,'h1')  8{(7)"},                              
+
+        new object[] {"Branch Complicated", "a{{@.b}@.c}d{@.e}{@.f{@.g}}", "1.($,'a')  2.(1,'b')  3{(2)  4.(1,'c')  5{(4)  6.(1,'d')  7{(6)  8.(6,'e')  9{(8)  10.(6,'f')  11{(10)  12.(10,'g')  13{(12)"},
+
+        new object[] {"Simple Parameter Group", "a(@.b)", "1.($,'a')  2.(1,'b')  3.(1,2)  4{(3)"},
+        new object[] {"Parameter Group", "a#(@.b2.c2)b.1", "1.($,'a')  2.(1,'b2')  3.(2,'c2')  4#(1,3)  5.(4,'b')  6.(5,'1')  7{(6)"},
         new object[] {"Parameter Group root", "a($b)", "1.($,'a')  2.($,'b')  3.(1,2)  4{(3)" },
 
-        new object[] {"Multi Parameter Group", "a(@b,@c,@d)", "1.($,'a')  2.(1,'b')  3.(1,'c')  4.(1,'d')  5.(1,2,3,4)  6{(5)"},
+        new object[] {"Multi Parameter Group", "a(@.b,@.c,@.d)", "1.($,'a')  2.(1,'b')  3.(1,'c')  4.(1,'d')  5.(1,2,3,4)  6{(5)"},
 
         //new object[] { "Write Foreach", "*:*a*:*b:$.f", "1*($)  2:*(1)  3.(2,'a')  4*(3)  5:*(4)  6.(5,'b')  7:(6,$:)  8.(7,'f')  9{(8)" },
 

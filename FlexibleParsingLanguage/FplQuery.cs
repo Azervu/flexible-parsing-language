@@ -51,16 +51,70 @@ public class FplQuery
 
     public object Parse(object readRoot, IWritingModule? writingModule = null)
     {
-
         var writer = writingModule ?? _writingModule ?? new CollectionWritingModule();
 
         object? writeRoot = (_config.RootType & OpCompileType.WriteObject) > 0
             ? writer.BlankMap()
             : writer.BlankArray();
    
-
         var ctx = new ParsingContext(writer, _modules, readRoot, writeRoot, _rootMetaContext);
 
+        for (var j = 0; j < _operations.Count; j++)
+        {
+            var o = _operations[j];
+
+            try
+            {
+                o.Op(this, ctx, o.Data);
+#if DEBUG
+                ctx.Focus.ValidateTree();
+#endif
+            }
+            catch (QueryException ex)
+            {
+                ex.Ops.Add(o.Metadata);
+                ex.Query = _rawQuery;
+                throw;
+            }
+            catch (Exception ex)
+            {
+
+                string at = string.Empty;
+                if (ex.StackTrace != null)
+                {
+                    var lines = ex.StackTrace.Split(Environment.NewLine);
+                    for (var i = 0; i < lines.Length; i++)
+                    {
+                        if (!lines[i].Contains("FlexibleParsingLanguage"))
+                            continue;
+                        for (; i < lines.Length; i++)
+                            at += "\n" + lines[i];
+                        break;
+                    }
+                }
+
+                var msg = new StringBuilder(ex.Message);
+                msg.Append(" | version = ");
+                msg.Append(Assembly.GetAssembly(typeof(ParsingContext)).GetName().Version.ToString());
+
+                if (at != null)
+                {
+                    msg.Append(" | ");
+                    msg.Append(at);
+                }
+
+                var ex2 = new QueryException(o.Metadata, msg.ToString(), true);
+                ex2.Query = _rawQuery;
+
+                throw ex2;
+            }
+
+#if DEBUG
+            ctx.Focus.ValidateTree();
+#endif
+        }
+
+        /*
         foreach (var o in _operations)
         {
             try
@@ -105,7 +159,11 @@ public class FplQuery
 
                 throw ex2;
             }
+#if DEBUG
+            ctx.ValidateTree();
+#endif
         }
+        */
 
         return writeRoot;
     }

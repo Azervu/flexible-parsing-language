@@ -10,7 +10,7 @@ public class HierarchyModuleTest
 {
     public static IEnumerable<object[]> SimpleJsonQueries => new List<object[]>
     {
-        new object[] { "Simple Hierarchy Test", "{'k1': 'a1', 'v': [{'k2': 'a2', 'v': [{'k3': 'a3'}, {'k3': 'a3.2'}]}]}", "{@k1:a}v*:*{@k2:b}v*:*k3:c", "[['a1','a2','a3.2'],['a1','a2','a3']]" },
+        new object[] { "Simple Hierarchy Test", "{'k1': 'a1', 'v': [{'k2': 'a2', 'v': [{'k3': 'a3'}, {'k3': 'a3.2'}]}]}", "{@.k1:a}v*:*{@.k2:b}v*:*k3:c", "[['a1','a2','a3.2'],['a1','a2','a3']]" },
     };
 
     [TestMethod]
