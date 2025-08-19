@@ -37,12 +37,14 @@ public class TokenizerTest
         new object[] { "Write Foreach", "a:$b", "1.($,'a')  2:$(1)  3.(2,'b')  4{(3)" },
 
         new object[] { "Functions", "|with_param('a > b','a <> b')a|withouth_param.b", "1|($,'with_param','a > b','a <> b')  2.(1,'a')  3|(2,'withouth_param')  4.(3,'b')  5{(4)" },
+
     };
 
     public static IEnumerable<object[]> InvalidQueries => new List<object[]>
     {
         new object[] { "Un-ended escape", "a.b'sdf.c" },
         new object[] { "Branching group ends with an infix operator", "a.b{c.d#}e" },
+        //new object[] { "Invalid parameter group", "v(index_of('v'))" },
     };
 
     [TestMethod]
@@ -116,5 +118,4 @@ public class TokenizerTest
         }
         Assert.Fail($"Failed to catch issue in {query}");
     }
-
 }

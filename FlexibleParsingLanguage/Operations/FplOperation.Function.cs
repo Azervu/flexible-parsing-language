@@ -59,7 +59,7 @@ internal partial class FplOperation
 
         var parameters = CompiledParameter.CompileParameters(parser, op);
 
-        yield return new ParseOperation(op, (q, c, d) => OperationFunctionConvertMultiParam(q, c, d, parameters, converter));
+        yield return new ParseOperation(op, (q, c, d) => OperationFunctionConvertMultiParam(q, c, d, parameters, converter.Convert));
 
         parser.LoadedId[0] = id;
 
@@ -74,8 +74,6 @@ internal partial class FplOperation
         //CompileTransformerFunction(parser, op, 2, [new ParseOperation((q, c, i, a) => OperationFunctionConvert(q, c, i, a, converter))]);
         //return CompileSaveUtil(parser, op, 2, [new ParseOperation((q, c, i, a) => OperationFunctionConvert(q, c, i, a, converter))]);
     }
-
-
 
     internal static void OperationFunctionFilter(FplQuery query, ParsingContext context, ParseOperationData d, List<CompiledParameter> parameters, IFilterFunction filter)
     {
@@ -150,28 +148,8 @@ internal partial class FplOperation
 
 
 
-    internal static void OperationFunctionConvertMultiParam(FplQuery parser, ParsingContext context, ParseOperationData data, List<CompiledParameter> parameters, IConverterFunction converter)
+    internal static void OperationFunctionConvertMultiParam(FplQuery parser, ParsingContext context, ParseOperationData data, List<CompiledParameter> parameters, Func<object, object[], object> converter)
     {
-        /*
-        var secondarySequences = context.Focus.GenerateSequencesIntersectionReadConfig()
-    .SelectMany(x => x.AVal.Foci)
-    .Where(x => x.Config.Entries.ContainsKey(acc))
-    .Select(x => x.Config.Entries[acc].Value)
-    .ToList();
-        */
-
-
-        /*
-
-
-        var read = context.Focus.Reads[focus.ReadId];
-        var intersections = context.Focus.GenerateSequencesIntersection(
-            read, read.Select(x => x.SequenceId).ToList(),
-            config, config.Select(x => x.SequenceId).ToList()
-        );
-
-        */
-
 #if DEBUG
         context.Focus.ValidateTree();
 #endif
@@ -242,6 +220,9 @@ internal partial class FplOperation
         }
 
         var ll = l.ToString();
+
+
+
 #endif
 
         var result = new List<FocusEntry>(sequenceIntersection.Count());
@@ -268,18 +249,31 @@ internal partial class FplOperation
                 else
                     secondaryData[j] = secondaryFocusEntries[sp.Foci[0].Index].Value.V;
             }
-            var v = converter.Convert(primaryData.V, secondaryData);
 
-            context.Focus.SequenceIdCounter++;
-            result.Add(new FocusEntry
+            var v = converter.Invoke(primaryData.V, secondaryData);
+
+
+            if (v is IEnumerable)
             {
-                Key = new ValueWrapper(data.StringAcc),
-                Value = new ValueWrapper(v),
-                SequenceId = context.Focus.SequenceIdCounter,
-            });
-
-            context.Focus.Sequences[sequenceId].ChildrenIds.Add(context.Focus.SequenceIdCounter);
-            context.Focus.Sequences[context.Focus.SequenceIdCounter] = new ParsingSequence { ParentId = sequenceId };
+                context.Focus.SequenceIdCounter++;
+                context.Focus.Sequences[sequenceId].ChildrenIds.Add(context.Focus.SequenceIdCounter);
+                context.Focus.Sequences[context.Focus.SequenceIdCounter] = new ParsingSequence { ParentId = sequenceId };
+                result.Add(new FocusEntry
+                {
+                    Key = new ValueWrapper(data.StringAcc),
+                    Value = new ValueWrapper(v),
+                    SequenceId = context.Focus.SequenceIdCounter,
+                });
+            }
+            else
+            {
+                result.Add(new FocusEntry
+                {
+                    Key = new ValueWrapper(data.StringAcc),
+                    Value = new ValueWrapper(v),
+                    SequenceId = sequenceId,
+                });
+            }
         }
 
         context.Focus.NextRead(data.Id, result);
@@ -288,6 +282,7 @@ internal partial class FplOperation
         context.Focus.ValidateTree();
 #endif
     }
+
 
     internal static void OperationFunctionConvert2(FplQuery parser, ParsingContext context, ParseOperationData data, IConverterFunction converter) {
         context.ReadTransformValue(data.Id, (w) =>

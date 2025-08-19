@@ -44,25 +44,28 @@ public class JsonParsingModule : IReadingModule
 
     IEnumerable<KeyValuePair<object, object>> IReadingModule.Foreach(object raw)
     {
+
+        var result = new List<KeyValuePair<object, object>>();
+
         switch (raw)
         {
             case JsonObject jsonNode:
                 foreach (var x in jsonNode)
-                    yield return new KeyValuePair<object, object>(x.Key, x.Value);
+                    result.Add(new KeyValuePair<object, object>(x.Key, x.Value));
                 break;
             case JsonArray jsonArray:
                 for (int i = 0; i < jsonArray.Count; i++)
-                    yield return new KeyValuePair<object, object>(i, jsonArray[i]);
+                    result.Add(new KeyValuePair<object, object>(i, jsonArray[i]));
                 break;
             case ICollection<KeyValuePair<object, object>> dict:
                 foreach (var kv in dict)
-                    yield return kv;
+                    result.Add(kv);
                 break;
             case IEnumerable enumerable:
                 var ii = 0;
                 foreach (var x in enumerable)
                 {
-                    yield return new KeyValuePair<object, object>(ii, x);
+                    result.Add(new KeyValuePair<object, object>(ii, x));
                     ii++;
                 }
                 break;
@@ -72,5 +75,6 @@ public class JsonParsingModule : IReadingModule
 #endif
                 break;
         }
+        return result;
     }
 }

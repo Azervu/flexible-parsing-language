@@ -27,9 +27,6 @@ public partial class FplCompiler
 
         GroupOps(data, ref ops);
 
-#if DEBUG
-        var b = ops.Select(x => $"({x.Id,2}/{x.CharIndex,2}){(string.IsNullOrEmpty(x.Accessor) ? x.Type.Operator : $"'{x.Accessor}'"),5}").Join("\n");
-#endif
         SequenceAffixes(data, ref ops);
 
         foreach (var op in ops)
@@ -71,6 +68,24 @@ public partial class FplCompiler
 
         foreach (var op in ops)
             op.Input = op.GetRawInput().ToList();
+
+
+#if DEBUG
+        var b = ops.Select(x => {
+            var log = new StringBuilder($"({x.Id,2}/{x.CharIndex,2}){(string.IsNullOrEmpty(x.Accessor) ? x.Type.Operator : $"'{x.Accessor}'"),5} | SequenceType = {x.Type.SequenceType}");
+
+            if (x.LeftInput.Count > 0)
+                log.Append($" | L=[{string.Join(", ", x.LeftInput.Select(x => x.Id))}]");
+
+            if (x.RightInput.Count > 0)
+                log.Append($" | R=[{string.Join(", ", x.RightInput.Select(x => x.Id))}]");
+
+            foreach (var c in x.AffixChildren)
+                log.Append($" | C=[{string.Join(", ", c)}]");
+
+            return log.ToString();
+        }).Join("\n");
+#endif
     }
 
     private void GroupOps(SequenceProccessData data, ref List<RawOp> ops)
@@ -94,7 +109,6 @@ public partial class FplCompiler
                     continue;
                 }
 
-
                 var group = data.Ops[parentId].GroupChildren[i];
                 data.GroupParents[op.Id] = (parentId, i);
                 group.Add(op.Id);
@@ -106,46 +120,25 @@ public partial class FplCompiler
                 data.Ops[op.Id].GroupChildren = [[]];
             }
         }
-
         ops = ops.Where(x => !x.Type.SequenceType.Any(OpSequenceType.UnGroup | OpSequenceType.GroupSeparator)).ToList();
     }
 
     private void SequenceAffixes(SequenceProccessData data, ref List<RawOp> ops)
     {
-        var ordered = new List<(RawOp, int)>();
-
-        ops.Select(x => x).ToList();
-
-
-        for (var i = 0; i < ops.Count; i++)
-            ordered.Add((ops[i], i));
-
-        //ordered = ordered.OrderByDescending(x => x.Item1.Type.Rank).ThenBy(x => x.Item2).ToList();
-
         data.AffixParents = data.GroupParents.ToDictionary(x => x.Key, x => x.Value);
 
         foreach (var op in data.Ops.Where(x => x.Value.GroupChildren.Count > 0))
             op.Value.AffixChildren = op.Value.GroupChildren.ToList();
 
-        foreach (var op in ordered)
+        foreach (var op in ops)
         {
-            SequenceAffixesInner(data, op.Item1);
+            SequenceAffixesInner(data, op);
         }
-
-#if DEBUG
-        var sss = "";
-        foreach (var x in data.Ops)
-        {
-            var o = x.Value;
-            sss += $"\n{o.Id,2} {(o.Accessor == null ? o.Type.Operator : $"'{o.Accessor}'"),5} | pre {o.Prefixed,5} | post {o.PostFixed,5} | [{o.GetRawInput().Select(y => y.Id.ToString()).Join(",")}]";
-        }
-
-        var debug = 543645;
-#endif
     }
 
     private void SequenceAffixesInner(SequenceProccessData data, RawOp op)
     {
+
         if (!data.AffixParents.TryGetValue(op.Id, out var x))
             return;
 
@@ -292,7 +285,8 @@ public partial class FplCompiler
 
         var targetChildren = data.Ops[target.Id].AffixChildren;
 
-        data.AffixParents[id] = (target.Id, 0);
+        //if (!op.Type.SequenceType.All(OpSequenceType.Group))
+         data.AffixParents[id] = (target.Id, 0);
 
         if (targetChildren.Count == 0)
             targetChildren.Add([]);
@@ -323,78 +317,12 @@ public partial class FplCompiler
         }
 
 
-
-    }
-
-    private void RemapGroupInputHierarchy(SequenceProccessData data, ref List<RawOp> ops)
-    {
-        var proccessed = new HashSet<int>();
-
-
-        foreach (var op in ops)
+        foreach (var input in target.LeftInput)
         {
-            if (!op.Type.SequenceType.All(OpSequenceType.Group) || proccessed.Contains(op.Id))
-                continue;
-
-            var active = op;
-            RawOp? target = null;
-            var remaps = new List<RawOp> { op };
-            while (true)
-            {
-                if (proccessed.Contains(active.Id))
-                {
-
-                    target = active.LeftInput.Count > 0
-                        ? active.LeftInput[0]
-                        : null;
-                    break;
-                }
-
-                var startId = active.Id;
-
-
-                if (active.LeftInput.Count > 0)
-                {
-                    active = active.LeftInput[0];
-                    if (!active.Type.SequenceType.All(OpSequenceType.Group))
-                    {
-                        target = active;
-                        break;
-                    }
-                }
-                else if (data.AffixParents.TryGetValue(active.Id, out var x))
-                {
-                    active = data.Ops[x.ParentId];
-                }
-
-
-                remaps.Add(active);
-
-                if (active.Id == RootGroupId)
-                {
-                    target = active;
-                    break;
-                }
-                else
-                {
-
-                    if (startId == active.Id)
-                        throw new QueryException(active, "grouping loop", true);
-                }
-            }
-
-            foreach (var r in remaps)
-            {
-                proccessed.Add(r.Id);
-                r.LeftInput.Clear();
-                if (target != null)
-                    r.LeftInput.Add(target);
-
-
-            }
+            if (input.Type.SequenceType.All(OpSequenceType.Group) && data.AffixParents.TryGetValue(input.Id, out var inputParent) && target.Id == inputParent.ParentId)
+                throw new QueryException(input, "Invalid postfix group", false);
         }
     }
-
 
     private void DissolveVirtuals(SequenceProccessData data, ref List<RawOp> ops)
     {
@@ -450,8 +378,6 @@ public partial class FplCompiler
             }
         }
 
-
-
         removes.Reverse();
 
         foreach (var i in removes)
@@ -459,15 +385,10 @@ public partial class FplCompiler
             ops.RemoveAt(i);
         }
 
-
 #if DEBUG
         var after = ops.Where(x => !x.IsSimple()).Select(x => x.ToString()).Join("\n");
         var d = 354;
 #endif
-
-
-
-
     }
 
 

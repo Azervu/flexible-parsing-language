@@ -343,12 +343,14 @@ internal class ParsingFocusData
             }
         }
 
-        return primeSequence.Select(sequenceId =>
-        {
 
+        var result = new List<(int SequenceId, SequenceIntersectionEntryInner[] Intersected)>(primeSequence.Count);
+
+        for (var i = 0; i < primeSequence.Count; i++)
+        {
+            var sequenceId = primeSequence[i];
             var sequence = rwSequences[sequenceId];
             var primaryAncestors = new HashSet<int> { };
-
             var sequenceId2 = sequenceId;
 
             while (sequenceId2 >= 0)
@@ -357,32 +359,63 @@ internal class ParsingFocusData
                 sequenceId2 = Sequences[sequenceId2].ParentId;
             }
 
-            var inter = sequence.Secondary.Select(x =>
+            var inter = new SequenceIntersectionEntryInner[sequence.Secondary.Length];
+
+            for (var j = 0; j < sequence.Secondary.Length; j++)
             {
+                var x = sequence.Secondary[j];
                 var multiRead = true;
                 if (x.Count > 0)
                 {
                     var sequences = x.ToHashSet();
                     if (sequences.Count == 1)
                         multiRead = !primaryAncestors.Contains(sequences.First().SequenceId);
+
 #if DEBUG
                     if (!multiRead && x.Count > 1)
                         throw new Exception("multiple in same sequence");
 #endif
                 }
-                return new SequenceIntersectionEntryInner
+                inter[j] = new SequenceIntersectionEntryInner
                 {
                     Multiread = multiRead,
                     Foci = x,
                 };
-            });
 
-            return (sequenceId, inter.ToArray());
-        }).ToList();
+            }
+            result.Add((sequenceId, inter));
+        }
+        return result;
     }
 
 
 #if DEBUG
+
+
+
+    internal string DebugHierarchyString()
+    {
+        var sb = new StringBuilder();
+        var active = new List<(int Id, int Depth)> { (1, 0) };
+        while (active.Count > 0)
+        {
+            var x = active.Pop();
+            var e = Sequences[x.Id];
+
+
+            for (var i = 0; i < x.Depth; i++)
+                sb.Append("|");
+            sb.Append("+ ");
+            sb.Append(x.Id);
+            sb.Append("\n");
+            foreach (var c in e.ChildrenIds)
+                active.Add((c, x.Depth + 1));
+
+        }
+        return sb.ToString();
+    }
+
+
 
     internal string DebugString()
     {

@@ -14,6 +14,10 @@ internal partial class ParsingContext
 
         if (ReadingModule == null)
         {
+#if DEBUG
+            throw new Exception($"No reading module for type = '{r.V?.GetType().Name ?? "null"}' | value = '{r.V?.ToString()}'");
+#endif
+
             throw new Exception($"No reading module for type = '{r.V?.GetType().Name ?? "null"}'");
         }
 
