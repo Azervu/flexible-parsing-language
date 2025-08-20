@@ -355,10 +355,6 @@ public partial class FplCompiler
                 continue;
 
             var inputs = op.GetRawInput().ToList();
-
-            if (inputs.Count == 0)
-                continue;
-
             removes.Add(i);
 
             foreach (var o in op.Output)

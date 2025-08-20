@@ -265,22 +265,9 @@ public class CustomFunctionTest
         Assert.AreEqual("[\"r1r2a1\",\"r1r2b1\",\"r1r2c1\"]", JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = false }));
     }
 
-    /*
     [TestMethod]
-    public void EmptyParamTest()
-    {
-        var payload = "{\"v\": [\"a\", \"b\"], \"n\": 77}";
-        var query = $"|json@@s.v*|join(@s.n|donothing())";
-        var compiler = new FplCompiler();
-        compiler.RegisterConverter(new Joiner());
-        compiler.RegisterConverter(new DoNothing());
-        var parser = compiler.Compile(query);
-        var result = parser.Parse(payload);
-        Assert.AreEqual("?", JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = false }));
-    }
-    */
-
-    [TestMethod]
+    [DataRow("Linear Test", "{'a':'b'}", "|json.a", "[\"b\"]")]
+    [DataRow("Empty Param", "{'a':'b'}", "|json.a|donothing()", "[\"b\"]")]
     [DataRow(
         "FindIndex",
         "[{\"header\": [ \"a\", \"b\", \"v\", \"h\" ],\"values\": [ 54, 23, 101, 12, 9 ]},{\"header\": [ \"h\", \"v\", \"a\", \"b\" ],\"values\": [ 23, 102, 75, 12, 9 ]},{\"header\": [ \"h\", \"a\", \"b\", \"v\" ],\"values\": [ 23, 75, 12, 103 ]}]",
