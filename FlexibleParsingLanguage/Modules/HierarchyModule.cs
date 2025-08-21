@@ -21,8 +21,6 @@ public class HierarchyModule : IWritingModule
 
             _types.Add(x.Item1, (i, x.Item2));
         }
-
-
     }
 
     public void Append(object target, object? val)

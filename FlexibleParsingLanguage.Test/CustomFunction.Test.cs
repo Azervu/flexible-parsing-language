@@ -38,14 +38,14 @@ public class CustomFunctionTest
             return value;
         }
     }
-
+        
     class DeJsoniserParser : IConverterFunction
     {
         public string Name => "dejson";
 
         public object Convert(object value, object[] param)
         {
-            return System.Text.Json.JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
+            return JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
         }
     }
 

@@ -4,7 +4,6 @@ namespace FlexibleParsingLanguage.Parse;
 
 internal partial class ParsingContext
 {
-    internal IReadingModule ReadingModule;
     internal IWritingModule WritingModule;
     internal ParsingFocusData Focus;
     private Type _activeType = null;
@@ -66,13 +65,23 @@ internal partial class ParsingContext
 
     internal void WriteAction(int opId, Func<IWritingModule, ValueWrapper, ValueWrapper> writeFunc) => Focus.Write(opId, (data) => writeFunc(WritingModule, data));
 
+    internal IReadingModule GetReadingModule(ValueWrapper obj)
+    {
+        var t = obj.V?.GetType() ?? typeof(void);
+        return _modules.LookupModule(t);
+    }
+
+    internal IReadingModule GetReadingModuleFromValue(object v)
+    {
+        return _modules.LookupModule(v?.GetType() ?? typeof(void));
+    }
+
+
     internal ValueWrapper TransformReadInner(ValueWrapper raw)
     {
-        UpdateReadModule(raw);
-        if (ReadingModule == null)
-            return raw;
-        var v = ReadingModule.ExtractValue(raw.V);
-
+        var v = GetReadingModule(raw).ExtractValue(raw.V);
         return new ValueWrapper(v);
     }
+
+
 }

@@ -46,7 +46,7 @@ public partial class FplCompiler
             ops = FplOperation.OpConfigs;
 
         _modules = new ModuleHandler([
-            new CollectionParsingModule(),
+            new FallbackModule(),
             new JsonParsingModule(),
             new XmlParsingModule(),
         ]);

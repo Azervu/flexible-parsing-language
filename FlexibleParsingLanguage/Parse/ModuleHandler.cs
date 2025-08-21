@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 namespace FlexibleParsingLanguage.Parse;
 internal class ModuleHandler
 {
+    private IReadingModule _fallbackModule = new FallbackModule();
     private List<IReadingModule> _modules;
 
     private Dictionary<Type, IReadingModule> _moduleLookup = new Dictionary<Type, IReadingModule>();
@@ -39,6 +40,7 @@ internal class ModuleHandler
                 }
             }
         }
-        return null;
+        _moduleLookup.Add(t, _fallbackModule);
+        return _fallbackModule;
     }
 }

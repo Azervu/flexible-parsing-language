@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Modules
 {
-    internal class CollectionParsingModule : IReadingModule
+    internal class FallbackModule : IReadingModule
     {
         public List<Type> HandledTypes => [typeof(IList), typeof(IDictionary)];
 
@@ -45,21 +45,24 @@ namespace FlexibleParsingLanguage.Modules
 
         IEnumerable<KeyValuePair<object, object>> IReadingModule.Foreach(object raw)
         {
+            var result = new List<KeyValuePair<object, object>>();
             switch (raw)
             {
                 case IList x:
                     for (var i = 0; i < x.Count; i++)
-                        yield return new KeyValuePair<object, object>(i, x[i]);
-                    break;
-                case IDictionary x:
-                    foreach (var k in x.Keys)
-                        yield return new KeyValuePair<object, object>(k, x[k]);
-                    break;
+                        result.Add(new KeyValuePair<object, object>(i, x[i]));
+                    return result;
+                case IDictionary dict:
+                    foreach (var key in dict.Keys)
+                        result.Add(new KeyValuePair<object, object>(key, dict[key]));
+                    return result;
+                case IEnumerable it:
+                    var n = 0;
+                    foreach (var item in it)
+                        result.Add(new KeyValuePair<object, object>(n++, item));
+                    return result;
                 default:
-#if DEBUG
-                    throw new Exception($"Tried to Foreach to {raw?.GetType().FullName ?? "null"} ");
-#endif
-                    break;
+                    return result;
             }
         }
     }

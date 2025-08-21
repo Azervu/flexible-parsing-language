@@ -38,12 +38,6 @@ internal class CollectionWritingModule : IWritingModule
 
     public void Append(object target, object? val)
     {
-
-
-
-
-
-
         switch (target)
         {
             case IList list:
