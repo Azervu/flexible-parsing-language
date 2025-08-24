@@ -20,20 +20,27 @@ internal static partial class FplOperation {
 
         var accessor = op.Input[1];
 
-        if (op.Input.Count > 2)
+
+
+        var parameters = CompiledParameter.CompileParameters(parser, op, 1);
+        var dynamic = parameters.Any(x => !x.IsLiteral);
+
+
+        if (dynamic || parameters.Count > 2)
         {
             var id = op.GetStatusId(parser);
 
             foreach (var x in FplOperation.EnsureLoaded(parser, op))
                 yield return x;
 
-            var parameters = CompiledParameter.CompileParameters(parser, op, 1);
-            yield return new ParseOperation(op, (q, c, d) => OperationMultiRead(q, c, d, parameters), id);
+            yield return new ParseOperation(op, (q, c, d) => OperationDynamicRead(q, c, d, parameters), id);
         }
-        else if (accessor.Accessor == null)
+        /*
+        else if (parameters.Count > 2)
         {
-            yield return new ParseOperation(op, OperationReadDynamic, accessor.Id);
+            yield return new ParseOperation(op, (q, c, d) => OperationMultiRead(q, c, d, parameters), accessor.Id);
         }
+        */
         else if (accessor.Type.SequenceType.All(OpSequenceType.Literal))
         {
             yield return new ParseOperation(op, OperationRead, accessor.Accessor);
@@ -77,7 +84,7 @@ internal static partial class FplOperation {
         context.ReadFunc(d.Id, (m, readSrc) => m.Parse(readSrc, d.IntAcc));
     }
 
-    private static void OperationMultiRead(FplQuery q, ParsingContext c, ParseOperationData d, List<CompiledParameter> parameters)
+    private static void OperationDynamicRead(FplQuery q, ParsingContext c, ParseOperationData d, List<CompiledParameter> parameters)
     {
         var result = new List<FocusEntry>();
 
@@ -106,7 +113,7 @@ internal static partial class FplOperation {
                 result.Add(new FocusEntry
                 {
                     Key = new ValueWrapper(d.StringAcc),
-                    Value = new ValueWrapper(x),
+                    Value = new ValueWrapper(x),    
                     SequenceId = ps.SequenceId,
                 });
             }
@@ -114,37 +121,24 @@ internal static partial class FplOperation {
         c.Focus.NextRead(d.Id, result);
     }
 
-    private static void OperationReadDynamic(FplQuery parser, ParsingContext context, ParseOperationData d)
+    private static void OperationMultiRead(FplQuery parser, ParsingContext context, ParseOperationData d, List<CompiledParameter> parameters)
     {
-        var focus = context.Focus.Store[d.IntAcc];
-        var ww = context.Focus.Writes[context.Focus.Active.WriteId];
-        var rr = context.Focus.Reads[focus.ReadId];
-        var intersections = context.Focus.GenerateSequencesIntersection(
-            ww, ww.Select(x => x.SequenceId).ToList(),
-            rr, rr.Select(x => x.SequenceId).ToList()
-        );
+        var result = new List<FocusEntry>();
 
-        foreach (var x in intersections)
+        //TODO implement multi read
+
+        /*
+        foreach (var p in parameters)
         {
-            foreach (var r in x.AVal.Foci)
-            {
-                context.ReadFunc(d.Id, (m, readSrc) =>
-                {
-                    switch (r.Value.V)
-                    {
-                        case byte i:
-                            return m.Parse(readSrc, i);
-                        case long i:
-                            return m.Parse(readSrc, (int)i);
-                        case int i:
-                            return m.Parse(readSrc, i);
-                        case string s:
-                            return m.Parse(readSrc, s);
-                        default:
-                            return m.Parse(readSrc, r.Value.V.ToString());
-                    }
-                });
-            }
+            object x;
+            if (int.TryParse(p.CompiledParameter.Accessor, out var i))
+                x = m.Parse(ps.Primary, i);
+            else
+                x = m.Parse(ps.Primary, p.CompiledParameter.Accessor);
         }
+        */
+
     }
+
+
 }

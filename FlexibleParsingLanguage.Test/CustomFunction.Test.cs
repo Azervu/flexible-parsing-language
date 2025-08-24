@@ -275,6 +275,12 @@ public class CustomFunctionTest
         "[101,102,103]"
     )]
     [DataRow(
+        "FindIndex 2",
+        "[{\"header\": [ \"a\", \"b\", \"v\", \"h\" ],\"values\": [ 54, 23, 101, 12, 9 ]},{\"header\": [ \"h\", \"v\", \"a\", \"b\" ],\"values\": [ 23, 102, 75, 12, 9 ]},{\"header\": [ \"h\", \"a\", \"b\", \"v\" ],\"values\": [ 23, 75, 12, 103 ]}]",
+        $"|json*@@s.values[@s.header|index_of('v')]",
+        "[101,102,103]"
+    )]
+    [DataRow(
         "JoinIndexOf",
         "{\"v\": [\"a\", \"b\"], \"h1\": [ \"a1\", \"b1\", \"c1\", \"d1\" ], \"h2\": [ \"a2\", \"b2\", \"c2\", \"d2\" ], \"h3\": [ \"a3\", \"b3\", \"c3\", \"d3\" ], \"n\": [1,2,3,4,5,6,7,8,9]}",
         "|json@@s.v*|join(@s.h1, @s.h2, @s.h3.2, @s.h2|index_of('d2'))",
