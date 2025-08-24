@@ -25,7 +25,7 @@ public partial class FplCompiler
     private Dictionary<string, OpConfig?> Operators = new();
 
 
-    private Dictionary<string, IConverterFunction> _converter = new ();
+    private Dictionary<string, ITransformerFunction> _converter = new ();
     private Dictionary<string, IFilterFunction> _filters = new ();
     private ModuleHandler _modules;
 
@@ -34,7 +34,7 @@ public partial class FplCompiler
         _filters.Add(filter.Name, filter);
     }
 
-    public void RegisterConverter(IConverterFunction converter)
+    public void RegisterConverter(ITransformerFunction converter)
     {
         _converter.Add(converter.Name, converter);
     }

@@ -6,24 +6,26 @@ FPL is intended as a robust and extensible parsing language that comes with XML 
 Supports custom read and write modules as well as conversion and filter functions
 The syntaxt is similar to Json path where applicable
 
-| Operator | Description                            |
-|:---------|:---------------------------------------|
-| `.`      | Operator Separator / Read              |
-| `:`      | Write                                  |
-| `{` `}`  | Write Branching Group Operator         |
-| `(` `)`  | Parameter Grouping                     |
-| `,`      | Group Separator                        |
-| `*`      | Foreach                                |
-| `:*`     | Write Foreach                          | 
-| `~`      | Name                                   |
-| `\|`      | Function call                          | 
-| `#`      | Lookup                                 |
-| `##`     | Change Lookup Context                  |
-| `'` `"`  | Literal Operators                      | 
-| `\`      | Escape Literal                         |
-| `@`      | Context at start of current group      |
-| `$`      | Set read cursor to Root                |
-| `:$`     | Set write cursor to Root               |
+| Operator   | Description                            |
+|:-----------|:---------------------------------------|
+| `.`        | Operator Separator / Read              |
+| `:`        | Write                                  |
+| `{` `}`    | Write Branching Group Operator         |
+| `(` `)`    | Parameter Grouping                     |
+| `,`        | Group Separator                        |
+| `*`        | Foreach                                |
+| `:*`       | Write Foreach                          | 
+| `~`        | Name                                   |
+| `\|`       | Function call                          | 
+| `#`        | Lookup                                 |
+| `##`       | Change Lookup Context                  |
+| `'` `"`    | Literal Operators                      | 
+| `\`        | Escape Literal                         |
+| `@`        | Context at start of current group      |
+| `@<name>`  | Context at point <name>                |
+| `@@<name>` | Save context as <name>                 |
+| `$`        | Set read cursor to Root                |
+| `:$`       | Set write cursor to Root               |
 
 
 

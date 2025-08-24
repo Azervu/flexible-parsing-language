@@ -15,7 +15,7 @@ namespace FlexibleParsingLanguage.Test;
 [TestClass]
 public class CustomFunctionTest
 {
-    class DateTimeParser : IConverterFunction
+    class DateTimeParser : ITransformerFunction
     {
         public string Name => "datetime";
 
@@ -29,7 +29,7 @@ public class CustomFunctionTest
     }
 
 
-    class DoNothing : IConverterFunction
+    class DoNothing : ITransformerFunction
     {
         public string Name => "donothing";
 
@@ -39,7 +39,7 @@ public class CustomFunctionTest
         }
     }
         
-    class DeJsoniserParser : IConverterFunction
+    class DeJsoniserParser : ITransformerFunction
     {
         public string Name => "dejson";
 
@@ -68,7 +68,7 @@ public class CustomFunctionTest
         }
     }
 
-    class Concatenater : IConverterFunction
+    class Concatenater : ITransformerFunction
     {
         public string Name => "concat";
 
@@ -86,7 +86,7 @@ public class CustomFunctionTest
         }
     }
 
-    class Joiner : IConverterFunction
+    class Joiner : ITransformerFunction
     {
         public string Name => "join";
 
@@ -136,7 +136,7 @@ public class CustomFunctionTest
         }
     }
 
-    class IndexReducer : IConverterFunction
+    class IndexReducer : ITransformerFunction
     {
         public string Name => "index_of";
 
@@ -157,7 +157,7 @@ public class CustomFunctionTest
         }
     }
 
-    class ByIndexSelector : IConverterFunction
+    class ByIndexSelector : ITransformerFunction
     {
         public string Name => "by_index";
 

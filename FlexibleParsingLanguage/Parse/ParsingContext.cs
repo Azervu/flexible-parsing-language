@@ -1,12 +1,9 @@
-﻿using System.Text;
+﻿namespace FlexibleParsingLanguage.Parse;
 
-namespace FlexibleParsingLanguage.Parse;
-
-internal partial class ParsingContext
+internal class ParsingContext
 {
     internal IWritingModule WritingModule;
     internal ParsingFocusData Focus;
-    private Type _activeType = null;
     private ModuleHandler _modules;
 
     public ParsingContext(
@@ -21,6 +18,15 @@ internal partial class ParsingContext
         Focus = new ParsingFocusData(parsingConfig, readRoot, writeRoot);
         WritingModule = writingModule;
     }
+
+
+    internal IReadingModule GetReadingModule(ValueWrapper obj) => _modules.LookupModule(obj.V?.GetType() ?? typeof(void));
+
+    internal IReadingModule GetReadingModule(object obj) => _modules.LookupModule(obj?.GetType() ?? typeof(void));
+
+    private object ExtractReadValue(FocusEntry w) => GetReadingModule(w.Value).ExtractValue(w.Value.V);
+
+    internal ValueWrapper TransformReadInner(ValueWrapper raw) => new  ValueWrapper(GetReadingModule(raw).ExtractValue(raw.V));
 
     internal void WriteFlatten(int opId)
     {
@@ -65,23 +71,56 @@ internal partial class ParsingContext
 
     internal void WriteAction(int opId, Func<IWritingModule, ValueWrapper, ValueWrapper> writeFunc) => Focus.Write(opId, (data) => writeFunc(WritingModule, data));
 
-    internal IReadingModule GetReadingModule(ValueWrapper obj)
+    internal IEnumerable<ParameterInfo> GetActiveParameters(List<CompiledParameter> parameters)
     {
-        var t = obj.V?.GetType() ?? typeof(void);
-        return _modules.LookupModule(t);
+        var primaryFocus = Focus.Reads[Focus.Active.ReadId];
+
+        var primarySequences = primaryFocus
+            .Select(x => x.SequenceId)
+            .ToList();
+
+        var secondarySequences = new List<List<int>>();
+        var secondaryFocuses = new List<(int, List<FocusEntry>)>();
+
+        for (var i = 0; i < parameters.Count; i++)
+        {
+            var p = parameters[i];
+            if (p.IsLiteral)
+                continue;
+
+            var node = Focus.Store[p.Id];
+            var secFocus = Focus.Reads[node.ReadId];
+            secondarySequences.Add(secFocus.Select(x => x.SequenceId).ToList());
+            secondaryFocuses.Add((i, secFocus));
+        }
+
+        var sequenceIntersection = Focus.GenerateSequencesIntersectionInner(primarySequences, secondarySequences.ToArray());
+        for (var i = 0; i < sequenceIntersection.Count(); i++)
+        {
+            var (sequenceId, sequenceParameters) = sequenceIntersection[i];
+
+            if (sequenceId == -1)
+                throw new Exception("SequenceId parent = -1");
+
+            var secondaryData = parameters.Select(x => new SecondaryParamInfo { CompiledParameter = x, Value = x.Accessor }).ToArray();
+
+            for (var dynamicParamIndex = 0; dynamicParamIndex < sequenceParameters.Length; dynamicParamIndex++)
+            {
+                var sp = sequenceParameters[dynamicParamIndex];
+                var (j, secondaryFocusEntries) = secondaryFocuses[dynamicParamIndex];
+                var value = sp.Multiread
+                    ? sp.Foci.Select(k => ExtractReadValue(secondaryFocusEntries[k.Index])).ToList()
+                    : ExtractReadValue(secondaryFocusEntries[sp.Foci[0].Index]);
+
+                secondaryData[j].Value = value;
+            }
+
+            yield return new ParameterInfo
+            {
+                Primary = ExtractReadValue(primaryFocus[i]),
+                SequenceId = sequenceId,
+                Secondary = secondaryData
+            };
+        }
     }
-
-    internal IReadingModule GetReadingModuleFromValue(object v)
-    {
-        return _modules.LookupModule(v?.GetType() ?? typeof(void));
-    }
-
-
-    internal ValueWrapper TransformReadInner(ValueWrapper raw)
-    {
-        var v = GetReadingModule(raw).ExtractValue(raw.V);
-        return new ValueWrapper(v);
-    }
-
-
 }

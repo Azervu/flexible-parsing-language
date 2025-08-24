@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace FlexibleParsingLanguage.Converter;
 
-internal class JsonConverter : IConverterFunction
+internal class JsonConverter : ITransformerFunction
 {
     public string Name => "json";
 

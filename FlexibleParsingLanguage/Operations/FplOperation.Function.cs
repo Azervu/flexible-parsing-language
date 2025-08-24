@@ -43,10 +43,10 @@ internal partial class FplOperation
 
         var parameters = CompiledParameter.CompileParameters(parser, op);
 
-        return CompileSaveUtil(parser, op, -1, [new ParseOperation(op, (q, c, d) => OperationFunctionFilter(q, c, d, parameters, func))]);
+        return CompileSaveUtil(parser, op, -1, [new ParseOperation(op, (q, c, d) => OperationFilterFunction(q, c, d, parameters, func))]);
     }
 
-    internal static IEnumerable<ParseOperation> CompileTransformerFunction(ParseData parser, RawOp op, IConverterFunction converter)
+    internal static IEnumerable<ParseOperation> CompileTransformerFunction(ParseData parser, RawOp op, ITransformerFunction converter)
     {
         var id = op.GetStatusId(parser);
 
@@ -55,26 +55,54 @@ internal partial class FplOperation
 
         var parameters = CompiledParameter.CompileParameters(parser, op);
 
-        yield return new ParseOperation(op, (q, c, d) => c.OperationFunctionConvertMultiParam(q, d, parameters, converter.Convert));
+        yield return new ParseOperation(op, (q, c, d) => c.OperationTransformerFunction(q, d, parameters, converter.Convert));
 
         parser.LoadedId[0] = id;
 
         foreach (var x in FplOperation.EnsureSaved(parser, op))
             yield return x;
-
-        var sequences = new List<int>();
     }
 
-    internal static void OperationFunctionFilter(FplQuery query, ParsingContext context, ParseOperationData d, List<CompiledParameter> parameters, IFilterFunction filter)
+
+    internal static void OperationTransformerFunction(this ParsingContext c, FplQuery parser, ParseOperationData data, List<CompiledParameter> parameters, Func<object, object[], object> converter)
     {
-        context.Focus.ReadMultiParamForeach(d.Id, parameters, (w, p) =>
+#if DEBUG
+        c.Focus.ValidateTree();
+#endif
+        var result = new List<FocusEntry>();
+        foreach (var p in c.GetActiveParameters(parameters))
         {
-            var raw = context.GetReadingModule(w.Value).ExtractValue(w.Value.V);
+            var v = converter.Invoke(p.Primary, p.Secondary.Select(x => x.Value).ToArray());
+            result.Add(new FocusEntry
+            {
+                Key = new ValueWrapper(data.StringAcc),
+                Value = new ValueWrapper(v),
+                SequenceId = p.SequenceId,
+            });
+        }
+        c.Focus.NextRead(data.Id, result);
 
-            if (filter.Filter(raw, p))
-                return [new KeyValuePair<object, object>(w.Key.V, w.Value.V)];
+#if DEBUG
+        c.Focus.ValidateTree();
+#endif
+    }
 
-            return [];
-        });
+    internal static void OperationFilterFunction(FplQuery query, ParsingContext c, ParseOperationData d, List<CompiledParameter> parameters, IFilterFunction filter)
+    {
+        var result = new List<FocusEntry>();
+        foreach (var p in c.GetActiveParameters(parameters))
+        {
+            if (filter.Filter(p.Primary, p.Secondary.Select(x => x.Value).ToArray()))
+            {
+                result.Add(new FocusEntry
+                {
+                    Key = new ValueWrapper(d.StringAcc),
+                    Value = new ValueWrapper(p.Primary),
+                    SequenceId = p.SequenceId,
+                });
+            }
+
+        }
+        c.Focus.NextRead(d.Id, result);
     }
 }

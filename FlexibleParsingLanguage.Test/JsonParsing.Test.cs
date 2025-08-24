@@ -31,6 +31,7 @@ public class JsonParsingTest
 
         new object[] { "Branch Example", """[{"k1":1, "k2": 11}, {"k1":2, "k2": 12}, {"k1":3, "k2": 13}]""", "*:*{@.k1:h1}k2:h2", """[{"h1":1,"h2":11},{"h1":2,"h2":12},{"h1":3,"h2":13}]""" },
 
+        new object[] { "Multi Read foreach", "[1,7,2,7,7,3,4]", "[0,2,5]", "[1,2,3]" },
 
         new object[] { "Single Query With Header", "{ \"k\": \"test_v\" }", "k:h", "{\"h\":\"test_v\"}" },
         new object[] { "Single Query", "{ \"k\": \"test_v\" }", "k", "[\"test_v\"]" },
@@ -74,6 +75,10 @@ public class JsonParsingTest
         new object[] { "Foreach Header", "[[1,2],[3]]", "**:*:v", "[{'v':1},{'v':2},{'v':3}]"},
 
         new object[] { "Group Accessor Test", "{'a': { 'b': { 't28': 'v' } }, 'metadata': {'idkey': 't28'}}", "a.b($metadata.idkey)", "['v']" },
+
+        new object[] { "Multi Group Accessor Test", "{'a': { 'b': { 't28': 'v', 'x31': 'v2' } }, 'metadata': {'idkey': 't28'}}", "a.b($metadata.idkey, 'x31')", "['v','v2']" },
+
+
 
         new object[] { "Root vs Param Test A", "[{'n': 'a', 'v':1},{'n': 'b', 'v':2}]", "*:*{$*n:nn}v:w", "[{'nn':['a','b'],'w':1},{'nn':['a','b'],'w':2}]"},
         new object[] { "Root vs Param Test B", "[{'n': 'a', 'v':1},{'n': 'b', 'v':2}]", "*:*{@.n:nn}v:w", "[{'nn':'a','w':1},{'nn':'b','w':2}]"},

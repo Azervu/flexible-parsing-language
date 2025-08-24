@@ -24,7 +24,7 @@ public interface IWritingModule
     public void Append(object target, object? val);
 }
 
-public interface IConverterFunction
+public interface ITransformerFunction
 {
     public string Name { get; }
     public object Convert(object value, object[] param);

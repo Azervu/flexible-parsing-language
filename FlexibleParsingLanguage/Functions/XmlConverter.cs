@@ -9,7 +9,7 @@ using System.Xml;
 
 namespace FlexibleParsingLanguage.Converter;
 
-internal class XmlConverter : IConverterFunction
+internal class XmlConverter : ITransformerFunction
 {
     public string Name => "xml";
 

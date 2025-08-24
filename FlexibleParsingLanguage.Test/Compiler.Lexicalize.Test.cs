@@ -14,6 +14,8 @@ public class TokenizerTest
         new object[] {"Redundancies", "$b.#c{@.d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)"},
         new object[] {"Non redundant", "b#c{@.d}", "1.($,'b')  2#(1,'c')  3{(2)  4.(2,'d')  5{(4)" },
 
+        new object[] {"Multi Read", "['a','b','c']", "1.($,'a','b','c')  2{(1)" },
+
         new object[] {"EscapeSimple", "a'ee\\'e'", "1.($,'a')  2.(1,'ee\\'e')  3{(2)"},
 
         new object[] {"Escape", "a.b'ee\\'e'c.d", "1.($,'a')  2.(1,'b')  3.(2,'ee\\'e')  4.(3,'c')  5.(4,'d')  6{(5)"},

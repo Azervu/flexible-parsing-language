@@ -1,8 +1,6 @@
 ﻿using FlexibleParsingLanguage.Compiler;
-using System.Text;
 
 namespace FlexibleParsingLanguage.Parse;
-
 
 internal struct ParseOperationData
 {

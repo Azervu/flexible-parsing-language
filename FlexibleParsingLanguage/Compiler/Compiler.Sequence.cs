@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Numerics;
-using System.Reflection;
-using System.Runtime.Intrinsics.Arm;
-using System.Security.Principal;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+﻿using System.Text;
 
 namespace FlexibleParsingLanguage.Compiler;
 
 public partial class FplCompiler
 {
+
+    private enum PrefixType : byte
+    {
+        Left = 0,
+        Right = 1
+    }
+
     internal void Sequence(ref List<RawOp> ops)
     {
         var data = new SequenceProccessData();
@@ -146,8 +141,6 @@ public partial class FplCompiler
         var pre = op.IsPrefix();
         var opt = op.IsOptFix();
 
-
-
         if (!post && !pre && !opt && !op.Type.SequenceType.All(OpSequenceType.Named))
             return;
 
@@ -177,7 +170,7 @@ public partial class FplCompiler
 
             if (targetIndex != -1)
             {
-                AddInput(data, parentChildren, targetIndex, op, 1);
+                AddInput(data, parentChildren, targetIndex, op, PrefixType.Left);
             }
             else if (parent.Type.SequenceType.All(OpSequenceType.Branching | OpSequenceType.LeftInput))
             {
@@ -217,7 +210,7 @@ public partial class FplCompiler
 
             if (targetIndex != -1)
             {
-                AddInput(data, parentChildren, targetIndex, op, 2);
+                AddInput(data, parentChildren, targetIndex, op, PrefixType.Right);
             }
             else if (parent.Type.SequenceType.All(OpSequenceType.Branching | OpSequenceType.RightInput))
             {
@@ -229,8 +222,6 @@ public partial class FplCompiler
                 throw new QueryException(op, $"Prefix operator lacks input");
             }
         }
-
-
 
         if (opt)
         {
@@ -254,18 +245,12 @@ public partial class FplCompiler
                 }
             }
 
-
             if (targetIndex != -1)
-            {
-                AddInput(data, parentChildren, targetIndex, op, 3);
-            }
-
+                AddInput(data, parentChildren, targetIndex, op, PrefixType.Right);
         }
     }
 
-
-
-    private void AddInput(SequenceProccessData data, List<int> sourceChildren, int sourceIndex, RawOp target, int prefixIndex)
+    private void AddInput(SequenceProccessData data, List<int> sourceChildren, int sourceIndex, RawOp target, PrefixType prefixType)
     {
 
         var id = sourceChildren[sourceIndex];
@@ -273,49 +258,40 @@ public partial class FplCompiler
 
         if (target.Type.SequenceType.All(OpSequenceType.Branching))
         {
-            if (prefixIndex == 1)
+            if (prefixType == PrefixType.Left)
                 target.LeftInput.Add(op);
             else
                 target.RightInput.Add(op);
-
             return;
         }
 
         sourceChildren.RemoveAt(sourceIndex);
 
         var targetChildren = data.Ops[target.Id].AffixChildren;
-
-        //if (!op.Type.SequenceType.All(OpSequenceType.Group))
-         data.AffixParents[id] = (target.Id, 0);
+        data.AffixParents[id] = (target.Id, 0);
 
         if (targetChildren.Count == 0)
             targetChildren.Add([]);
-        else if (targetChildren.Count() > 1)
-            throw new Exception();
 
-        var tg = targetChildren[0];
-
-
-        switch (prefixIndex)
+        switch (prefixType)
         {
-
-            case 1:
-                tg.Insert(0, id);
-                target.PostFixed = true;
-                target.LeftInput.Add(op);
+            case PrefixType.Left:
+                foreach (var tg in targetChildren)
+                {
+                    tg.Insert(0, id);
+                    target.PostFixed = true;
+                    target.LeftInput.Add(op);
+                }
                 break;
-            case 2:
-                tg.Add(id);
-                target.Prefixed = true;
-                target.RightInput.Add(op);
-                break;
-            case 3:
-                tg.Add(id);
-                target.OptFixed = true;
-                target.RightInput.Add(op);
+            case PrefixType.Right:
+                foreach (var tg in targetChildren)
+                {
+                    tg.Add(id);
+                    target.Prefixed = true;
+                    target.RightInput.Add(op);
+                }
                 break;
         }
-
 
         foreach (var input in target.LeftInput)
         {
@@ -344,8 +320,6 @@ public partial class FplCompiler
 
                 var c = ((int)OpSequenceType.VirtualInput) % ((int)op.Type.SequenceType); 
                 var a = (int)op.Type.SequenceType;
-                var b = (int)OpSequenceType.VirtualInput;
-
 
                 removes.Add(i);
                 continue;

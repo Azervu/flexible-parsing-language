@@ -5,13 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace FlexibleParsingLanguage.Compiler;
 
 public partial class FplCompiler
 {
-
     private void HandleInput(Dictionary<int, (int, OpCompileType)> ctx, Func<RawOp, List<RawOp>> extractTest, RawOp op)
     {
         if (!ctx.TryGetValue(op.Id, out var v))
@@ -36,17 +34,13 @@ public partial class FplCompiler
         }
     }
 
-
-
     internal FplQuery CompileOperations(List<RawOp> ops, ParsingMetaContext configContext, string query)
     {
         OpCompileType rootType = OpCompileType.None;
         var compiles = new List<ParseOperation>();
         var ranks = new HashSet<int>();
 
-        var readInput = new Dictionary<int, (int, OpCompileType)>();
-        var readOutput = new Dictionary<int, (int, OpCompileType)>();
-        var writeInput = new Dictionary<int, (int, OpCompileType)>();
+
         var writeOutput = new Dictionary<int, (int, OpCompileType)>();
         foreach (var op in ops)
         {
@@ -55,34 +49,18 @@ public partial class FplCompiler
             var rt = ct & (OpCompileType.ReadArray | OpCompileType.ReadObject);
 
             if (wt != OpCompileType.None)
-            {
-                writeInput[op.Id] = (op.Id, wt);
                 writeOutput[op.Id] = (op.Id, wt);
-            }
 
-            if (rt != OpCompileType.None)
-            {
-                readInput[op.Id] = (op.Id, rt);
-                readOutput[op.Id] = (op.Id, rt);
-            }
         }
 
         foreach (var op in ops)
-        {
-            HandleInput(readInput, (x) =>  x.Output, op);
-            HandleInput(writeInput, (x) => x.Output, op);
-            HandleInput(readOutput, (x) => x.Input, op);
             HandleInput(writeOutput, (x) => x.Input, op);
-        }
 
         var parseData = new ParseData
         {
             Filters = _filters,
             Converter = _converter,
             LoadedId = [RootId],
-            ReadInput = readInput,
-            WriteInput = writeInput,
-            ReadOutput = readOutput,
             WriteOutput = writeOutput,
         };
 

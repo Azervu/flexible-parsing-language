@@ -1,4 +1,5 @@
 ﻿using FlexibleParsingLanguage.Compiler;
+using System.Security.Cryptography;
 
 namespace FlexibleParsingLanguage.Parse;
 
@@ -30,7 +31,12 @@ internal partial struct ParsesOperationType
 
     internal static void Save(FplQuery parser, ParsingContext context, ParseOperationData op) => context.Focus.Save(op.Id);
     internal static void Load(FplQuery parser, ParsingContext context, ParseOperationData op) => context.Focus.Load(op.IntAcc);
-    internal static void ReadName(FplQuery parser, ParsingContext context, ParseOperationData op) => context.ReadName(op.Id);
+    internal static void ReadName(FplQuery parser, ParsingContext context, ParseOperationData op) => context.Focus.ReadInner(op.Id, (focus) => new FocusEntry
+    {
+        Key = focus.Key,
+        Value = focus.Key,
+        SequenceId = focus.SequenceId
+    });
     internal static void WriteFromRead(FplQuery parser, ParsingContext context, ParseOperationData d) => context.WriteStringFromRead(d.StringAcc);
     internal static void WriteFlatten(FplQuery parser, ParsingContext context, ParseOperationData d)
     {
