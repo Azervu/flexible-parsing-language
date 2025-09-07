@@ -7,26 +7,6 @@ namespace FlexibleParsingLanguage.Compiler;
 
 public partial class FplCompiler
 {
-    private struct Token
-    {
-        internal OpConfig? Op;
-        internal string? Accessor;
-        internal int Index;
-
-        internal Token(OpConfig op, int i)
-        {
-            Op = op;
-            Index = i;
-        }
-
-        internal Token(OpConfig? op, string accessor, int i)
-        {
-            Op = op;
-            Accessor = accessor;
-            Index = i;
-        }
-    }
-
     private IEnumerable<Token> Tokenize(string raw)
     {
         var searchedIndex = 0;
@@ -142,4 +122,6 @@ public partial class FplCompiler
             yield return new Token(op, escapedString, opStart);
         }
     }
+
+
 }

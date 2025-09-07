@@ -12,24 +12,39 @@ public class QueryException : Exception
 
     internal string Query { get; set; }
 
+    internal string RawQuery { get; set; }
+
+    internal string RawMessage { get; set; }
+
     internal List<RawOp> Ops { get; private set; }
     internal QueryException
-        (RawOp op, string message, bool compilerIssue = false) : base(message) {
+        (RawOp op, string message, bool compilerIssue = false, Exception ex = null) : base(message, ex) {
+        RawMessage = message;
         Ops = new List<RawOp> { op };
         CompilerIssue = compilerIssue;
     }
 
     internal QueryException(List<RawOp> ops, string message, bool compilerIssue = false) : base(message) {
+        RawMessage = message;
         Ops = ops;
         CompilerIssue = compilerIssue;
     }
 
-    public override string Message => GenerateMessage();
+    internal string _message;
+    public override string Message
+    {
+        get
+        {
+            if (_message == null)
+                _message = GenerateMessage();
+            return _message;
+        }
+    }
 
     public string GenerateMessage()
     {
         var log = new StringBuilder(Ops.Count > 0
-            ? $" | op = {Ops[0].Type.Operator}{(string.IsNullOrEmpty(Ops[0].Accessor) ? string.Empty : $"'{Ops[0].Accessor}'")} | message = {base.Message}"
+            ? $" | op = {Ops[0].Type.Operator}{(string.IsNullOrEmpty(Ops[0].Accessor) ? string.Empty : $"'{Ops[0].Accessor}'")}({Ops[0].Id}) | origQuery = {RawQuery} | message = {base.Message}\n{InnerException?.StackTrace.ToString()}"
             : base.Message
         );
 

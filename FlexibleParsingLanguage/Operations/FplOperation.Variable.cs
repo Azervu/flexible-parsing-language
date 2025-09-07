@@ -11,64 +11,64 @@ internal static partial class FplOperation
 {
     internal static readonly OpConfig SetVariable = new OpConfig("@@", OpSequenceType.LeftInput | OpSequenceType.Virtual | OpSequenceType.Named | OpSequenceType.Branching)
     {
-        Sequence = SetVariableAction
+        Sequence = SequenceSetVariable
     };
 
     internal static readonly OpConfig AccessVariable = new OpConfig("@", OpSequenceType.Virtual | OpSequenceType.Named)
     {
-        Sequence = AccessVariableAction
+        Sequence = SequenceAccessVariable
     };
 
-    private static void SetVariableAction(SequenceProccessData data, RawOp op)
+    private static void SequenceSetVariable(SequenceProccessData data, RawOp op)
     {
         if (op.Name == string.Empty)
             throw new QueryException(op, "SetVariable name cannot be empty");
 
-        /*
-        RawOp seek = op;
-
-        while (true)
-        {
-            if (!data.AffixParents.TryGetValue(seek.Id, out var x))
-                throw new QueryException(op, $"Variable '{op.Name}' not found in the current context. Ensure it is defined before use.");
-
-            var parentChildren = data.Ops[x.ParentId].AffixChildren[x.Index];
-            var index = parentChildren.IndexOf(seek.Id);
-
-            if (index == -1)
-                throw new QueryException(op, $"Index not found in ({x.ParentId}, {x.Index}) [{parentChildren.Select(x => x.ToString()).Join(", ")}]");
-
-            if (index > 0)
-                seek = data.Ops[parentChildren[index - 1]];
-            else
-                seek = data.Ops[x.ParentId];
-
-            if (seek.Type.SequenceType.Any(OpSequenceType.Root) || !seek.Type.SequenceType.Any(OpSequenceType.Branching | OpSequenceType.VirtualInput))
-                break;
-        }
-                data.OpReferences[op.Name] = seek;
-        */
-
-        data.OpReferences[op.Name] = op.LeftInput[0];
+        var input = op.LeftInput[0];
+        op.ReadId = data.ActiveReadId;
+        op.WriteId = data.ActiveWriteId;
+        data.OpReferences[op.Name] = input;
     }
 
-    private static void AccessVariableAction(SequenceProccessData data, RawOp op)
+    /*
+RawOp seek = op;
+
+while (true)
+{
+    if (!data.AffixParents.TryGetValue(seek.Id, out var x))
+        throw new QueryException(op, $"Variable '{op.Name}' not found in the current context. Ensure it is defined before use.");
+
+    var parentChildren = data.Ops[x.ParentId].AffixChildren[x.Index];
+    var index = parentChildren.IndexOf(seek.Id);
+
+    if (index == -1)
+        throw new QueryException(op, $"Index not found in ({x.ParentId}, {x.Index}) [{parentChildren.Select(x => x.ToString()).Join(", ")}]");
+
+    if (index > 0)
+        seek = data.Ops[parentChildren[index - 1]];
+    else
+        seek = data.Ops[x.ParentId];
+
+    if (seek.Type.SequenceType.Any(OpSequenceType.Root) || !seek.Type.SequenceType.Any(OpSequenceType.Branching | OpSequenceType.VirtualInput))
+        break;
+}
+        data.OpReferences[op.Name] = seek;
+*/
+
+
+
+    private static void SequenceAccessVariable(SequenceProccessData data, RawOp op)
     {
-        if (op.Name != string.Empty)
-        {
-            if (!data.OpReferences.ContainsKey(op.Name))
-                throw new QueryException(op, $"No variable named '{op.Name}'");
+        var name = string.IsNullOrWhiteSpace(op.Name) ? op.FallbackAccessor : op.Name;
 
-            op.LeftInput.Add(data.OpReferences[op.Name]);
-        }
-        else
-        {
-            RawOp? ctx = null;
-            var (ancestorId, i) = data.GroupParents[op.Id];
-            var ancestor = data.Ops[ancestorId];
+        RawOp seek = null;
+        if (string.IsNullOrEmpty(name))
+            seek = data.Ops[data.RootOperatorId];
+        else if (!data.OpReferences.TryGetValue(name, out seek))
+            throw new QueryException(op, $"No variable named '{op.Name}'");
 
-            if (ancestor.LeftInput.Count >= 0)
-                op.LeftInput.Add(ancestor.LeftInput[0]);
-        }
+        data.ActiveReadId = seek.ReadId;
+        data.ActiveWriteId = seek.WriteId;
+        op.LeftInput.Add(seek);
     }
 }

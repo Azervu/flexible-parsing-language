@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,11 +9,10 @@ namespace FlexibleParsingLanguage.Parse;
 
 internal static class ParsingFocusDataExtension
 {
-    internal static List<SequenceIntersection<FocusEntry, FocusEntry>> GenerateSequencesIntersectionWriteRead(this ParsingFocusData data)
+    internal static List<SequenceIntersection<FocusEntry, FocusEntry>> GenerateSequencesIntersectionWriteRead(this ParsingFocusData data, int writeId, int readId)
     {
-        var w = data.Writes[data.Active.WriteId];
-        var r = data.Reads[data.Active.ReadId];
-        var s = data.Sequences;
+        var w = data.Writes[writeId];
+        var r = data.Reads[readId];
         return data.GenerateSequencesIntersection(
             w, w.Select(x => x.SequenceId).ToList(),
             r, r.Select(x => x.SequenceId).ToList()
@@ -40,36 +40,4 @@ internal static class ParsingFocusDataExtension
             a, a.Select(x => x.SequenceId).ToList()
         );
     }
-
-
-
-
-    internal static void WriteFromRead(this ParsingFocusData data, Func<FocusEntry, ValueWrapper> extractRead, Action<WriteParam> action)
-    {
-        var ws = data.GenerateSequencesIntersectionWriteRead();
-        foreach (var rw in ws)
-        {
-            var write = rw.Primary;
-            var read = rw.AVal;
-
-            if (read.Foci.Count == 0)
-                throw new Exception("no reads in sequence");
-            var p = new WriteParam(read.Foci.Select(extractRead).ToList(), rw.Primary.Value, read.Multiread);
-            action(p);
-        }
-    }
-
-
-    internal static void WriteFlatten(this ParsingFocusData data, int opId, Func<ValueWrapper, ValueWrapper> writeTransform)
-    {
-        data.NextWrite(opId,
-            data.GenerateSequencesIntersectionWriteRead()
-            .SelectMany(x => x.AVal.Foci.Select(r => new FocusEntry { SequenceId = r.SequenceId, Value = writeTransform(x.Primary.Value) }))
-            .ToList()
-        );
-    }
-
-
-
-
 }

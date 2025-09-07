@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace FlexibleParsingLanguage.Parse;
 
@@ -21,7 +22,25 @@ internal class ParsingFocusData
     internal Dictionary<int, List<FocusEntry>> Writes { get; set; }
     internal Dictionary<int, List<ConfigEntry>> Configs { get; set; }
 
-    internal ParsingNode Active { get; set; }
+    private ParsingNode _active;
+    internal ParsingNode Active {
+        get
+        {
+            return _active;
+        }
+        
+        set
+        {
+
+#if DEBUG
+            if (value.ReadId == 10)
+            {
+                var s = 456;
+            }
+#endif
+            _active = value;
+        }
+    }
 
     internal ParsingFocusData(ParsingMetaContext parsingConfig, object readRoot, object writeRoot)
     {
@@ -31,57 +50,30 @@ internal class ParsingFocusData
 
         Reads = new Dictionary<int, List<FocusEntry>>
         {
-            { 1, [ new FocusEntry { Value = new ValueWrapper(readRoot), SequenceId = SequenceIdCounter } ] }
+            { FplCompiler.ReadRootId, [ new FocusEntry { Value = new ValueWrapper(readRoot), SequenceId = SequenceIdCounter } ] }
         };
 
         Writes = new Dictionary<int, List<FocusEntry>>
         {
-            { 1, [ new FocusEntry { Value = new ValueWrapper(writeRoot), SequenceId = SequenceIdCounter } ] }
+            { FplCompiler.ReadRootId, [ new FocusEntry { Value = new ValueWrapper(writeRoot), SequenceId = SequenceIdCounter } ] }
         };
 
         Configs = new Dictionary<int, List<ConfigEntry>>
         {
-            { 1, [new ConfigEntry(parsingConfig, SequenceIdCounter) ] }
+            { FplCompiler.ReadRootId, [new ConfigEntry(parsingConfig, SequenceIdCounter) ] }
         };
 
-        Active = new ParsingNode(1, 1, 1);
+        Active = new ParsingNode(FplCompiler.ReadRootId, FplCompiler.WriteRootId, FplCompiler.ReadRootId);
         Store = new Dictionary<int, ParsingNode> {
-            { Compiler.FplCompiler.RootId, Active }
+            { Compiler.FplCompiler.ReadRootId, new ParsingNode(FplCompiler.ReadRootId, FplCompiler.WriteRootId, FplCompiler.ReadRootId, [ new FocusEntry { Value = new ValueWrapper(readRoot), SequenceId = SequenceIdCounter } ]) },
+            //{ Compiler.FplCompiler.WriteRootId, new ParsingNode(FplCompiler.ReadRootId, FplCompiler.WriteRootId, FplCompiler.ReadRootId, [ new FocusEntry { Value = new ValueWrapper(writeRoot), SequenceId = SequenceIdCounter } ]) }
         };
     }
-
-    internal void Save(int id)
-    {
-        Store[id] = Active;
-        Store[id] = Active;
-    }
-
-    internal void Load(int id)
-    {
-        Active = Store[id];
-    }
-
-    internal void LoadRead(int id)
-    {
-        var readId = Store[id].ReadId;
-        Active = new ParsingNode(readId, Active.WriteId, Active.ConfigId);
-    }
-
-    internal void LoadWrite(int id)
-    {
-        var writeId = Store[id].WriteId;
-        Active = new ParsingNode(Active.ReadId, writeId, Active.ConfigId);
-    }
-
-    internal void Read(int opId, Func<ValueWrapper, KeyValuePair<ValueWrapper, ValueWrapper>> transform) => ReadInner(opId, x =>
-    {
-        var kv = transform(x.Value);
-        return new FocusEntry { Key = kv.Key, Value = kv.Value, SequenceId = x.SequenceId, };
-    });
 
     internal void ReadInner(int opId, Func<FocusEntry, FocusEntry> transform)
     {
-        NextRead(opId, Reads[Active.ReadId].Select(transform).ToList());
+        Reads[opId] = Reads[Active.ReadId].Select(transform).ToList();
+        Active = new ParsingNode(opId, Active.WriteId, Active.ConfigId);
     }
 
     internal void NextRead(int opId, List<FocusEntry> reads)
@@ -89,37 +81,11 @@ internal class ParsingFocusData
         Reads[opId] = reads;
         Active = new ParsingNode(opId, Active.WriteId, Active.ConfigId);
     }
-
-
-    internal void ReadForeach(int opId, Func<FocusEntry, IEnumerable<KeyValuePair<object, object>>> transformAction)
-    {
-        var result = new List<FocusEntry>();
-        foreach (var r in Reads[Active.ReadId])
-        {
-            foreach (var kv in transformAction(r))
-            {
-                SequenceIdCounter++;
-                result.Add(new FocusEntry
-                {
-                    Key = new ValueWrapper(kv.Key),
-                    Value = new ValueWrapper(kv.Value),
-                    SequenceId = SequenceIdCounter
-                });
-                Sequences[r.SequenceId].ChildrenIds.Add(SequenceIdCounter);
-                Sequences[SequenceIdCounter] = new ParsingSequence { ParentId = r.SequenceId };
-            }
-        }
-        Reads[opId] = result;
-        Active = new ParsingNode(opId, Active.WriteId, Active.ConfigId);
-    }
-
-    internal void Write(int opId, Func<ValueWrapper, ValueWrapper> transform) =>
-        NextWrite(opId, Writes[Active.WriteId].Select((x) => new FocusEntry { Value = transform(x.Value), SequenceId = x.SequenceId }).ToList());
         
-    internal void NextWrite(int opId, List<FocusEntry> next)
+    internal void NextWrite(int writeOpId, List<FocusEntry> next)
     {
-        Writes[opId] = next;
-        Active = new ParsingNode(Active.ReadId, opId, Active.ConfigId);
+        Writes[writeOpId] = next;
+        Active = new ParsingNode(Active.ReadId, writeOpId, Active.ConfigId);
     }
 
     internal void NextConfig(int opId, List<ConfigEntry> next)
@@ -383,26 +349,6 @@ internal struct SequenceIntersectionEntry<T>
     {
         Foci = ii.Foci.Select(x => raw[x.Index]).ToList();
         Multiread = ii.Multiread;
-    }
-}
-
-
-internal struct ParsingNode
-{
-    internal int WriteId { get; private set; }
-    internal int ReadId { get; private set; }
-    internal int ConfigId { get; private set; }
-    internal ParsingNode(int readId, int writeId, int configId)
-    {
-#if DEBUG
-        if (readId == 0 && writeId == 0 && configId == 0)
-            throw new Exception($"read = {readId} | write = {writeId} | config = {configId}");
-#endif
-
-
-        WriteId = writeId;
-        ReadId = readId;
-        ConfigId = configId;
     }
 }
 

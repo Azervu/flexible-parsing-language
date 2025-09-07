@@ -18,7 +18,6 @@ public class OpConfig
     internal Func<ParseData, RawOp, int> GetStatusId { get; set; }
 
     internal Action<SequenceProccessData, RawOp> Sequence { get; set; }
-
     internal Func<ParseData, RawOp, IEnumerable<ParseOperation>> Compile { get; set; }
 
     internal OpConfig(string op, OpSequenceType sequenceType, OpCompileType compileType, Func<ParseData, RawOp, IEnumerable<ParseOperation>> compile = null, string op2 = null)
@@ -30,11 +29,11 @@ public class OpConfig
         Compile = compile;
     }
 
-    internal OpConfig(string op, OpSequenceType type, Func<ParseData, RawOp, IEnumerable<ParseOperation>> compile = null, string op2 = null)
+    internal OpConfig(string op, OpSequenceType type, Func<ParseData, RawOp, IEnumerable<ParseOperation>> compile = null, string groupOperator = null)
     {
         Operator = op;
         SequenceType = type;
-        GroupOperator = op2;
+        GroupOperator = groupOperator;
         Compile = compile;
     }
 }
@@ -63,19 +62,17 @@ internal enum OpSequenceType
     Temp               = 0b_0000_0100_0000_0000_0000,
     Accessor           = 0b_0000_1000_0000_0000_0000,
 
-    VirtualInput           = 0b_0001_0000_0000_0000_0000,
-
 }
 
 [Flags]
 internal enum OpCompileType
 {
-    None        = 0b_0000_0000_0000_0000,
-    WriteObject = 0b_0000_0000_0000_0001,
-    WriteArray  = 0b_0000_0000_0000_0010,
-    Branch      = 0b_0000_0000_0000_0100,
-    ReadObject  = 0b_0000_0000_0010_0000,
-    ReadArray   = 0b_0000_0000_0001_0000,
+    None          = 0b_0000_0000_0000_0000,
+    WriteObject   = 0b_0000_0000_0000_0001,
+    WriteArray    = 0b_0000_0000_0000_0010,
+    WriteFlexible = 0b_0000_0000_0000_0100,
+    ReadObject    = 0b_0000_0000_0010_0000,
+    ReadArray     = 0b_0000_0000_0001_0000,
 }
 
 internal static class OpTypeExtension
@@ -85,4 +82,5 @@ internal static class OpTypeExtension
 
     internal static bool All(this OpCompileType flag, OpCompileType value) => (flag & value) == value;
     internal static bool Any(this OpCompileType flag, OpCompileType value) => (flag & value) > 0;
+    internal static bool None(this OpCompileType flag, OpCompileType value) => (flag & value) == 0;
 }

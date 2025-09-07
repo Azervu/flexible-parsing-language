@@ -44,7 +44,6 @@ public class JsonParsingModule : IReadingModule
 
     IEnumerable<KeyValuePair<object, object>> IReadingModule.Foreach(object raw)
     {
-
         var result = new List<KeyValuePair<object, object>>();
 
         switch (raw)

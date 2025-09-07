@@ -12,9 +12,84 @@ namespace FlexibleParsingLanguage.Operations;
 internal static partial class FplOperation
 {
 
-    internal static readonly OpConfig Lookup = new OpConfig("#", OpSequenceType.RightInput | OpSequenceType.LeftInput, (p, op) => CompileAccessorOperation(p, op, OperationLookup, null, OperationLookupDynamic));
+    internal static readonly OpConfig Lookup = new OpConfig("#", OpSequenceType.RightInput | OpSequenceType.LeftInput, (p, op) => CompileLookup(p, op, OperationLookup, null, OperationLookupDynamic));
 
-    internal static readonly OpConfig ChangeLookupContext = new OpConfig("##", OpSequenceType.RightInput | OpSequenceType.LeftInput, (p, op) => CompileAccessorOperation(p, op, OperationLookupChange, null, OperationLookupChangeDynamic));
+    internal static readonly OpConfig ChangeLookupContext = new OpConfig("##", OpSequenceType.RightInput | OpSequenceType.LeftInput, (p, op) => CompileChangeLookup(p, op, OperationLookupChange, null, OperationLookupChangeDynamic));
+
+    private static IEnumerable<ParseOperation> CompileLookup(
+        ParseData parser,
+        RawOp op,
+        Action<FplQuery, ParsingContext, ParseOperationData> accessorAction,
+        Action<FplQuery, ParsingContext, ParseOperationData>? intAccessorAction,
+        Action<FplQuery, ParsingContext, ParsingNode, ParseOperationData> dynamicAccessorAction
+    )
+    {
+        if (op.Input.Count < 2)
+            throw new QueryException(op, $"{op.Input.Count} params | read takes 2+");
+
+        foreach (var x in CompileLoad(parser, op))
+            yield return x;
+
+        var input = op.Input[0];
+        var accessor = op.Input[1];
+
+        if (accessor.Accessor == null)
+            yield return new ParseOperation(op, (q, c, data) => dynamicAccessorAction(q, c, c.Focus.Store[data.IntAcc], data), accessor.Id);
+        else if (accessor.Type.SequenceType.All(OpSequenceType.Literal))
+            yield return new ParseOperation(op, accessorAction, accessor.Accessor);
+        else if (intAccessorAction != null && int.TryParse(accessor.Accessor, out var intAcc))
+            yield return new ParseOperation(op, intAccessorAction, intAcc);
+        else
+            yield return new ParseOperation(op, accessorAction, accessor.Accessor);
+
+        parser.LoadedId[0] = op.Id;
+
+        foreach (var x in CompileSaved(parser, op))
+            yield return x;
+
+        parser.ActiveReadId = op.Id;
+        op.ReadId = op.Id;
+    }
+
+    private static IEnumerable<ParseOperation> CompileChangeLookup(
+        ParseData parser,
+        RawOp op,
+        Action<FplQuery, ParsingContext, ParseOperationData> accessorAction,
+        Action<FplQuery, ParsingContext, ParseOperationData>? intAccessorAction,
+        Action<FplQuery, ParsingContext, ParsingNode, ParseOperationData> dynamicAccessorAction
+    )
+    {
+        if (op.Input.Count < 2)
+            throw new QueryException(op, $"{op.Input.Count} params | read takes 2+");
+
+        foreach (var x in CompileLoad(parser, op))
+            yield return x;
+
+
+        var input = op.Input[0];
+        var accessor = op.Input[1];
+
+        if (accessor.Accessor == null)
+            yield return new ParseOperation(op, (q, c, data) => dynamicAccessorAction(q, c, c.Focus.Store[data.IntAcc], data), accessor.Id);
+        else if (accessor.Type.SequenceType.All(OpSequenceType.Literal))
+            yield return new ParseOperation(op, accessorAction, accessor.Accessor);
+        else if (intAccessorAction != null && int.TryParse(accessor.Accessor, out var intAcc))
+            yield return new ParseOperation(op, intAccessorAction, intAcc);
+        else
+            yield return new ParseOperation(op, accessorAction, accessor.Accessor);
+
+        parser.LoadedId[0] = op.Id;
+
+        foreach (var x in CompileSaved(parser, op))
+            yield return x;
+
+        parser.ActiveReadId = input.ReadId;
+        op.ReadId = input.ReadId;
+    }
+
+
+
+
 
     internal static void OperationLookup(FplQuery parser, ParsingContext context, ParseOperationData d)
     {
@@ -26,9 +101,7 @@ internal static partial class FplOperation
                 throw new Exception("TODO handle multi read per config");
 #endif
 
-
             var read = r.AVal.Foci[0];
-
             return new FocusEntry
             {
                 Key = new ValueWrapper(d.StringAcc),

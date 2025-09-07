@@ -1,0 +1,11 @@
+﻿
+
+
+
+ParsingFocusData
+-remove ParsingNode Active
+-Reads Writes Configs into single store -> make array
+-consider unify @ $
+-unify config and read
+
+

@@ -4,6 +4,26 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal class ParseData
 {
+
+
+    private int _activeReadId = -1;
+    internal int ActiveReadId
+    {
+        get => _activeReadId;
+        set
+        {
+#if DEBUG
+            if (value == 18)
+            {
+                var s = 3456456;
+            }
+#endif
+            _activeReadId = value;
+        }
+    }
+
+    internal int ActiveWriteId { get; set; } = -1;
+
     internal Dictionary<string, ITransformerFunction> Converter { get; set; }
     internal Dictionary<string, IFilterFunction> Filters { get; set; }
     internal int[] LoadedId { get; set; }

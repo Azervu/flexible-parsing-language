@@ -188,7 +188,7 @@ public class CustomFunctionTest
         compiler.RegisterConverter(new DeJsoniserParser());
         var parser = compiler.Compile(query);
         var result = parser.Parse(payload);
-        Assert.AreEqual("bbb", ((List<object>)result)[0].ToString());
+        Assert.AreEqual("[\"bbb\"]", JsonSerializer.Serialize(result));
     }
 
 
@@ -202,7 +202,7 @@ public class CustomFunctionTest
         compiler.RegisterConverter(new DateTimeParser());
         var parser = compiler.Compile(query);
         var result = parser.Parse(payload);
-        Assert.AreEqual(DateTime.Parse("2024-01-15T19:11:17+00:00").ToUniversalTime(), ((List<object>)result)[0]);
+        Assert.AreEqual(DateTime.Parse("2024-01-15T19:11:17+00:00").ToUniversalTime(), ((IList)result)[0]);
     }
 
     [TestMethod]
@@ -214,8 +214,7 @@ public class CustomFunctionTest
         compiler.RegisterConverter(new Concatenater());
         var parser = compiler.Compile(query);
         var result = parser.Parse(payload);
-        Assert.AreEqual(1, ((List<object>)result).Count);
-        Assert.AreEqual("avbvcv", ((List<object>)result)[0].ToString());
+        Assert.AreEqual("[\"avbvcv\"]", JsonSerializer.Serialize(result));
     }
 
     [TestMethod]
@@ -323,25 +322,4 @@ public class CustomFunctionTest
         var result = parser.Parse(payload);
         Assert.AreEqual(expected, JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = false }));
     }
-
-
-
-
-
-
-
-
-    /*
-    [TestMethod]
-    public void FindIndex2Test()
-    {
-        var payload = "[{\"header\": [ \"a\", \"b\", \"v\", \"h\" ],\"values\": [ 54, 23, 101, 12, 9 ]},{\"header\": [ \"h\", \"v\", \"a\", \"b\" ],\"values\": [ 23, 102, 75, 12, 9 ]},{\"header\": [ \"h\", \"a\", \"b\", \"v\" ],\"values\": [ 23, 75, 12, 103 ]}]";
-        var query = $"|json*@@s.values(@s.header|index_of('v'))";
-        var compiler = new FplCompiler();
-        compiler.RegisterReducer(new IndexReducer());
-        var parser = compiler.Compile(query);
-        var result = parser.Parse(payload);
-        Assert.AreEqual("[101,102,103]", JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = false }));
-    }
-    */
 }

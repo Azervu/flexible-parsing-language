@@ -43,14 +43,18 @@ internal partial class FplOperation
 
         var parameters = CompiledParameter.CompileParameters(parser, op);
 
-        return CompileSaveUtil(parser, op, -1, [new ParseOperation(op, (q, c, d) => OperationFilterFunction(q, c, d, parameters, func))]);
+        foreach (var x in CompileSaveUtil(parser, op, -1, [new ParseOperation(op, (q, c, d) => OperationFilterFunction(q, c, d, parameters, func))]))
+            yield return x;
+
+        op.ReadId = op.Id;
+        parser.ActiveReadId = op.Id;
     }
 
     internal static IEnumerable<ParseOperation> CompileTransformerFunction(ParseData parser, RawOp op, ITransformerFunction converter)
     {
         var id = op.GetStatusId(parser);
 
-        foreach (var x in FplOperation.EnsureLoaded(parser, op))
+        foreach (var x in FplOperation.CompileLoad(parser, op))
             yield return x;
 
         var parameters = CompiledParameter.CompileParameters(parser, op);
@@ -58,9 +62,8 @@ internal partial class FplOperation
         yield return new ParseOperation(op, (q, c, d) => c.OperationTransformerFunction(q, d, parameters, converter.Convert));
 
         parser.LoadedId[0] = id;
-
-        foreach (var x in FplOperation.EnsureSaved(parser, op))
-            yield return x;
+        op.ReadId = op.Id;
+        parser.ActiveReadId = op.Id;
     }
 
 

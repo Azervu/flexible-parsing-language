@@ -11,19 +11,44 @@ internal class RawOp
             return Type.GetStatusId(d, this);
         return Id;
     }
-
     internal string Name { get; set; } = string.Empty;
     internal int CharIndex { get; set; }
     internal OpConfig Type { get; set; }
     internal string? Accessor { get; set; }
-    internal List<RawOp> LeftInput { get; private set; } = new List<RawOp>();
+    internal string? FallbackAccessor { get; set; }
+
+    private List<RawOp> _leftInput = new List<RawOp>();
+    internal List<RawOp> LeftInput {
+        get
+        {
+#if DEBUG
+            if (_leftInput.Where(x => x == null).Any())
+                throw new InvalidOperationException("*** *** ***");
+#endif
+            return _leftInput;
+        }
+    }
     internal List<RawOp> RightInput { get; private set; } = new List<RawOp>();
     internal IEnumerable<RawOp> GetRawInput() => LeftInput.Concat(RightInput);
     internal List<RawOp> Output { get; set; } = new List<RawOp>();
+    internal int WriteId { get; set; } = -1;
+    private int _readId = -1;
+    internal int ReadId
+    {
+        get => _readId;
+        set
+        {
+#if DEBUG
+            if (value == 17) {
+                var s = 3456456;
+            }
+#endif
+            _readId = value;
+        }
+    }
 
     internal List<List<int>> AffixChildren { get; set; } = new List<List<int>>();
     internal List<List<int>> GroupChildren { get; set; } = new List<List<int>>();
-
     internal bool Prefixed { get; set; }
     internal bool PostFixed { get; set; }
     internal bool OptFixed { get; set; }
@@ -44,7 +69,6 @@ internal class RawOp
         return false;
     }
 
-
     internal bool IsOptFix()
     {
         if (Type.SequenceType.All(OpSequenceType.OptionalExtraInput) && !OptFixed)
@@ -52,7 +76,6 @@ internal class RawOp
 
         return false;
     }
-
 
     internal List<RawOp> Input = new List<RawOp>();
 
@@ -116,7 +139,7 @@ internal static class RawOpExtension
     }
 
 
-    internal static bool IsSimple(this RawOp x) => x.Output.Count == 1 && x.GetRawInput().Count() == 0;
+    internal static bool IsSimple(this RawOp x) => x.Output != null && x.Output.Count == 1 && x.GetRawInput().Count() == 0;
 
     private static void LogEntry(HashSet<int> proccessed, StringBuilder log, RawOp t)
     {

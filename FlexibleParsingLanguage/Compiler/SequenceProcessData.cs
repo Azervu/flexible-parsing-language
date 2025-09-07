@@ -8,6 +8,12 @@ namespace FlexibleParsingLanguage.Compiler;
 
 internal class SequenceProccessData
 {
+    internal int RootOperatorId = -1;
+    internal int ActiveReadId = -1;
+    internal int ActiveWriteId = -1;
+
+    internal int OpIdCounter { get; set; }
+
     internal Dictionary<int, RawOp> Ops { get; set; }
 
     internal Dictionary<string, RawOp> OpReferences { get; set; } = new Dictionary<string, RawOp>();

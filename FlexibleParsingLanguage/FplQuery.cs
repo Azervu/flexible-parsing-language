@@ -4,7 +4,10 @@ using FlexibleParsingLanguage.Functions;
 using FlexibleParsingLanguage.Modules;
 using FlexibleParsingLanguage.Operations;
 using FlexibleParsingLanguage.Parse;
+using System;
+using System.Collections;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 namespace FlexibleParsingLanguage;
 
@@ -15,7 +18,7 @@ public class FplQuery
         get
         {
             if (_compiler == null)
-                _compiler = new Compiler.FplCompiler(FplOperation.OpConfigs);
+                _compiler = new Compiler.FplCompiler();
             return _compiler;
         }
     }
@@ -23,21 +26,16 @@ public class FplQuery
     private List<ParseOperation> _operations;
     
     private ParsingMetaContext _rootMetaContext;
-    private ParserRootConfig _config;
     private IWritingModule? _writingModule;
     private ModuleHandler _modules;
-    private string _rawQuery;
-
+    internal string DesugaredQuery { get; set; }
+    internal string RawQuery { get; set; }
     internal FplQuery(
         List<ParseOperation> operations,
         ParsingMetaContext rootMetaContext,
-        ParserRootConfig config,
-        ModuleHandler modules,
-        string rawQuery
+        ModuleHandler modules
     )
     {
-        _rawQuery = rawQuery;
-        _config = config;
         _rootMetaContext = rootMetaContext;
         _operations = operations;
         _modules = modules;
@@ -53,118 +51,81 @@ public class FplQuery
     {
         var writer = writingModule ?? _writingModule ?? new CollectionWritingModule();
 
-        object? writeRoot = (_config.RootType & OpCompileType.WriteObject) > 0
-            ? writer.BlankMap()
-            : writer.BlankArray();
-   
+        var writeRoot = new WriteRoot();
+
         var ctx = new ParsingContext(writer, _modules, readRoot, writeRoot, _rootMetaContext);
 
-        for (var j = 0; j < _operations.Count; j++)
-        {
-            var o = _operations[j];
 
-            try
+#if DEBUG
+        RawOp activeOp = null;
+        var log = string.Empty;
+#endif
+
+
+        ParseOperation o = null;
+        try
+        {
+
+
+            foreach (var x in _operations)
             {
+                o = x;
                 o.Op(this, ctx, o.Data);
+                ctx.Focus.Store[o.Data.Id] = ctx.Focus.Active;
 #if DEBUG
                 ctx.Focus.ValidateTree();
 #endif
             }
-            catch (QueryException ex)
-            {
-                ex.Ops.Add(o.Metadata);
-                ex.Query = _rawQuery;
-                throw;
-            }
-            catch (Exception ex)
-            {
-
-                string at = string.Empty;
-                if (ex.StackTrace != null)
-                {
-                    var lines = ex.StackTrace.Split(Environment.NewLine);
-                    for (var i = 0; i < lines.Length; i++)
-                    {
-                        if (!lines[i].Contains("FlexibleParsingLanguage"))
-                            continue;
-                        for (; i < lines.Length; i++)
-                            at += "\n" + lines[i];
-                        break;
-                    }
-                }
-
-                var msg = new StringBuilder(ex.Message);
-                msg.Append(" | version = ");
-                msg.Append(Assembly.GetAssembly(typeof(ParsingContext)).GetName().Version.ToString());
-
-                if (at != null)
-                {
-                    msg.Append(" | ");
-                    msg.Append(at);
-                }
-
-                var ex2 = new QueryException(o.Metadata, msg.ToString(), true);
-                ex2.Query = _rawQuery;
-
-                throw ex2;
-            }
-
-#if DEBUG
-            ctx.Focus.ValidateTree();
-#endif
         }
 
-        /*
-        foreach (var o in _operations)
+        catch (QueryException ex)
         {
-            try
-            {
-                o.Op(this, ctx, o.Data);
-            }
-            catch (QueryException ex)
-            {
-                ex.Ops.Add(o.Metadata);
-                ex.Query = _rawQuery;
-                throw;
-            } 
-            catch (Exception ex)
-            {
-
-                string at = string.Empty;
-                if (ex.StackTrace != null)
-                {
-                    var lines = ex.StackTrace.Split(Environment.NewLine);
-                    for (var i = 0; i < lines.Length; i++)
-                    {
-                        if (!lines[i].Contains("FlexibleParsingLanguage"))
-                            continue;
-                        for (; i < lines.Length; i++)
-                            at += "\n" + lines[i];
-                        break;
-                    }
-                }
-
-                var msg = new StringBuilder(ex.Message);
-                msg.Append(" | version = ");
-                msg.Append(Assembly.GetAssembly(typeof(ParsingContext)).GetName().Version.ToString());
-
-                if (at != null)
-                {
-                    msg.Append(" | ");
-                    msg.Append(at);
-                }
-
-                var ex2 = new QueryException(o.Metadata, msg.ToString(), true);
-                ex2.Query = _rawQuery;
-
-                throw ex2;
-            }
-#if DEBUG
-            ctx.ValidateTree();
-#endif
+            ex.Ops.Add(o.Metadata);
+            ex.Query = DesugaredQuery;
+            ex.RawQuery = RawQuery;
+            throw ex;
         }
-        */
+        catch (Exception ex)
+        {
 
-        return writeRoot;
+            string at = string.Empty;
+            if (ex.StackTrace != null)
+            {
+                var lines = ex.StackTrace.Split(Environment.NewLine);
+                for (var i = 0; i < lines.Length; i++)
+                {
+                    if (!lines[i].Contains("FlexibleParsingLanguage"))
+                        continue;
+                    for (; i < lines.Length; i++)
+                        at += "\n" + lines[i];
+                    break;
+                }
+            }
+
+            var msg = new StringBuilder(ex.Message);
+            msg.Append(" | version = ");
+            msg.Append(Assembly.GetAssembly(typeof(ParsingContext)).GetName().Version.ToString());
+
+            if (at != null)
+            {
+                msg.Append(" | ");
+                msg.Append(at);
+            }
+
+            var ex2 = new QueryException(o.Metadata, msg.ToString(), true);
+            ex2.Query = DesugaredQuery;
+            ex2.RawQuery = RawQuery;
+            throw ex2;
+        }
+
+        if (writeRoot.Dictionary.Count() == 0)
+            return writeRoot.List;
+        if (writeRoot.List.Count == 0)
+            return writeRoot.Dictionary;
+
+        var dict = writeRoot.Dictionary.ToDictionary();
+        for(var i = 0; i < writeRoot.List.Count; i++)
+            dict[i.ToString()] = writeRoot.List[i];
+        return dict;
     }
 }
